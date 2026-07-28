@@ -291,7 +291,11 @@ export async function resolvePerson(name) {
    ever existed kept the bug the original had after the original was
    fixed, and there have been three. */
 export async function survivorsViaTmdb(film, tmdbId) {
-  if (!process.env.TMDB_KEY) return { alive: [], unknown: 0 };
+  /* ok:false, not a bare empty list. Without a key the survivor test does
+     not run at all — every picture on every path passes it unopposed — and
+     a caller reading only `alive` cannot tell that from a clean result.
+     This is the single easiest way to have the whole guard silently off. */
+  if (!process.env.TMDB_KEY) return { alive: [], unknown: 0, ok: false };
 
   return survivors({
     film,

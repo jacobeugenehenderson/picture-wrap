@@ -58,15 +58,12 @@ async function notify(message) {
 async function harvest(person, state, queue) {
   const found = await sparql(wrappedFilmsQuery(qid(person.p)));
   const fresh = [];
+  let queued = 0;
 
   for (const film of found) {
     const id = qid(film.film);
 
     if (state.seen.includes(id)) continue;
-
-    /* Seen means considered, not announced. Recording it here is what
-       stops a thin film being re-offered on every future sweep. */
-    state.seen.push(id);
 
     if (unnamed(film.filmLabel)) {
       log(`      skip  ${id} — no name in any language`);
@@ -123,11 +120,32 @@ async function harvest(person, state, queue) {
     item.unknownCount = unknown;
     await sleep(250);
     queue.push(item);
+
+    /* Seen is recorded HERE, once the picture has actually been offered,
+       and nowhere earlier.
+
+       It used to be stamped on the way in, before the name check, before
+       the cast floor and before the survivor test — so a picture we
+       declined because somebody was still alive could never be offered
+       again, not even after that person died. The one event that resolves
+       it was the one event it had made itself deaf to. Nothing clears
+       these either: recheck.js only frees ids belonging to archive entries
+       that reopen.
+
+       Everything not queued is now simply left unrecorded, so the next
+       death on that picture brings it back round. The cost is re-testing
+       films we have already declined, which is exactly the work that
+       finding them requires. */
+    state.seen.push(item.id);
+    queued++;
     log(`   +  ${item.title}${item.year ? ` (${item.year})` : ''} — closed by ` +
         `${item.last.name}, ${longDate(item.last.died)}`);
   }
 
-  return fresh.length;
+  /* What was queued, not what was found. `added` drives both the summary
+     and queue.slice(-added) in the notification, so counting rejected
+     films here named the wrong people in the alert. */
+  return queued;
 }
 
 
@@ -219,8 +237,6 @@ async function backfill(range) {
         const confirm = await sparql(wrappedFilmsQuery(actual ? qid(actual.p) : id));
         const match = confirm.find(f => qid(f.film) === id);
 
-        state.seen.push(id);
-
         if (!match) continue;                                  /* crew still living */
         if (Number(match.castCount) < MIN_CAST) continue;
         if (unnamed(match.filmLabel)) continue;                /* nothing to call it */
@@ -235,6 +251,9 @@ async function backfill(range) {
           log(`   -  ${match.filmLabel} — still living: ${alive.slice(0, 2).join(', ')}`);
           continue;
         }
+
+        /* Recorded only now, for the same reason as the sweep above. */
+        state.seen.push(id);
 
         queue.push({
           id,

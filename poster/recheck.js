@@ -82,7 +82,20 @@ async function recheck(entry) {
      Same species as every other bug here: silence presented as an answer. */
   if (!entry.tmdbId) return { verdict: 'unchecked' };
 
-  const { alive, unknown } = await survivorsViaTmdb(entry.id, entry.tmdbId);
+  /* `ok` is the difference between "asked and found nobody" and "never got
+     an answer". Reading the second as the first is how a TMDB outage
+     halfway through a re-check would quietly stamp hundreds of untested
+     entries as verified — and overwrite their unknownCount with 0, which
+     claims nothing is unaccounted for on a picture nothing examined.
+
+     The no-id case above was fixed on its own and the other three failure
+     modes were left behind: a null credits fetch, a film TMDB has no
+     credits for, and any thrown error including a failed SPARQL call. All
+     of them returned an empty survivor list, and an empty survivor list
+     read as a clean bill of health. */
+  const { alive, unknown, ok } = await survivorsViaTmdb(entry.id, entry.tmdbId);
+  if (!ok) return { verdict: 'unchecked' };
+
   return {
     verdict: alive.length ? 'reopened' : 'closed',
     survivors: alive,
