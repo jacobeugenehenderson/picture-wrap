@@ -1188,6 +1188,14 @@ async function kindOfId(id) {
   }
 }
 
+/* The Vault needs a way back from a film or a person. The landing page
+   already has one under the chips, so the masthead link only appears
+   elsewhere — otherwise the same link sits twice on one screen. */
+function showNav(on) {
+  const nav = document.getElementById('nav');
+  if (nav) nav.hidden = !on;
+}
+
 async function route() {
   /* URLs are #/barbara-adolph/Q807328 — the readable part, then the id.
      The Q-id is found wherever it sits, so every URL ever published still
@@ -1198,6 +1206,8 @@ async function route() {
   window.scrollTo(0, 0);
 
   try {
+    showNav(!!id || kind === 'about');
+
     if (kind === 'archive') { await viewArchive(); return; }
     if (kind === 'about') { viewAbout(); return; }
     if (!id) { await viewLanding(); return; }

@@ -9,7 +9,7 @@
        cache these hard; without a new URL, returning visitors keep the old
        version until they hard-refresh. The number is arbitrary — any change
        works — but keeping them in step makes it one edit to remember. -->
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 
@@ -19,6 +19,8 @@
       <h1>Picture&nbsp;Wrap</h1>
     </a>
     <p class="tagline">Every picture wraps twice</p>
+    <!-- Hidden on the landing page, where the chips already lead there. -->
+    <nav class="nav" id="nav" hidden><a href="#/archive">The Vault</a></nav>
   </header>
 
   <div class="search" role="search">
@@ -56,6 +58,6 @@
 
   <!-- type="module" so app.js can import shared.js, which the poster imports
        too. Native ES modules in both runtimes; still no build step. -->
-  <script type="module" src="app.js?v=13"></script>
+  <script type="module" src="app.js?v=14"></script>
 </body>
 </html>
