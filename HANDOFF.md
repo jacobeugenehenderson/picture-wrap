@@ -1,19 +1,25 @@
 # Handoff — 28 July 2026
 
-Read this before touching the Vault. It stops at an unresolved decision,
-deliberately. Nothing is half-written; everything below is a clean state.
+Read this before touching the Vault. Nothing is half-written; everything
+below is a clean state.
 
 ## Where things stand
 
 | | |
 |---|---|
-| `archive.json` | **2,819** — unchanged all session |
-| `poster/queue.json` | **887** — the overnight sweep, filed, not reviewed |
-| Bluesky | 26 posts, 46 archive entries, all from 05:47–05:51 today |
-| Live site | current with `main`, `?v=17` |
+| `archive.json` | **3,640** — every row judged by one implementation |
+| `poster/queue.json` | **empty** |
+| Unverifiable | **113** rows have no TMDB id and never got a second opinion |
+| Bluesky | 26 posts; **37** of the 46 entries survive |
+| Live site | current with `main`, `?v=18` |
 | Working tree | clean, pushed |
 
 Nothing is running. No process holds a lock. `caffeinate` released.
+
+The Vault has been re-checked end to end **twice** under the fixed logic:
+2,819 → 2,754 (65 reopened), then the 887 filed and the whole 3,641
+re-tested, which removed 1. Every entry now standing has been judged by
+the same three passes.
 
 ## What got fixed today
 
