@@ -5,6 +5,43 @@ Roughly in the order they're worth doing.
 
 ---
 
+## Name-matching for TMDB orphans
+
+**Priority: highest. Blocks the Vault re-check.**
+
+When TMDB names someone Wikidata has no `P4985` link for, we ask TMDB for
+their dates. If TMDB has none either, we currently call them **alive** —
+which vetoes the picture.
+
+That is wrong often enough to be useless. Péter Eötvös died 24 March 2024,
+Wikidata records it, and he has no `P4985`. So he reads as living and
+reopens *Cats' Play*. A partial dry run reopened ~49% of the first 200
+Vault entries, mostly this.
+
+**Fix:** before concluding "alive", try matching the orphan by **name**
+against Wikidata. Guard the collision risk — require a plausible birth
+year, or an acting/crew occupation, or both. An unmatched name stays
+`unknown`, not `alive`.
+
+Then re-run `node recheck.js --dry-run` and get a real number.
+
+---
+
+## Two judgment calls on what counts as a survivor
+
+Neither should be decided silently.
+
+- **Placeholder birthdays.** Bill Alcorn, who reopens *Mildred Pierce*, is
+  recorded as born `1920-01-01` — the shape TMDB uses when only the year
+  is known. He would be 106. Should an uncorroborated `-01-01` be treated
+  as `unknown` rather than `alive`?
+- **Uncredited extras.** He is credited as *Soldier (uncredited)*. Should
+  an uncredited bit part veto a picture the way a director would?
+
+Both defensible either way. Both change the size of the Vault materially.
+
+---
+
 ## The site still has the old verification bug
 
 **Priority: highest. Do this first.**
@@ -56,9 +93,12 @@ Expect the Vault to shrink. That is the point.
 
 ## Alt text worth reading
 
-**Priority: high.** Currently it is a caption, not a description — both
+**Priority: medium.** Currently it is a caption, not a description — both
 lines merely repeat the post text, so a screen reader gets nothing the
 sighted reader didn't already have in words.
+
+It matters to the project and it is not urgent. Correctness work comes
+first; this is worth doing properly rather than quickly.
 
 **What it should carry.** A sighted reader glancing at a 1945 noir poster
 picks up era, genre and mood instantly: colour, shadow, typography. That

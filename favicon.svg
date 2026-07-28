@@ -1,0 +1,45 @@
+<!-- The site's one image: a list divided by the gold bar. Living above,
+     dead below, the bar risen past the middle because it always is.
+
+     The gradient stops are the same five as .bar in style.css. If that
+     changes, change it here — nothing imports anything, so they only stay
+     in step by hand.
+
+     The field is ink rather than paper: the mark has to hold at 16px on
+     both a light and a dark browser chrome, and gold on near-black is the
+     only version that does both. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
+     aria-label="Picture Wrap">
+  <title>Picture Wrap</title>
+
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0"    stop-color="#7a5e14"/>
+      <stop offset="0.22" stop-color="#c9a227"/>
+      <stop offset="0.5"  stop-color="#f0d67a"/>
+      <stop offset="0.78" stop-color="#c9a227"/>
+      <stop offset="1"    stop-color="#7a5e14"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" fill="#16130e"/>
+
+  <!-- Above the bar: still here. Full strength. -->
+  <g fill="#ece7db">
+    <rect x="12" y="9"  width="40" height="5" rx="1"/>
+    <rect x="12" y="18" width="28" height="5" rx="1"/>
+  </g>
+
+  <!-- The bar itself, full bleed — it is a boundary, not an element on a
+       page, and stopping it short of the edges makes it look like a row.
+       Sitting a little above centre, since that is the direction it moves. -->
+  <rect x="0" y="27" width="64" height="9" fill="url(#gold)"/>
+
+  <!-- Below: gone. Same rows, dimmer — the page doesn't grey the dead out,
+       but at 16px equal weight above and below reads as a pattern rather
+       than a division. -->
+  <g fill="#ece7db" opacity="0.42">
+    <rect x="12" y="41" width="40" height="5" rx="1"/>
+    <rect x="12" y="50" width="32" height="5" rx="1"/>
+  </g>
+</svg>

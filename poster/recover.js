@@ -22,7 +22,7 @@
 
 import { readFile } from 'node:fs/promises';
 import {
-  sparql, qid, load, save, paths, sleep, CREDITS, detailsFor, longDate,
+  sparql, qid, load, save, paths, sleep, VALUES, IN_LIST, detailsFor, longDate,
   survivorsViaTmdb,
 } from './lib.js';
 
@@ -30,8 +30,8 @@ const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const LIST = '/tmp/naming-losses.json';
 const CONCURRENCY = 4;
-const VALUES = CREDITS.join(' ');
-const IN = CREDITS.join(', ');
+/* Both come from shared.js — see the note in recheck.js. Re-deriving them
+   from CREDITS produced invalid SPARQL once CREDITS became pairs. */
 const LANGS = 'en,fr,de,it,es,pt,nl,sv,da,no,fi,is,pl,cs,sk,hu,ro,bg,sr,hr,sl,uk,ru,el,tr,he,ar,fa,hi,bn,ta,te,ml,kn,mr,ur,th,vi,id,ms,ja,ko,zh,ca,eu,gl,et,lv,lt,ga,cy,sq,mk,ka,hy,az,kk,uz,af,sw,yi,la';
 
 if (!process.env.TMDB_KEY) { console.error('Set TMDB_KEY first.'); process.exit(1); }

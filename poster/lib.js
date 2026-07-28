@@ -13,8 +13,12 @@ import {
   qid, year, longDate, pickDemonym, slug, path, unnamed,
 } from '../shared.js';
 
-export { CREDITS, CREDIT_NOUNS, OCCUPATIONS, qid, year, longDate,
-         pickDemonym, slug, path, unnamed };
+/* Re-export everything taken from shared.js, not a subset. IN_LIST, VALUES
+   and LANGS were missing here, so recheck.js and recover.js re-derived
+   them locally — and their derivation broke silently when CREDITS became
+   an array of pairs. A partial re-export is an invitation to duplicate. */
+export { CREDITS, CREDIT_NOUNS, OCCUPATIONS, IN_LIST, VALUES, LANGS,
+         qid, year, longDate, pickDemonym, slug, path, unnamed };
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 

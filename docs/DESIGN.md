@@ -240,3 +240,60 @@ The small type scale also goes **up** on mobile, not down: `--size-tiny`
 0.7rem → 0.78rem, `--size-small` 0.8rem → 0.86rem.
 
 Hues are fixed. If you change a value, re-measure.
+
+---
+
+## The tab
+
+The tab is the only part of the site visible while you are looking at
+something else, so it carries the same two facts the page leads with:
+which picture is open, and whether it has wrapped.
+
+| | |
+|---|---|
+| Landing | `Picture Wrap` |
+| A film | `Mildred Pierce (1945) · Picture Wrap` |
+| A wrapped film | `The Wizard of Oz (1939) — wrapped · Picture Wrap` |
+| A person | `Ann Blyth (1928–) · Picture Wrap` |
+| The Vault | `The Vault — 2,819 pictures · Picture Wrap` |
+| Loading | `Pulling the call sheet · Picture Wrap` |
+
+Two rules behind that table. **The qualifier goes last**, because tabs
+truncate from the right and a name cut short is still a name. And **the
+title is plain text** — `document.title` renders `&ndash;` as those eight
+characters, so real dashes only, never the entities the markup uses.
+
+The count on the Vault is the whole Vault, not the filtered view. A tab
+that changes size because you clicked "French" is reporting on the widget,
+not on the archive.
+
+Loading messages reach the tab as well. A background tab on a slow
+Wikidata query otherwise sits on the title of whatever you were reading
+before, which is the one thing it must not say.
+
+### The icon
+
+`favicon.svg` is the drawing: the roster, divided. Two rows above the bar,
+two below and dimmer, the bar full-bleed and a little above centre because
+that is the direction it moves. Its gradient is the same five stops as
+`.bar` in `style.css`, copied by hand — nothing imports anything here, so
+they only stay in step if you change both.
+
+The field is ink, not paper, and this is the one place the site's warmth
+gives way. A favicon sits on browser chrome we don't control and can't
+query: paper disappears against a light tab strip, and gold on near-black
+is the only version legible against either. At 16px the pairs of rows
+blur into single blocks — checked, and it still reads as a list with a
+gold line through it, which is the whole mark.
+
+The two PNGs are rasterisations for Safari before 16 and for iOS home
+screens. Regenerate them from the SVG rather than editing them:
+
+```sh
+qlmanage -t -s 180 -o . favicon.svg && mv favicon.svg.png apple-touch-icon.png
+qlmanage -t -s 32  -o . favicon.svg && mv favicon.svg.png favicon-32.png
+```
+
+`theme-color` paints the browser's own chrome, and carries both `--paper`
+values behind a `prefers-color-scheme` query, so the frame matches the
+page it is framing in either theme.

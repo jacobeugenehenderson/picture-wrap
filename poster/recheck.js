@@ -22,7 +22,7 @@
 
 import { writeFile } from 'node:fs/promises';
 import {
-  sparql, load, save, paths, sleep, CREDITS, survivorsViaTmdb,
+  sparql, load, save, paths, sleep, VALUES, survivorsViaTmdb,
 } from './lib.js';
 
 const args = process.argv.slice(2);
@@ -33,7 +33,12 @@ const limit = limitIx === -1 ? Infinity : Number(args[limitIx + 1]);
 const CONCURRENCY = 4;
 const CHECKPOINT = 200;
 
-const VALUES = CREDITS.join(' ');
+/* VALUES comes from shared.js. It used to be re-derived here as
+   CREDITS.join(' ') — which was right until CREDITS became an array of
+   [property, label] pairs, at which point the join silently produced
+   "wdt:P57,Director wdt:P58,Screenplay" and every query 400'd. The run
+   reported "2819 could not be checked" and changed nothing, which is the
+   only reason it wasn't worse. Never re-derive a shared constant. */
 
 if (!process.env.TMDB_KEY) {
   console.error('Set TMDB_KEY first.');

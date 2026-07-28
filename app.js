@@ -102,7 +102,29 @@ function thumb(url, w = 120) {
 }
 
 function show(html) { stage.innerHTML = html; wireShare(); }
-function state(msg) { show(`<p class="state">${esc(msg)}</p>`); }
+
+/* The tab is the only part of the page you can see while looking at
+   something else, so it says which picture is open and whether it has
+   wrapped — the same two facts the page leads with.
+
+   Plain text, never markup: document.title shows "&ndash;" as those eight
+   characters. Real dashes only. */
+const SITE = 'Picture Wrap';
+function setTitle(line) {
+  document.title = line ? `${line} · ${SITE}` : SITE;
+}
+
+/* Named the same way in the tab as on the page and in the share text. */
+function filmName(meta) {
+  return `${meta.label || ''}${meta.year ? ` (${meta.year})` : ''}`;
+}
+
+/* A holding message goes to the tab too. A background tab on a slow
+   query otherwise sits on the title of whatever you were reading last. */
+function state(msg) {
+  show(`<p class="state">${esc(msg)}</p>`);
+  setTitle(msg.replace(/[.…]+$/, ''));
+}
 
 
 /* --- search ------------------------------------------------------------ */
@@ -313,6 +335,7 @@ async function viewFilm(id) {
   filmMeta = meta;
 
   if (!everyone.length) {
+    setTitle(filmName(meta));
     show(titleCard(meta, null) +
       `<p class="state">Wikidata has no one credited on this one.</p>`);
     return;
@@ -434,8 +457,13 @@ function renderRoster() {
     cast.length > 0 && front.living.length === 0 && allLiving.length > 0;
 
   const shareText = wrapDate
-    ? `Nobody who made ${filmMeta.label}${filmMeta.year ? ` (${filmMeta.year})` : ''} is left.`
-    : `Who is still with us from ${filmMeta.label}${filmMeta.year ? ` (${filmMeta.year})` : ''}.`;
+    ? `Nobody who made ${filmName(filmMeta)} is left.`
+    : `Who is still with us from ${filmName(filmMeta)}.`;
+
+  /* The one thing worth carrying into the tab: whether the bar is at the
+     top. Appended rather than prefixed, so the title survives truncation
+     down to something still recognisable. */
+  setTitle(filmName(filmMeta) + (wrapDate ? ' — wrapped' : ''));
 
   /* When a picture has wrapped, the bar rises above everything — the crew
      card included, since everyone in it is gone too. Nothing should sit
@@ -771,6 +799,13 @@ async function viewPerson(id) {
     : '';
   const sub = [life, meta.occupations].filter(Boolean).join(' &middot; ');
 
+  /* Same dates as the card, in characters a title can hold. An open span
+     — "(1928–)" — is the person still being here, which is the point. */
+  const lifeText = meta.dob
+    ? ` (${year(meta.dob)}–${meta.dod ? year(meta.dod) : ''})`
+    : '';
+  setTitle((meta.label || id) + lifeText);
+
   const card = `
     <section class="card card-person">
       ${meta.img
@@ -947,6 +982,7 @@ async function viewArchive() {
   const all = await loadArchive();
 
   if (!all.length) {
+    setTitle('The Vault');
     show(`
       <section class="card"><h2>The Vault</h2></section>
       <p class="state">Nothing here yet. It fills as pictures close &mdash;
@@ -968,6 +1004,10 @@ async function viewArchive() {
    backfill puts on the order of a thousand closings into six decades, and
    two hundred rows under one heading is its own problem. */
 function renderArchive(all) {
+  /* The whole Vault, not the filtered view — the tab shouldn't change size
+     because you clicked "French". */
+  setTitle(`The Vault — ${all.length.toLocaleString('en')} pictures`);
+
   /* Counts come from the whole Vault, not the filtered view, so the row
      doesn't rearrange itself as you click through it. */
   const tally = new Map();
@@ -1096,6 +1136,7 @@ function archiveRow(group) {
    The limits described here are real and a visitor deserves them stated
    plainly rather than discovered. */
 function viewAbout() {
+  setTitle('About');
   show(`
     <section class="card">
       <h2>About</h2>
@@ -1208,6 +1249,8 @@ function viewAbout() {
    recent closings — so the page keeps itself current. PICKS is only the
    fallback for an empty archive. */
 async function viewLanding() {
+  /* The front door carries no qualifier — the site's own name is what's up. */
+  setTitle('');
   const archive = await loadArchive();
   const recent = archive.slice(0, 5);
 

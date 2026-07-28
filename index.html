@@ -5,11 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Picture Wrap</title>
   <meta name="description" content="Every picture wraps twice: first when the shooting stops, and finally when the last person who made it is gone.">
+
+  <!-- The tab. favicon.svg is the drawing and the only thing to edit; the
+       two PNGs are rasterisations of it, for Safari before 16 and for iOS
+       home screens, and are regenerated with:
+
+         qlmanage -t -s 180 -o . favicon.svg && mv favicon.svg.png apple-touch-icon.png
+         qlmanage -t -s 32  -o . favicon.svg && mv favicon.svg.png favicon-32.png
+
+       Order matters: browsers that understand SVG take the first line and
+       stop, older ones fall through to the PNG. -->
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+  <!-- Paints the browser's own chrome to match the page it's framing —
+       the same two --paper values style.css switches between. -->
+  <meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#12100c" media="(prefers-color-scheme: dark)">
+
   <!-- Bump ?v= on BOTH tags whenever style.css or app.js changes. Browsers
        cache these hard; without a new URL, returning visitors keep the old
        version until they hard-refresh. The number is arbitrary — any change
        works — but keeping them in step makes it one edit to remember. -->
-  <link rel="stylesheet" href="style.css?v=17">
+  <link rel="stylesheet" href="style.css?v=18">
 </head>
 <body>
 
@@ -58,6 +77,6 @@
 
   <!-- type="module" so app.js can import shared.js, which the poster imports
        too. Native ES modules in both runtimes; still no build step. -->
-  <script type="module" src="app.js?v=17"></script>
+  <script type="module" src="app.js?v=18"></script>
 </body>
 </html>
