@@ -533,7 +533,7 @@ export async function survivorsViaTmdb(film, tmdbId) {
        truncated value serialises as 1 January whether the editor knew the
        day or only the year, and those two are different evidence. */
     const rows = await sparql(`
-      SELECT ?tmdb ?pLabel ?dob ?prec ?dod WHERE {
+      SELECT ?tmdb ?p ?pLabel ?dob ?prec ?dod WHERE {
         VALUES ?tmdb { ${missing.map(i => `"${i}"`).join(' ')} }
         ?p wdt:P4985 ?tmdb .
         OPTIONAL {
@@ -545,10 +545,32 @@ export async function survivorsViaTmdb(film, tmdbId) {
       }`).catch(() => []);
 
     const names = new Map(everyone.map(c => [String(c.id), c.name]));
-    const wikidata = new Map();
+
+    /* One TMDB id can be claimed by more than one Wikidata item, and when
+       it is, taking the first row is not a choice — SPARQL does not order
+       results, so it is a coin flip that lands differently between runs.
+
+       TMDB person 31220 is "Jorge Busto", who edited a picture in 1940 and
+       has no dates. Two Wikidata items claim him: one with no dates, one
+       born in 1982. Whichever came back first decided whether a man born
+       forty-two years after the picture vetoed it, and a re-check that had
+       held twice reopened The Priest's Secret on the third run.
+
+       Two items claiming one identifier is ambiguity, not evidence — the
+       same rule the name matching already applies. We keep neither and let
+       TMDB answer instead, which for an unresolved person means 'unknown'
+       and no veto. */
+    const claims = new Map();
     for (const r of rows) {
-      if (wikidata.has(r.tmdb)) continue;   /* First item wins, as before. */
-      wikidata.set(r.tmdb, {
+      if (!claims.has(r.tmdb)) claims.set(r.tmdb, new Map());
+      claims.get(r.tmdb).set(r.p ?? r.pLabel ?? '', r);
+    }
+
+    const wikidata = new Map();
+    for (const [id, items] of claims) {
+      if (items.size !== 1) continue;       /* Contested. Nobody wins. */
+      const r = [...items.values()][0];
+      wikidata.set(id, {
         name: r.pLabel || null,
         born: day(r.dob),
         precision: Number(r.prec ?? 0),
