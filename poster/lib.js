@@ -534,8 +534,10 @@ export function compose(group) {
   const { last, items } = group;
   const when = longDate(last.died);
   const url = `${SITE}/#/${slug(last.name)}/${last.id}`;
-  /* A label, not a fake address. See linkFacets in bluesky.js. */
-  const link = `[[${last.name} at picture-wrap.com|${url}]]`;
+  /* Just the domain. Naming the person again — "Barbara Adolph at
+     picture-wrap.com" — repeats the first three words of the post, and a
+     label that isn't a fake path is the whole point. See linkFacets. */
+  const link = `[[picture-wrap.com|${url}]]`;
 
   /* Name alone is a stranger. Nationality, trade and age are what make a
      reader able to place someone they've never heard of — which is most
@@ -571,7 +573,7 @@ export function compose(group) {
       const stars = (film.stars || []).slice(0, howManyStars || 2);
       const line = stars.length ? `\n\nWith ${and(stars)}.` : '';
       const fu = `${SITE}/#/${slug(film.title)}/${film.id}`;
-      return `${named(film)}${line}\n\n[[${named(film)} at picture-wrap.com|${fu}]]`;
+      return `${named(film)}${line}\n\n[[picture-wrap.com|${fu}]]`;
     }
     const listed = ordered.slice(0, count);
     const rest = ordered.length - listed.length;
