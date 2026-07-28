@@ -38,54 +38,96 @@ Nothing is running. No process holds a lock. `caffeinate` released.
 6. Contrast, mobile type sizes, English-name fallback, the closing line,
    the Back control, the search placeholder, the tagline.
 
-## The decision that blocks everything else
+## The over-correction — fixed, `75adfad`
 
-**The verification is now too aggressive in the opposite direction.**
+**Superseded. Kept because the numbers it replaces were quoted elsewhere.**
 
-Rule as written: a person with a birth date inside a human lifespan and no
-death date is *alive*, and vetoes the picture.
+The verification had gone too far the other way: an absent death date was
+being read as a pulse. Three separate versions of that one mistake, each
+found by a specific wrong answer.
 
-The failure case, confirmed:
+| | |
+|---|---|
+| Stopped at pass one | Wikidata knew someone and had no `P570`, so TMDB was never asked. **Robert Amon** — Wikidata item with no dates at all, TMDB record saying he died November 1992 — vetoed *Le chemin des écoliers*. **Helen Hunt**, hairdresser on *Cover Girl*, has no dates in either database and vetoed that. |
+| Stopped at pass two | **Péter Eötvös** died 24 March 2024, recorded on Wikidata, but with no `P4985` link the id lookup missed him and TMDB has no `deathday`. Reopened *Cats' Play*. |
+| Took placeholders literally | **Bill Alcorn**, *Soldier (uncredited)* in *Mildred Pierce*, born `1920-01-01`, nothing on IMDb. Closing out the picture at 106. |
 
-> **Péter Eötvös** died 24 March 2024. Wikidata knows. He has **no
-> `P4985`** link, so he falls to the TMDB path; TMDB has no `deathday`;
-> we call him alive and reopen *Cats' Play*.
+`survivorsViaTmdb` now runs three passes and prefers neither database:
+Wikidata by TMDB id for birth *and* death dates, TMDB's own dates for
+everyone Wikidata has not buried, then Wikidata again by name for whoever
+is still standing. The name pass is guarded on birth year within two, and
+only where exactly one person clears the guard.
 
-A partial dry run reopened **~49%** of the first 200 entries — a
-projected 1,381 of 2,819. That number is not real. It is mostly this bug.
+### The ~49% was wrong
 
-**The fix, not yet written:** for orphans TMDB cannot date, try matching
-by **name** against Wikidata before concluding "alive". Guard against name
-collisions — require a plausible birth year or an acting occupation.
+**It does not reproduce, and it never should have been projected.**
+`poster/recheck-dryrun.log`, the file the earlier version of this note
+cited, reopened **34 of the first 200 (17%)** and **105 of 800 (13%)** —
+not 49%, and so not a projected 1,381 either. Where 49% came from is
+unrecoverable; the log is untracked, so there is no history to read.
 
-`poster/recheck-dryrun.log` holds the flawed run. Delete it once the
-name-matching pass exists; its numbers are misleading.
+Measured on the same first 200, same script, one change at a time:
 
-### A second, smaller judgment call
+| | reopened |
+|---|---|
+| the flawed run | 34 *(17%)* |
+| + name matching, + placeholder rule | 30 |
+| + both databases, both ways | **14** *(7%)* |
 
-`Mildred Pierce` reopens on **Bill Alcorn**, *Soldier (uncredited)*, born
-`1920-01-01` — a placeholder that usually means "year only". He would be
-106. Worth deciding whether:
+Nothing newly reopens at any step — every change strictly removed false
+reopens. That projects to roughly **200 of 2,819**. A full dry run is the
+number that counts; this is the shape of it.
 
-- placeholder birthdays (`-01-01`, uncorroborated) should be `unknown`
-  rather than `alive`
-- uncredited extras should veto a picture at all
+Delete `poster/recheck-dryrun.log` once the full run has been diffed
+against it. Its numbers are misleading and its provenance is unknown.
 
-Both are defensible either way. Neither should be decided silently.
+### The two judgment calls, settled
+
+**Placeholder birthdays: `unknown`, not `alive`** — past a hundred years
+old, and only then. Below that threshold a 1 January birthday is mostly
+people actually born on 1 January, and demoting them would wrongly close
+pictures. Above it, the date is a cataloguer typing what they had.
+
+**Uncredited extras still veto.** Considered and rejected. Bill Alcorn's
+problem was never his billing, it was a placeholder read as a pulse — fix
+that and he resolves on his own. Excluding people by credit status would
+quietly change what *wrapped* means, which is the objection `BACKLOG.md`
+already raises against folding poster artists in from the other side.
 
 ## The order to work in
 
-1. **Add name-matching for TMDB orphans**, then re-run
-   `node recheck.js --dry-run` and see what the real number is.
-2. **Settle the two judgment calls above.**
-3. **Run `node recheck.js`** for real. It backs up to
+1. ~~Add name-matching for TMDB orphans~~ — done, `75adfad`.
+2. ~~Settle the two judgment calls~~ — done, above.
+3. **Full `node recheck.js --dry-run`**, diffed against the old log.
+4. **Run `node recheck.js`** for real. It backs up to
    `archive.json.before-recheck` and clears reopened ids from
    `state.seen`.
-4. **`node review.js --archive-only`** — files the 887, posts nothing.
-5. **Commit and push** so the live site picks up `archive.json`.
+5. **`node review.js --archive-only`** — files the 887, posts nothing.
+6. **Commit and push** so the live site picks up `archive.json`.
 
-Do not do 4 before 3. Filing 887 entries into an unverified Vault means
+Do not do 5 before 4. Filing 887 entries into an unverified Vault means
 re-checking everything twice.
+
+## The nine published entries — no special treatment
+
+Re-checked all 46 live posts under the fixed logic: **33 hold, 9 reopen,
+4 cannot be verified** (no TMDB id). Down from 14 reopening.
+
+The nine are all post-1950 and mostly non-English — Yugoslav, Greek,
+Iranian, Brazilian, Bulgarian, Hungarian, Mexican — which is the thin end
+of the archive, and exactly where you would expect to be wrong. One is
+not arguable: *The Raven* (1977) lists **Bahman Farmanara**, who is alive
+and well known.
+
+**Decided: they are dropped like any other reopened entry.** No
+retraction, no correction thread, no ceremony. This is a beta with an
+audience of approximately nobody, and the cost of treating 26 early posts
+as a permanent public record is a Vault built on top of known-wrong rows.
+A clean foundation is worth more than a tidy timeline.
+
+Revisit if the project ever has readers who would notice. The etiquette
+question is real; it is just not real *yet*, and answering it now would
+buy nothing and cost the re-check.
 
 ## Backups
 

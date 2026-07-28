@@ -22,9 +22,17 @@ public/
 # Generated preview
 preview.html
 
-# Logs and backups
+# Logs and backups.
+#
+# `*.before-recheck` alone was too narrow: every other rescue copy —
+# .before-refill, .before-tmdbids, queue.json.old-check — was committed
+# instead, putting 3.2 MB of duplicated archive into the history. They are
+# rollback points for one afternoon, not versioned artefacts. Name a new
+# backup `<file>.before-<thing>` and it stays local, which is where a
+# backup taken against a run that is about to write belongs.
 *.log
-*.before-recheck
+*.before-*
+*.old-check
 
 # Credentials live in ~/.picture-wrap.env, outside this folder entirely.
 .env
