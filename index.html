@@ -9,7 +9,7 @@
        cache these hard; without a new URL, returning visitors keep the old
        version until they hard-refresh. The number is arbitrary — any change
        works — but keeping them in step makes it one edit to remember. -->
-  <link rel="stylesheet" href="style.css?v=10">
+  <link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
 
@@ -54,6 +54,8 @@
     </p>
   </footer>
 
-  <script src="app.js?v=10"></script>
+  <!-- type="module" so app.js can import shared.js, which the poster imports
+       too. Native ES modules in both runtimes; still no build step. -->
+  <script type="module" src="app.js?v=11"></script>
 </body>
 </html>

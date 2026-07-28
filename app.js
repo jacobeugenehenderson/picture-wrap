@@ -14,6 +14,11 @@
      The bar rises as the living block shrinks. Reaching the top is the end.
    ========================================================================== */
 
+import {
+  CREW, CREDITS, CREDIT_PROPS, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
+  qid, year, longDate, pickDemonym, slug, sentence,
+} from './shared.js';
+
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
 
@@ -21,19 +26,6 @@ const WD_API = 'https://www.wikidata.org/w/api.php';
    than through completeness: I Love Lucy has 17 cast on record and 16 of
    them dead, the bar one row from the top, and the survivor is the child
    who played Little Ricky.
-
-   Incomplete cast lists are much less dangerous on old television than on
-   recent — the actors Wikidata never recorded for a 1951 show are dead
-   too. The risk sits with middle-aged series like Cheers, where the
-   unrecorded are plausibly still alive. */
-const KINDS = [
-  'Q11424',      // film
-  'Q5398426',    // television series
-  'Q1259759',    // miniseries
-  'Q117467246',  // animated television series — a SEPARATE item from
-                 // Q5398426, which is why BoJack Horseman was invisible
-  'Q202866',     // animated film
-];
 
 /* TMDB fills in character names, which Wikidata barely records. The
    Umbrellas of Cherbourg has 0 of 29 characters on Wikidata; TMDB has
@@ -52,11 +44,6 @@ const KINDS = [
    colophon, and no caching beyond six months. */
 const TMDB_KEY = '6f0df4c801a86a2f009beac377bdf1e0';
 
-/* Label languages, in preference order. English first, then the major
-   European languages, then everything else. Order matters: the label
-   service walks this list and takes the first hit. */
-const LANGS = 'en,fr,de,it,es,pt,nl,sv,da,no,fi,is,pl,cs,sk,hu,ro,bg,sr,hr,sl,uk,ru,el,tr,he,ar,fa,hi,bn,ta,te,ml,kn,mr,ur,th,vi,id,ms,ja,ko,zh,ca,eu,gl,et,lv,lt,ga,cy,sq,mk,ka,hy,az,kk,uz,af,sw,yi,la';
-
 /* Where corrections go. */
 const BLUESKY = 'picture-wrap.bsky.social';
 
@@ -69,38 +56,6 @@ const BLUESKY = 'picture-wrap.bsky.social';
    returned nothing for her. Ennio Morricone was missing for the same
    reason. Searching Q33999 only also misses Roger Deakins entirely and
    won't return Stanley Kubrick.
-
-   If someone is missing from search, check their P106 first — it is almost
-   always an occupation item nobody thought to include. */
-const OCCUPATIONS = [
-  'Q33999',     // actor
-  'Q10800557',  // film actor        — commoner than Q33999 in practice
-  'Q10798782',  // television actor
-  'Q2259451',   // stage actor
-  'Q2405480',   // voice actor
-  'Q948329',    // character actor
-  'Q2526255',   // film director
-  'Q3455803',   // director
-  'Q28389',     // screenwriter
-  'Q222344',    // cinematographer
-  'Q3282637',   // film producer
-  'Q36834',     // composer
-  'Q7042855',   // film editor
-];
-
-/* Credits Wikidata actually records. Below-the-line crew — grips, gaffers,
-   the second unit — simply isn't in there, so "everyone" always means
-   "everyone documented". The colophon says so plainly. */
-const CREDITS = [
-  ['wdt:P57',   'Director'],
-  ['wdt:P58',   'Screenplay'],
-  ['wdt:P344',  'Cinematography'],
-  ['wdt:P86',   'Music'],
-  ['wdt:P162',  'Producer'],
-  ['wdt:P1040', 'Editor'],
-  ['wdt:P2554', 'Production design'],
-  ['wdt:P4805', 'Costume design'],
-];
 
 /* A few films to start from. Verified QIDs. */
 const PICKS = [
@@ -138,19 +93,6 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
   ));
-}
-
-function year(iso) {
-  return iso ? iso.slice(0, 4) : '';
-}
-
-/* "2004-07-01T00:00:00Z" -> "1 July 2004" */
-function longDate(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d)) return year(iso);
-  return d.toLocaleDateString('en-GB',
-    { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
 
 /* Commons file URL -> a sensibly sized thumbnail. */
@@ -309,7 +251,7 @@ SELECT ?p ?pLabel ?dob ?dod ?img ?charLabel ?tmdbPerson WHERE {
 const filmCrewQuery = id => `
 SELECT ?p ?pLabel ?dob ?dod ?img ?role WHERE {
   VALUES (?prop ?role) {
-    ${CREDITS.map(([p, label]) => `(${p} "${label}")`).join('\n    ')}
+    ${CREW.map(([p, label]) => `(${p} "${label}")`).join('\n    ')}
   }
   wd:${id} ?prop ?p .
   OPTIONAL { ?p wdt:P569 ?dob }
@@ -596,20 +538,6 @@ async function labelFor(id) {
   }
 }
 
-function pickDemonym(forms) {
-  const all = String(forms || '').split('|').map(s => s.trim()).filter(Boolean);
-  if (!all.length) return null;
-  const singular = all.filter(f => !f.endsWith('s'));
-  const pool = singular.length ? singular : all;
-  /* Prefer an adjective ending. Length alone isn't enough — "Spaniard" is
-     longer than "Spanish", and "Briton" competes with "British". */
-  const adjective = pool.filter(f => /(ish|ian|ean|ese|an|ch|sh|ic)$/i.test(f));
-  return (adjective.length ? adjective : pool)
-    .reduce((a, b) => (b.length > a.length ? b : a));
-}
-
-const sentence = s => (s ? s[0].toUpperCase() + s.slice(1) : '');
-
 function titleCard(meta, wrappedOn) {
   /* Type and country first, because on an obscure or foreign title they're
      the difference between recognising what you're looking at and not.
@@ -697,7 +625,7 @@ async function survivingIds(candidates) {
         VALUES ?f { ${ids.map(i => `wd:${i}`).join(' ')} }
         OPTIONAL { ?f wdt:P4947 ?tmdb }
         OPTIONAL {
-          VALUES ?prop { ${CREDIT_PROPS.split(', ').join(' ')} }
+          VALUES ?prop { ${VALUES} }
           ?f ?prop ?p . ?p wdt:P4985 ?castTmdb .
         }
       }`);
@@ -768,20 +696,13 @@ SELECT (SAMPLE(?b) AS ?dob) (SAMPLE(?d) AS ?dod)
    any capacity, and everyone else credited on those films. Counts here are
    never shown — they only decide which side of the bar a film falls on,
    and MAX(death date) gives the film its wrap date. */
-/* Cast (P161) and voice cast (P725) join the crew properties here. The
-   crew FOLD is built from CREDITS alone, so voice actors stay in the
-   roster where they belong; this list is only for "what is this person
-   credited on" and "is everyone credited dead". Keep it in step with
-   CREDITS in poster/lib.js. */
-const CREDIT_PROPS = CREDITS.map(([p]) => p).concat('wdt:P161', 'wdt:P725').join(', ');
-
 const filmographyQuery = id => `
 SELECT ?film ?filmLabel (SAMPLE(?y) AS ?year) (COUNT(DISTINCT ?c) AS ?credited)
        (COUNT(DISTINCT ?cd) AS ?dead) (MAX(?dv) AS ?wrapped) WHERE {
-  VALUES ?mine { ${CREDIT_PROPS.split(', ').join(' ')} }
+  VALUES ?mine { ${VALUES} }
   ?film ?mine wd:${id} .
   ?film ?any ?c .
-  FILTER(?any IN (${CREDIT_PROPS}))
+  FILTER(?any IN (${IN_LIST}))
   OPTIONAL { ?c wdt:P570 ?dv . BIND(?c AS ?cd) }
   OPTIONAL { ?film wdt:P577 ?rd . BIND(YEAR(?rd) AS ?y) }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en,fr,de,it,es,pt,nl,sv,da,no,fi,is,pl,cs,sk,hu,ro,bg,sr,hr,sl,uk,ru,el,tr,he,ar,fa,hi,bn,ta,te,ml,kn,mr,ur,th,vi,id,ms,ja,ko,zh,ca,eu,gl,et,lv,lt,ga,cy,sq,mk,ka,hy,az,kk,uz,af,sw,yi,la". }

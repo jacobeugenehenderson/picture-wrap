@@ -8,6 +8,13 @@
 import { readFile, writeFile } from 'node:fs/promises';
 
 import { measure, LIMIT } from './bluesky.js';
+import {
+  CREDITS, CREDIT_NOUNS, OCCUPATIONS, IN_LIST, VALUES, LANGS,
+  qid, year, longDate, pickDemonym, slug, unnamed,
+} from '../shared.js';
+
+export { CREDITS, CREDIT_NOUNS, OCCUPATIONS, qid, year, longDate,
+         pickDemonym, slug, unnamed };
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,22 +26,6 @@ const WDQS = 'https://query.wikidata.org/sparql';
    contact in here — it's how they reach you instead of blocking you. */
 const AGENT = 'PictureWrap/1.0 (https://picture-wrap.com; jacob@jacobhenderson.studio)';
 
-/* Same credit set as the website. Keep the two in step. */
-export const CREDITS = [
-  'wdt:P161',   // cast
-  'wdt:P725',   // voice actor — animation's cast lives here
-  'wdt:P57',    // director
-  'wdt:P58',    // screenwriter
-  'wdt:P344',   // cinematographer
-  'wdt:P86',    // composer
-  'wdt:P162',   // producer
-  'wdt:P1040',  // editor
-  'wdt:P2554',  // production designer
-  'wdt:P4805',  // costume designer
-];
-
-const IN_LIST = CREDITS.join(', ');
-const VALUES  = CREDITS.join(' ');
 
 /* A COST control for the backfill, and nothing else.
 
@@ -86,14 +77,6 @@ export async function sparql(query, { retries = 3 } = {}) {
 }
 
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-export const qid = uri => uri.split('/').pop();
-
-/* Wikidata's label service hands back the Q-number when an item has no
-   English label. A film we can't name isn't one we can announce — the
-   post would read "Q3285451 has wrapped." Skip it and say so. */
-export const unnamed = label => !label || /^Q\d+$/.test(label);
-
 
 /* --- the two queries the sweep needs ----------------------------------- */
 
@@ -208,18 +191,6 @@ export function coverage(wikidataCast, tmdbCast) {
    that isn't a plural — that gives Danish over Dane, American over
    Americans, British over Briton — falling back to whatever exists for
    countries with only a plural-looking form (Swiss). */
-export function pickDemonym(forms) {
-  const all = String(forms || '').split('|').map(s => s.trim()).filter(Boolean);
-  if (!all.length) return null;
-  const singular = all.filter(f => !f.endsWith('s'));
-  const pool = singular.length ? singular : all;
-  /* Prefer an adjective ending. Length alone isn't enough — "Spaniard" is
-     longer than "Spanish", and "Briton" competes with "British". */
-  const adjective = pool.filter(f => /(ish|ian|ean|ese|an|ch|sh|ic)$/i.test(f));
-  return (adjective.length ? adjective : pool)
-    .reduce((a, b) => (b.length > a.length ? b : a));
-}
-
 export const kindQuery = film => `
 SELECT (SAMPLE(?tyl) AS ?type) (GROUP_CONCAT(DISTINCT ?dem; separator="|") AS ?demonyms) WHERE {
   OPTIONAL { wd:${film} wdt:P31 ?ty . ?ty rdfs:label ?tyl . FILTER(LANG(?tyl) = "en") }
@@ -278,10 +249,6 @@ SELECT ?film ?filmLabel (SAMPLE(?y) AS ?year)
 
 /* Resolve a name to a Wikidata person, constrained to film occupations so
    a stray capitalised phrase doesn't match a town or a racehorse. */
-export const OCCUPATIONS = [
-  'Q33999', 'Q10800557', 'Q10798782', 'Q2259451', 'Q2405480', 'Q948329',
-  'Q2526255', 'Q3455803', 'Q28389', 'Q222344', 'Q3282637', 'Q36834', 'Q7042855',
-];
 
 export async function resolvePerson(name) {
   const filter = OCCUPATIONS.map(q => 'P106=' + q).join('|');
@@ -392,48 +359,13 @@ export async function save(path, data) {
 
 /* --- formatting -------------------------------------------------------- */
 
-export const year = iso => (iso ? iso.slice(0, 4) : '');
-
-export function longDate(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d)) return year(iso);
-  return d.toLocaleDateString('en-GB',
-    { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-}
 
 
-/* --- who this person was ------------------------------------------------ */
+/* --- who this person was ---------------------------------------------- */
 
 /* "Barbara Adolph died 19 June 2026" tells a reader nothing. Wikidata
-   knows she was German, an actor, and 95 — the difference between a name
-   and a person.
-
-   Occupation is taken in a fixed priority order rather than alphabetically,
-   because everyone has half a dozen and only one is the reason they're
-   here. "actor" is used regardless of gender; guessing gendered nouns from
-   P21 is a choice this project doesn't need to make. */
-/* Taken from how they are credited on THIS picture, not from P106.
-
-   P106 lists everything a person ever was, and picking from it means
-   guessing what they are known for — which gets Woody Allen wrong, since
-   an alphabetical or actor-first order calls a director an actor.
-
-   Crew outranks cast: if you directed a picture and appeared in it, you
-   are its director. */
-const CREDIT_NOUNS = [
-  ['wdt:P57',   'director'],
-  ['wdt:P58',   'screenwriter'],
-  ['wdt:P344',  'cinematographer'],
-  ['wdt:P86',   'composer'],
-  ['wdt:P162',  'producer'],
-  ['wdt:P1040', 'editor'],
-  ['wdt:P2554', 'production designer'],
-  ['wdt:P4805', 'costume designer'],
-  ['wdt:P161',  'actor'],
-  ['wdt:P725',  'voice actor'],
-];
-
+   knows she was German and 95 — the difference between a name and a
+   person, and most people this account posts about will be strangers. */
 export const personContextQuery = person => `
 SELECT ?dob (GROUP_CONCAT(DISTINCT ?dem; separator="|") AS ?dems) WHERE {
   OPTIONAL { wd:${person} wdt:P569 ?dob }
@@ -466,6 +398,8 @@ export async function creditNoun(person, films) {
   }
 }
 
+
+
 export async function personContext(person, diedISO, films) {
   try {
     const [row] = await sparql(personContextQuery(person));
@@ -492,29 +426,6 @@ export async function personContext(person, diedISO, films) {
     return {};
   }
 }
-
-/* A readable tail on an otherwise opaque URL. The router splits the hash
-   and reads only the first two segments, so anything after the Q-id is
-   decoration — but it turns /#/person/Q807328 into something a person can
-   read before clicking. */
-export function slug(name) {
-  return String(name || '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48);
-}
-
-
-/* --- pictures for the posts -------------------------------------------- */
-
-/* The first post carries the person's face, the second carries the
-   posters of what they closed. Words alone don't stop a thumb.
-
-   Portraits come from Wikidata's P18, which points at Wikimedia Commons —
-   mostly CC-BY, so the photographer's name goes in the alt text where
-   there is room for it. Posters come from TMDB at w500, 60-120 KB each. */
 
 export const portraitQuery = person => `
 SELECT ?img WHERE { wd:${person} wdt:P18 ?img } LIMIT 1`;
@@ -572,6 +483,7 @@ export async function imagesFor(group) {
 
   return [first, second];
 }
+
 
 
 /* --- post composition -------------------------------------------------- */
