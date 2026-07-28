@@ -258,17 +258,25 @@ for (const [i, group] of groups.entries()) {
 
   const answer = (assumeYes && dryRun)
     ? 'a'
-    : await ask('   [a]pprove  [s]kip  [r]eject  [e]dit  [q]uit  > ');
+    : await ask('   [p]ost it   [s]kip for now   [n]ever   [e]dit   [q]uit  > ');
 
-  if (answer === 'q') {
+  /* Accept whole words as well as letters. "post" and "skip" are what a
+     person types when they haven't memorised a keyboard shortcut. */
+  const said = { p: 'a', post: 'a', a: 'a', approve: 'a',
+                 s: 's', skip: 's', '': 's',
+                 n: 'r', never: 'r', r: 'r', reject: 'r',
+                 e: 'e', edit: 'e',
+                 q: 'q', quit: 'q', stop: 'q' }[answer] ?? answer;
+
+  if (said === 'q') {
     /* Everything unvisited stays queued. */
     for (const g of groups.slice(i)) keep.push(...g.items);
     break;
   }
 
-  if (answer === 's' || answer === '') { keep.push(...group.items); continue; }
+  if (said === 's') { keep.push(...group.items); continue; }
 
-  if (answer === 'r') {
+  if (said === 'r') {
     for (const item of group.items) {
       rejected.push({ id: item.id, title: item.title, at: new Date().toISOString() });
     }
@@ -278,7 +286,7 @@ for (const [i, group] of groups.entries()) {
 
   let text = compose(group);
 
-  if (answer === 'e') {
+  if (said === 'e') {
     /* Edit posts the thread as a single post of your own words. Use \\n
        for line breaks. */
     const edited = await rawAsk('\n   Replacement post (blank keeps the thread):\n   > ');
@@ -292,7 +300,7 @@ for (const [i, group] of groups.entries()) {
     }
     const ok = await ask('   Post this? [y/N] > ');
     if (ok !== 'y') { keep.push(...group.items); continue; }
-  } else if (answer !== 'a') {
+  } else if (said !== 'a') {
     console.log('   Not a choice — keeping it queued.');
     keep.push(...group.items);
     continue;
