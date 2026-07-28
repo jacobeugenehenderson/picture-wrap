@@ -1,12 +1,37 @@
 # Data
 
-Everything here was measured against live Wikidata during development.
-Figures are point-in-time — Wikidata changes daily — but the orders of
-magnitude and the query costs are stable and worth trusting.
+Everything here was measured against live Wikidata and TMDB during
+development. Figures are point-in-time — both change daily — but the
+orders of magnitude and the query costs are stable and worth trusting.
+
+**Current state:** 2,819 pictures in the Vault across 31 countries;
+1930–1945 releases backfilled; 3,805 films considered.
 
 ---
 
-## Source: Wikidata, not TMDB
+## Two sources, one of them authoritative
+
+**Wikidata decides.** Who is credited, who has died, when, what type of
+thing it is, which country. Every judgement rests on it.
+
+**TMDB is asked two questions**, neither of them about facts Wikidata
+owns:
+
+1. *What characters did these people play?* Wikidata's `P453` is thin —
+   The Umbrellas of Cherbourg has 0 of 29; TMDB has them all.
+2. *Did Wikidata know the whole cast?* This is the one that matters. TMDB's
+   cast lists are far fuller, and Wikidata stores TMDB's own ids
+   (`P4947` films, `P4985` people), so the join is exact — no name
+   matching.
+
+The second question removed **278 wrong entries** from the Vault, caught
+**14 of 60** candidates on the first real sweep, and reopened *The Glove*
+(1979), which looked closed while Joanna Cassidy, Rosey Grier and Tony
+Lorea were alive and all three in Wikidata.
+
+---
+
+## Why Wikidata and not TMDB alone
 
 | | Wikidata | TMDB |
 |---|---|---|
@@ -164,6 +189,35 @@ writes. There is no alternative.
 **Backfill must be two passes.** A cheap cast-only rollup per year to find
 candidates, then the exact crew-inclusive test on each. Roughly 30s + ~0.5s
 per candidate; 1930 produced 727 films with cast data and 206 candidates.
+
+---
+
+## What TMDB is worth, measured
+
+Coverage across 2,415 measured Vault entries:
+
+| | |
+|---|---|
+| median coverage | **64%** |
+| under 50% | **919 pictures** |
+
+The thinnest records in the Vault:
+
+| Coverage | Picture | Wikidata / TMDB |
+|---|---|---|
+| 7% | The Wife Takes a Flyer | 5 of 70 |
+| 8% | Stand Up and Cheer! | 10 of 123 |
+| 9% | The Conspirators | 14 of 160 |
+| 9% | Second Fiddle | 16 of 169 |
+| 10% | Batman (1943) | 5 of 50 |
+
+*Mildred Pierce* rests on 21 of 58. The median entry is sound; the tail is
+not, which is why film pages name the people they can't account for
+instead of claiming completeness.
+
+**TMDB's own death data is not used.** It has a `deathday` field, but the
+question asked of TMDB is only "who else was in this", and every death
+date comes from Wikidata.
 
 ---
 

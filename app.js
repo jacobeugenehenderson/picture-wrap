@@ -16,7 +16,7 @@
 
 import {
   CREW, CREDITS, CREDIT_PROPS, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
-  CREDIT_NOUNS, qid, year, longDate, pickDemonym, slug, sentence,
+  CREDIT_NOUNS, qid, year, longDate, pickDemonym, slug, path, sentence,
 } from './shared.js';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
@@ -568,7 +568,7 @@ function personRow(p) {
   const qid = p.p.split('/').pop();
   const gone = Boolean(p.dod);
   return `
-    <li class="is-link ${gone ? 'gone' : 'living'}" data-go="#/${esc(slug(p.pLabel || ''))}/${esc(qid)}">
+    <li class="is-link ${gone ? 'gone' : 'living'}" data-go="${esc(path(p.pLabel, qid))}">
       ${p.img
         ? `<img class="portrait" src="${esc(thumb(p.img))}" alt="" loading="lazy">`
         : `<span class="portrait" aria-hidden="true"></span>`}
@@ -794,7 +794,7 @@ function filmRow(f, wrapped) {
   const qid = f.film.split('/').pop();
   const roles = rolesOn(f);
   return `
-    <li class="is-link ${wrapped ? 'gone' : 'living'}" data-go="#/${esc(slug(f.filmLabel || ''))}/${esc(qid)}">
+    <li class="is-link ${wrapped ? 'gone' : 'living'}" data-go="${esc(path(f.filmLabel, qid))}">
       <span class="who">
         <span class="who-name">${esc(f.filmLabel || qid)}</span>
         ${roles.length ? `<span class="who-role">${esc(roles.join(' &middot; ').replace(/&middot;/g, '·'))}</span>` : ''}
@@ -1011,7 +1011,7 @@ function archiveRow(group) {
       </p>
       <ul class="closing-films">
         ${films.map(f => `
-          <li class="is-link" data-go="#/${esc(slug(f.title || ''))}/${esc(f.id)}">
+          <li class="is-link" data-go="${esc(path(f.title, f.id))}">
             <span class="closing-film">
               <span class="who-name">${esc(f.title)}</span>
               ${[
@@ -1152,9 +1152,9 @@ async function viewLanding() {
   const recent = archive.slice(0, 5);
 
   const picks = recent.length
-    ? recent.map(f => `<button data-go="#/${esc(slug(f.title || ''))}/${esc(f.id)}">${esc(f.title)}` +
+    ? recent.map(f => `<button data-go="${esc(path(f.title, f.id))}">${esc(f.title)}` +
         `<span class="pick-year">${esc(year(f.wrapped))}</span></button>`).join('')
-    : PICKS.map(p => `<button data-go="#/${esc(slug(p.name))}/${p.id}">${esc(p.name)}</button>`).join('');
+    : PICKS.map(p => `<button data-go="${esc(path(p.name, p.id))}">${esc(p.name)}</button>`).join('');
 
   /* The way through sits below the pictures, not up in the masthead —
      you should meet a few closings before you're offered all of them. */

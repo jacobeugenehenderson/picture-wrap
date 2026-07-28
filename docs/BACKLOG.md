@@ -133,24 +133,26 @@ data is already in `archive.json`.
 
 ---
 
-## Link previews
+## Link previews outside Bluesky
 
-Hash routing means `picture-wrap.com/#/film/Q979726` never sends the film
-id to a server, so a shared link gets the generic site metadata.
+Hash routing means `picture-wrap.com/#/mildred-pierce/Q979726` never sends
+the id to a server, so a shared link gets the generic site metadata.
 
-Bluesky is solved — posts carry images now, and an `external` embed lets
-us supply title and description directly. Everywhere else (Slack, iMessage,
-Mastodon) still shows the generic card.
+**Bluesky is solved** — posts carry the portrait and posters directly, so
+no card is needed. Everywhere else (Slack, iMessage, Mastodon, Discord)
+still shows one generic card for every page on the site.
 
-Fixing it properly means the poster prerendering a small static HTML file
-per archived film with real `og:` tags. Bounded set, no new
-infrastructure. See DECISIONS.md → hash routing.
+The fix without a server: have the poster prerender a small static HTML
+file per Vault entry with real `og:` tags. Bounded set — 2,819 files —
+and GitHub Pages will serve them. The site itself would stay a single-page
+app; those files exist only to be scraped.
 
 ---
 
 ## More backfill
 
-The archive covers **1930–1945 releases only**. Two obvious extensions:
+The Vault covers **1930–1945 releases only** — 2,819 pictures. Two obvious
+extensions:
 
 - **1946–1965.** The biggest gap by far, and where closings are dense —
   old enough that casts have gone, recent enough to be well documented.
@@ -186,9 +188,34 @@ Would pair with a "help fill this in" link on thin film pages.
 
 ---
 
-## Vault maintenance script
+## Put the Vault re-check on a schedule
 
-`OPERATIONS.md` describes a monthly re-check for pictures that *un-wrap*
-when someone adds a living cast member. `recheck.js` does exactly this
-already — it just needs to be a cron line rather than a thing you
-remember.
+`recheck.js` exists and works — its first run removed 278 of 2,752 entries
+— but it is run by hand. It should be a cron line, monthly, like the wide
+sweep.
+
+Not automated yet because it *deletes* Vault entries, and a scheduled job
+that quietly removes things deserves a notification when it does.
+
+---
+
+## Watch the watcher's first real catch
+
+`watch.js` has been tested with `--test` and its connection to eight
+newsrooms verified, but no actual death has come through it. The first one
+matters more than the code: crude name extraction, an unverified newsroom
+claim, and a draft that lands in review flagged `provisional`.
+
+Worth being at the keyboard for it rather than trusting it, and worth
+checking afterwards whether the name-extraction heuristic produced noise.
+
+---
+
+## `state.json` is not backed up
+
+It records every film the poster has ever considered — 3,805 of them — and
+is deliberately gitignored, because it changes on every run and would make
+the history unreadable.
+
+If it is lost, a backfill re-offers everything from scratch. Worth a copy
+somewhere that isn't this machine.

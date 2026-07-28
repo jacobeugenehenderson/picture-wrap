@@ -169,5 +169,13 @@ export function slug(name) {
     .slice(0, 48);
 }
 
+/* The hash path for an entity. Omits the slug when there isn't one —
+   27 Vault titles are in Arabic, Cyrillic or Tamil and slug to nothing,
+   which would otherwise produce "#//Q12292564". */
+export function path(name, id) {
+  const s = slug(name);
+  return s ? `#/${s}/${id}` : `#/${id}`;
+}
+
 /* Sentence case, for Wikidata's lowercase type labels. */
 export const sentence = s => (s ? s[0].toUpperCase() + s.slice(1) : '');

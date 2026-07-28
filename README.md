@@ -3,9 +3,12 @@
 *Every picture wraps twice. Once when the shooting stops, and once when the
 last person who made it is gone.*
 
+**[picture-wrap.com](https://picture-wrap.com)** ·
+**[@picture-wrap.bsky.social](https://bsky.app/profile/picture-wrap.bsky.social)**
+
 A film's page is a single list of everyone credited on it, divided by a gold
 bar: the living above, the dead below. As people die the bar rises. When it
-reaches the top, the picture has wrapped, and it enters the archive.
+reaches the top, the picture has wrapped, and it enters the Vault.
 
 ---
 
@@ -15,21 +18,20 @@ The project is deliberately two things that barely know about each other.
 
 | | | |
 |---|---|---|
-| **The site** | `index.html` `style.css` `app.js` | Three static files. No backend, no build step, no database, no dependencies. The browser queries Wikidata directly. |
-| **The poster** | `poster/` | A Node script on a cron. Finds films that have closed, holds them for approval, posts approved ones to Bluesky. |
+| **The site** | `index.html` `style.css` `app.js` `shared.js` | Static files. No backend, no build step, no dependencies. The browser queries Wikidata and TMDB directly. |
+| **The poster** | `poster/` | Node scripts. Finds pictures that have closed, holds them for approval, posts approved ones to Bluesky. |
 
-They share exactly one file: `archive.json`, which the poster writes and the
-site reads. Delete the poster and the site still works completely — it just
-has no archive page.
+They share two files: **`shared.js`**, the single source of truth for
+anything both must agree about, and **`archive.json`**, which the poster
+writes and the site reads.
 
-This separation is the most important structural decision in the project.
-See [docs/DECISIONS.md](docs/DECISIONS.md).
+Delete the poster and the site still works — it just has no Vault.
 
 ---
 
 ## Run it
 
-**The site** needs to be served, not opened as a file, or the browser blocks
+**The site** must be served, not opened from disk, or the browser blocks
 the cross-origin calls:
 
 ```sh
@@ -39,12 +41,29 @@ python3 -m http.server 8000     # then open localhost:8000
 **The poster** needs Node 18+ and no install step:
 
 ```sh
+. ~/.picture-wrap.env           # credentials, kept outside the repo
 cd poster
-node run.js         # find closings → queue.json
-node review.js      # approve → Bluesky → archive.json
+node preview.js                 # see the queue as a web page, images and all
+node review.js                  # approve → Bluesky → archive.json
 ```
 
-Full setup, credentials and cron in [poster/README.md](poster/README.md).
+There are launchers on the Desktop for the three things done by hand:
+`picture-wrap-preview`, `picture-wrap-review`, `picture-wrap-watch`.
+
+---
+
+## The scripts
+
+| | |
+|---|---|
+| `run.js` | The daily sweep, and the backfill. Finds closings, posts nothing. |
+| `watch.js` | Listens to newsrooms on Bluesky, drafts ahead of Wikidata. |
+| `review.js` | The approval gate. **The only thing that posts.** |
+| `preview.js` | Renders the queue as a web page with real images. |
+| `recheck.js` | Re-tests the Vault; removes pictures that turn out to have survivors. |
+| `recover.js` | Re-files pictures an earlier bug dropped. |
+| `coverage.js` | Measures how complete Wikidata's cast list is, against TMDB. |
+| `check.js` | Verifies Bluesky credentials. Posts nothing. |
 
 ---
 
@@ -53,25 +72,25 @@ Full setup, credentials and cron in [poster/README.md](poster/README.md).
 | | |
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the halves fit, what runs where, data flow |
-| [docs/DATA.md](docs/DATA.md) | Wikidata properties, measured coverage, query costs |
+| [docs/DATA.md](docs/DATA.md) | Properties, measured coverage, query costs |
 | [docs/DESIGN.md](docs/DESIGN.md) | The gold bar and the rules around it |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Every significant choice and why |
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Daily running, backfill, deployment, failure modes |
-| [poster/README.md](poster/README.md) | The poster in detail |
 | [docs/BACKLOG.md](docs/BACKLOG.md) | Deferred work, with enough context to pick it up cold |
+| [poster/README.md](poster/README.md) | The poster in detail |
 
 ---
 
-## The one thing to understand before changing anything
+## Two things to understand before changing anything
 
-**"Everyone" always means everyone Wikidata records.**
+**"Everyone" means everyone recorded.** Below-the-line crew — grips,
+gaffers, second unit — does not exist in any free database. Cast lists are
+incomplete. A page can show a bar at the top while people who were never
+entered are alive. Every guard here exists because of that gap.
 
-Below-the-line crew — grips, gaffers, second unit — does not exist in any
-free database. Cast lists are incomplete. A film's page can show a bar at the
-top while four surviving supporting players simply were never entered.
-
-Every guard in this codebase exists because of that gap: the minimum cast
-floor, the human approval queue, the "the record is thin" message, the
-colophon. They are not defensive programming. They are the difference between
-a project that is careful and one that publishes false statements about
-whether real people are alive.
+**Wikidata alone never decides that a picture has closed.** Its cast lists
+are routinely a fraction of the real cast, and the people it omits are
+usually people it *knows* — just not attached to that film. Every path that
+concludes "no one is left" verifies against TMDB first. There are six of
+them, listed in DECISIONS.md. Adding a seventh without the check will
+publish something false about whether a real person is alive.

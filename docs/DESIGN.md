@@ -26,8 +26,14 @@ wrapped film has it at the top with nothing above. Neither is labelled.
 
 **One gold bar per picture.** The crew fold has its own living/dead divider,
 deliberately rendered as a *hairline* — a thin gold gradient fading out at
-both ends. The archive page has none at all: everything on it has already
-crossed, and a divider there would spend the bar's meaning for nothing.
+both ends. The Vault has none at all: everything on it has already crossed,
+and a divider there would spend the bar's meaning for nothing.
+
+**When a picture has wrapped, the bar rises above everything** — above the
+crew card too, since everyone in it is gone as well. Nothing sits above the
+bar once there is nobody left. The Wizard of Oz is the case that showed
+this: a collapsed card floating above the line undercut the one moment the
+design exists to state.
 
 ---
 
@@ -84,14 +90,49 @@ progressive enhancement; an empty frame holds the column.
 
 ---
 
+## The person page
+
+Same instrument, rotated. Their pictures, newest first, divided by the bar:
+still running above, wrapped below.
+
+**Newest first, not oldest.** A filmography reads as a document oldest-first,
+but newest-first makes this bar mean what it means everywhere else — the
+oldest still-open picture sits directly above it, the one most likely to
+close next, and the most recently closed sits directly below. Same rule as
+a film page, same direction as the Vault.
+
+**Each row carries the roles held on that picture** — "Director ·
+Screenwriter · Actor" for Manhattan, "Actor" for Scenes from a Mall. Rows
+rather than IMDb-style sections, because sections would fragment the bar: a
+picture's living/dead status is independent of the role, so Director and
+Actor would each need their own and the page's one instrument would stop
+meaning anything.
+
+---
+
 ## Structure of a film page
 
 ```
-  Title card          title · year · director · wrap stamp
-  Behind the camera   crew, collapsed to one row
-  ─ message ─         only when the cast is complete but crew survive
-  The roster          living · GOLD BAR · dead
+  Title card           title · year · country + type · director
+                       FINAL PICTURE WRAP · date      (if closed)
+  Share                share · copy link · bluesky
+  ── GOLD BAR ──                                      (if closed)
+  Behind the camera    crew, collapsed to one row
+  ─ message ─          only when the cast is complete but crew survive
+  The roster           living · GOLD BAR · dead       (bar here if open)
+  Credited, no record  people TMDB names and Wikidata doesn't
 ```
+
+**Type and country come before the director** in the meta line. On an
+obscure or foreign title, *"1964 · French film"* identifies it better than
+a name you've never heard. The demonym is used, not the country — "French
+film", not "France film" — taken from one country rather than every
+co-producer, or The Umbrellas of Cherbourg reads as West German.
+
+**Credited, no record** is the third state. TMDB names people Wikidata has
+never heard of; they are listed, shown with an em-dash where a lifespan
+would be, and deliberately not counted either way. Counting them as living
+or as dead would both be a guess.
 
 Crew sits **above** the cast, the way a title card runs. Collapsed it costs a
 single row, and on an old picture it is a who's who in its own right — which
@@ -166,6 +207,12 @@ masthead tagline carries it alone.
 better: the cast is always the picture, nothing is hidden, and the crew is
 available rather than alternative.
 
-**Released / Closed pulldowns on the archive.** Replaced by year sections.
-The sections are the navigation, and a year with no closings simply doesn't
-appear — a gap that a filter would have shown as an empty result.
+**Released / Closed pulldowns on the Vault.** Replaced by decade folds with
+years nested inside. The sections are the navigation, and a year with no
+closings simply doesn't appear — a gap a filter would have shown as an
+empty result. A country filter row survived, because 31 countries in one
+list is genuinely hard to read past.
+
+**Explanations of things the layout already said.** The caveat under the
+wrap stamp restated the fold beneath it. The fold's paragraph restated its
+own title. Both cut to nothing.

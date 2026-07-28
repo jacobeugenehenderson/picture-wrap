@@ -10,11 +10,11 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { measure, LIMIT } from './bluesky.js';
 import {
   CREDITS, CREDIT_NOUNS, OCCUPATIONS, IN_LIST, VALUES, LANGS,
-  qid, year, longDate, pickDemonym, slug, unnamed,
+  qid, year, longDate, pickDemonym, slug, path, unnamed,
 } from '../shared.js';
 
 export { CREDITS, CREDIT_NOUNS, OCCUPATIONS, qid, year, longDate,
-         pickDemonym, slug, unnamed };
+         pickDemonym, slug, path, unnamed };
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -533,7 +533,7 @@ export function groupQueue(queue) {
 export function compose(group) {
   const { last, items } = group;
   const when = longDate(last.died);
-  const url = `${SITE}/#/${slug(last.name)}/${last.id}`;
+  const url = `${SITE}/${path(last.name, last.id)}`;
   /* The visible text is the real address, minus the scheme. A label like
      "picture-wrap.com" is prettier but strands anyone reading the post as
      plain text — copied, screenshotted, syndicated — on the homepage with
@@ -575,7 +575,7 @@ export function compose(group) {
       const film = items[0];
       const stars = (film.stars || []).slice(0, howManyStars || 2);
       const line = stars.length ? `\n\nWith ${and(stars)}.` : '';
-      const fu = `${SITE}/#/${slug(film.title)}/${film.id}`;
+      const fu = `${SITE}/${path(film.title, film.id)}`;
       return `${named(film)}${line}\n\n[[${bare(fu)}|${fu}]]`;
     }
     const listed = ordered.slice(0, count);
