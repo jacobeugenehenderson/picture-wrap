@@ -81,6 +81,32 @@ a person page of their own.
 
 ---
 
+## Quote-posting an obituary
+
+When a newsroom reports a death, the closing is genuine added context —
+but **quote, never reply.** A reply inserts into their thread and their
+notifications; a quote sits on our own timeline. Same information, better
+manners, and it doesn't become reply-guy behaviour when it happens to
+every outlet that covers a death.
+
+Mechanics are settled:
+
+- `app.bsky.feed.searchPosts` finds candidate posts and returns the `uri`
+  and `cid` a quote needs. Verified working — searching a person's name
+  returned two real obituary posts with both fields.
+- `app.bsky.embed.recordWithMedia` combines the quoted post **with**
+  images, so quoting doesn't cost us the posters.
+- `watch.js` already sees the newsroom post that triggered a check, so it
+  could record that post's identity at the time rather than searching for
+  it later.
+
+**Should be a per-post choice, not automatic.** A `[q]uote` key in the
+review screen that offers the candidate posts it found, or takes a pasted
+URL. Automating it would produce exactly the behaviour the etiquette
+concern is about.
+
+---
+
 ## Rotating phrasings
 
 The closing line is fixed: *"Nobody who made it is left"* for a single
