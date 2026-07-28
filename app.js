@@ -675,6 +675,82 @@ function lifespan(p) {
 }
 
 
+/* --- verifying a filmography ------------------------------------------- */
+
+/* The filmography query asks Wikidata alone, and Wikidata's cast lists are
+   often a fraction of the real cast. The Glove (1979) looked closed there
+   while TMDB knew Joanna Cassidy, Rosey Grier and Tony Lorea, all living —
+   so the person page said "wrapped" about a picture whose own page showed
+   survivors.
+
+   Only the films that LOOK closed need checking, which is usually a
+   handful. Done in three round trips rather than three per film: their
+   TMDB ids in one query, their cast lists in parallel, then every
+   unmatched person resolved in one more. */
+async function survivingIds(candidates) {
+  if (!TMDB_KEY || !candidates.length) return new Set();
+  const ids = candidates.map(f => qid(f.film));
+
+  try {
+    const rows = await sparql(`
+      SELECT ?f ?tmdb ?castTmdb WHERE {
+        VALUES ?f { ${ids.map(i => `wd:${i}`).join(' ')} }
+        OPTIONAL { ?f wdt:P4947 ?tmdb }
+        OPTIONAL {
+          VALUES ?prop { ${CREDIT_PROPS.split(', ').join(' ')} }
+          ?f ?prop ?p . ?p wdt:P4985 ?castTmdb .
+        }
+      }`);
+
+    const filmTmdb = new Map();
+    const known = new Map();
+    for (const row of rows) {
+      const r = flat(row);
+      const f = qid(r.f);
+      if (r.tmdb) filmTmdb.set(f, r.tmdb);
+      if (r.castTmdb) {
+        if (!known.has(f)) known.set(f, new Set());
+        known.get(f).add(r.castTmdb);
+      }
+    }
+
+    const missing = new Map();
+    await Promise.all([...filmTmdb].map(async ([f, tmdbId]) => {
+      try {
+        const res = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}` +
+          `/credits?api_key=${encodeURIComponent(TMDB_KEY)}`);
+        if (!res.ok) return;
+        const { cast } = await res.json();
+        const have = known.get(f) || new Set();
+        for (const c of cast || []) {
+          const id = String(c.id);
+          if (have.has(id)) continue;
+          if (!missing.has(id)) missing.set(id, new Set());
+          missing.get(id).add(f);
+        }
+      } catch { /* leave this film alone */ }
+    }));
+
+    if (!missing.size) return new Set();
+
+    const alive = await sparql(`
+      SELECT ?tmdb WHERE {
+        VALUES ?tmdb { ${[...missing.keys()].map(i => `"${i}"`).join(' ')} }
+        ?p wdt:P4985 ?tmdb .
+        FILTER NOT EXISTS { ?p wdt:P570 ?d }
+      }`);
+
+    const reopened = new Set();
+    for (const row of alive) {
+      for (const f of missing.get(flat(row).tmdb) || []) reopened.add(f);
+    }
+    return reopened;
+  } catch {
+    return new Set();
+  }
+}
+
+
 /* --- person view ------------------------------------------------------- */
 
 const personMetaQuery = id => `
@@ -750,6 +826,11 @@ async function viewPerson(id) {
 
   const isWrapped = f => Number(f.credited) > 0 && f.credited === f.dead;
 
+  /* Anything Wikidata thinks is closed gets checked against TMDB before we
+     put it below the bar. */
+  const reopened = await survivingIds(films.filter(isWrapped));
+  const closed = f => isWrapped(f) && !reopened.has(qid(f.film));
+
   /* Newest first, both sides — which makes this bar mean what the bar
      means everywhere else. Running films newest-first put the OLDEST
      still-open picture directly above it: the one most likely to close
@@ -758,9 +839,9 @@ async function viewPerson(id) {
      below — and the same direction as the Vault. */
   const byYear = (a, b) => (b.year || '0000').localeCompare(a.year || '0000');
 
-  const running = films.filter(f => !isWrapped(f)).sort(byYear);
+  const running = films.filter(f => !closed(f)).sort(byYear);
 
-  const done = films.filter(isWrapped).sort(byYear);
+  const done = films.filter(closed).sort(byYear);
 
   show(
     card + share +

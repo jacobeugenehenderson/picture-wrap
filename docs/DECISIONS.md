@@ -114,6 +114,36 @@ because counting cast separately inside that query cost **51s against 3.5s**.
 
 ---
 
+## Wikidata alone never decides that a picture has closed
+
+**Decision.** Every path that concludes "no one is left" verifies against
+TMDB first, by resolving TMDB's fuller cast list through `P4985`.
+
+**Why.** Wikidata's cast lists are routinely a fraction of the real cast,
+and the people it omits are usually people it *knows* — just not attached
+to that film. The Vault re-check removed **278** wrong entries this way. A
+45-day sweep had **14 of 60** candidates with living cast. *The Glove*
+(1979) looked closed while Joanna Cassidy, Rosey Grier and Tony Lorea were
+all alive and all in Wikidata.
+
+**Where it applies — all six:**
+
+| Path | Verification |
+|---|---|
+| Film page | TMDB-resolved cast merged into the roster |
+| Person page | `survivingIds()` re-checks anything that looks closed |
+| Vault | `archive.json`, built by verified paths |
+| Sweep | `survivorsViaTmdb()` |
+| Backfill | `survivorsViaTmdb()` |
+| Watcher | `survivorsViaTmdb()` |
+
+**This was missed three times.** Built for the Vault, then discovered
+absent from the sweep, then from the person page, then from the watcher
+and the backfill. Any *new* code that decides a picture has closed must
+call one of these, and the list above should be updated when it does.
+
+---
+
 ## The approval gate <a name="the-approval-gate"></a>
 
 **Decision.** No automated posting, ever. `run.js` queues; `review.js` is the

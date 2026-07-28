@@ -159,9 +159,8 @@ The archive covers **1930–1945 releases only**. Two obvious extensions:
   pre-1920 films were already closed on cast alone. If you ever want to
   name the first picture ever to wrap, it's in there.
 
-Both need `recheck.js`-style TMDB verification, which the backfill path
-does **not** currently do — only the sweep does. Fix that first or the
-Vault fills with false closings again.
+Both paths now run the same TMDB verification as the sweep, so a backfill
+no longer refills the Vault with false closings.
 
 ---
 

@@ -27,7 +27,7 @@
 
 import {
   sparql, qid, load, save, paths,
-  wouldWrapQuery, resolvePerson, detailsFor,
+  wouldWrapQuery, resolvePerson, detailsFor, survivorsViaTmdb,
 } from './lib.js';
 
 const JETSTREAM = 'wss://jetstream2.us-east.bsky.network/subscribe';
@@ -99,20 +99,33 @@ async function consider(name, source) {
   const fresh = films.filter(f => !state.seen.includes(f.id));
   if (!fresh.length) return;
 
-  log(`*** ${name} (${person}) — ${fresh.length} picture(s) would close`);
-
   const queue = await load(paths.queue, []);
   const today = new Date().toISOString();
+  let queued = 0;
 
   for (const film of fresh) {
     state.seen.push(film.id);
+
+    const details = await detailsFor(film.id, person);
+
+    /* Wikidata says everyone else on this picture is dead. Ask TMDB
+       whether Wikidata knew the whole cast — without this the watcher
+       drafts posts about pictures that still have living people, which is
+       the one error this project can't take back. */
+    const alive = await survivorsViaTmdb(film.id, details.tmdbId);
+    if (alive.length) {
+      log(`      skip  ${film.filmLabel} — still living: ${alive.slice(0, 3).join(', ')}`);
+      continue;
+    }
+    queued++;
+
     queue.push({
       id: film.id,
       title: film.filmLabel,
       year: film.year || null,
       wrapped: today,
       castCount: Number(film.castCount),
-      ...(await detailsFor(film.id, person)),
+      ...details,
       last: { id: person, name, died: today, character: null },
       foundAt: today,
 
@@ -127,8 +140,11 @@ async function consider(name, source) {
   await save(paths.state, state);
   await save(paths.queue, queue);
 
+  if (!queued) return;
+  log(`*** ${name} (${person}) — ${queued} picture(s) closed`);
+
   await notify(
-    `${name} — ${fresh.length} picture(s)`,
+    `${name} — ${queued} picture(s)`,
     `${name} reported dead.\n\n` +
     fresh.map(f => `· ${f.filmLabel}${f.year ? ` (${f.year})` : ''}`).join('\n') +
     `\n\nUNCONFIRMED — ${source}\nRun: node review.js`);

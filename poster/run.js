@@ -224,6 +224,17 @@ async function backfill(range) {
         if (Number(match.castCount) < MIN_CAST) continue;
         if (unnamed(match.filmLabel)) continue;                /* nothing to call it */
 
+        const details = await detailsFor(id, qid(actual.p));
+
+        /* Same verification the sweep does. Without it a backfill refills
+           the Vault with exactly the false closings the re-check removed —
+           278 of them, last time. */
+        const alive = await survivorsViaTmdb(id, details.tmdbId);
+        if (alive.length) {
+          log(`   -  ${match.filmLabel} — still living: ${alive.slice(0, 2).join(', ')}`);
+          continue;
+        }
+
         queue.push({
           id,
           title: match.filmLabel,
@@ -236,7 +247,7 @@ async function backfill(range) {
             died: actual.dod,
             character: actual.charLabel || null,
           },
-          ...(await detailsFor(id, qid(actual.p))),
+          ...details,
           foundAt: new Date().toISOString(),
           backfilled: true,
         });
