@@ -428,9 +428,13 @@ const and = names => (names.length === 2
   ? `${names[0]} and ${names[1]}`
   : names.join(', '));
 
-const named = (i, withStars) => {
+/* howManyStars: 2, 1 or 0. Varying this rather than the number of
+   pictures is what lets a list keep both — five titles is the agreed
+   shape, and a name beside each is what makes them placeable. */
+const named = (i, howManyStars = 0) => {
   const title = i.year ? `${i.title} (${i.year})` : i.title;
-  return withStars && i.stars?.length ? `${title}, with ${and(i.stars)}` : title;
+  const stars = (i.stars || []).slice(0, howManyStars);
+  return stars.length ? `${title}, with ${and(stars)}` : title;
 };
 
 export function groupQueue(queue) {
@@ -454,7 +458,7 @@ export function compose(group) {
 
   /* --- one: the person --- */
   const lead = items.length === 1
-    ? `${who} died ${when} \u2014 the last of ${named(items[0], false)}.\n\n` +
+    ? `${who} died ${when} \u2014 the last of ${named(items[0])}.\n\n` +
       `Nobody who made it is left.\n\n${link}`
     : `${who} died ${when}.\n\n` +
       `${WORDS[items.length] || items.length} pictures have lost the last ` +
@@ -463,28 +467,30 @@ export function compose(group) {
   /* --- two: the pictures --- */
   const ordered = [...items].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0));
 
-  const build = (count, withStars) => {
+  const build = howManyStars => {
     if (items.length === 1) {
       const film = items[0];
-      const stars = withStars && film.stars?.length
-        ? `\n\nWith ${and(film.stars)}.` : '';
-      return `${named(film, false)}${stars}\n\n${SITE}/#/film/${film.id}`;
+      const stars = (film.stars || []).slice(0, howManyStars || 2);
+      const line = stars.length ? `\n\nWith ${and(stars)}.` : '';
+      return `${named(film)}${line}\n\n${SITE}/#/film/${film.id}`;
     }
-    const listed = ordered.slice(0, count);
+    const listed = ordered.slice(0, MAX_LISTED);
     const rest = ordered.length - listed.length;
     /* The "more" link goes to the PERSON, not the site root — it's the
        page that actually holds the rest of their pictures. */
-    const more = rest ? `\n\nand ${rest} more at ${link}` : '';
-    return listed.map(i => `\u00b7 ${named(i, withStars)}`).join('\n') + more;
+    /* "+12 more" rather than "and 12 more at" — Ann Blyth's list came to
+       301 of 300 characters with one star name each, and lost all five
+       names over a single character. */
+    const more = rest ? `\n\n+${rest} more\n${link}` : '';
+    return listed.map(i => `\u00b7 ${named(i, howManyStars)}`).join('\n') + more;
   };
 
-  /* Naming who was in a picture is what lets a reader place it — "Mildred
-     Pierce" alone leaves them guessing, "with Joan Crawford" doesn't. So
-     shed titles before shedding stars: five with stars, then four, then
-     three, and only fall back to a bare list if even two won't fit. */
-  for (const count of [MAX_LISTED, 4, 3, 2]) {
-    const text = build(count, true);
+  /* Always MAX_LISTED pictures. When they won't fit, shed star names
+     rather than titles — two each, then one, then none. The count is the
+     shape of the post; the names are the detail. */
+  for (const stars of [2, 1, 0]) {
+    const text = build(stars);
     if (measure(text) <= LIMIT) return [lead, text];
   }
-  return [lead, build(MAX_LISTED, false)];
+  return [lead, build(0)];
 }
