@@ -19,6 +19,9 @@ public/
 # Scratch SPARQL
 *.rq
 
+# Generated preview
+preview.html
+
 # Logs and backups
 *.log
 *.before-recheck
