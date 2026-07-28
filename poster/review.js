@@ -364,6 +364,12 @@ for (const [i, group] of groups.entries()) {
       });
     }
     posted += group.items.length;
+
+    /* A beat between threads. Timestamps are millisecond-precise so the
+       order would hold regardless, but a dozen threads landing in the same
+       second reads as a dump rather than a feed — and it keeps well clear
+       of Bluesky's rate limits. */
+    if (!dryRun) await sleep(4000);
   } catch (err) {
     console.log(`   failed: ${err.message} — keeping them queued.`);
     keep.push(...group.items);
