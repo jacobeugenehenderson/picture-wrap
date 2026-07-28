@@ -563,12 +563,6 @@ function renderRoster() {
    a stamp above a list of one name says exactly what it's worth, and the
    reader can see it. The floor this used to carry was guarding a claim the
    page never really made on its own. */
-/* Small numbers read as words in a sentence — "One more name" rather
-   than "1 more name". */
-const NUMBERS = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven',
-                 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
-const count = n => NUMBERS[n] || String(n);
-
 /* Sentence case: Wikidata's type labels arrive lowercase ("television
    series") except where they start with a proper noun. */
 /* Wikidata lists several demonym forms and we want the adjective:
@@ -624,15 +618,10 @@ function titleCard(meta, wrappedOn) {
   ].filter(Boolean).join(' &middot; ');
 
   const stamp = wrappedOn
-    ? `<p class="card-wrapped">Final picture wrap &middot; ${esc(longDate(wrappedOn))}</p>` +
-      (unrecorded.length
-        ? `<p class="card-thin">Everyone on record is gone. ${
-             unrecorded.length === 1
-               ? 'One more name is credited'
-               : `${count(unrecorded.length)} more names are credited`
-           }, with nothing known about ${unrecorded.length === 1 ? 'them' : 'them'}
-           either way &mdash; living or otherwise.</p>`
-        : '')
+    /* No caveat line here. The "Credited, no record" fold below says the
+       same thing and says it better, because it names the people it's
+       talking about. Two versions of one disclosure is one too many. */
+    ? `<p class="card-wrapped">Final picture wrap &middot; ${esc(longDate(wrappedOn))}</p>`
     : '';
 
   return `
