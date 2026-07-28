@@ -403,6 +403,67 @@ export function longDate(iso) {
 }
 
 
+/* --- pictures for the posts -------------------------------------------- */
+
+/* The first post carries the person's face, the second carries the
+   posters of what they closed. Words alone don't stop a thumb.
+
+   Portraits come from Wikidata's P18, which points at Wikimedia Commons —
+   mostly CC-BY, so the photographer's name goes in the alt text where
+   there is room for it. Posters come from TMDB at w500, 60-120 KB each. */
+
+export const portraitQuery = person => `
+SELECT ?img WHERE { wd:${person} wdt:P18 ?img } LIMIT 1`;
+
+export async function portraitFor(person) {
+  try {
+    const rows = await sparql(portraitQuery(person));
+    const img = rows[0]?.img;
+    return img ? img.replace(/^http:/, 'https:') + '?width=800' : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function posterFor(tmdbId) {
+  if (!process.env.TMDB_KEY || !tmdbId) return null;
+  try {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/movie/${encodeURIComponent(tmdbId)}` +
+      `?api_key=${encodeURIComponent(process.env.TMDB_KEY)}`);
+    if (!res.ok) return null;
+    const { poster_path } = await res.json();
+    return poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : null;
+  } catch {
+    return null;
+  }
+}
+
+/* Returns [imagesForPost1, imagesForPost2] — the face, then the posters.
+   Bluesky allows four images per post. */
+export async function imagesFor(group) {
+  const { last, items } = group;
+
+  const face = await portraitFor(last.id);
+  const first = face ? [{ url: face, alt: last.name }] : [];
+
+  const ordered = [...items].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0));
+  const second = [];
+  for (const film of ordered.slice(0, 4)) {
+    const poster = await posterFor(film.tmdbId);
+    if (poster) {
+      second.push({
+        url: poster,
+        alt: `Poster for ${film.title}${film.year ? ` (${film.year})` : ''}`,
+      });
+    }
+    await sleep(120);
+  }
+
+  return [first, second];
+}
+
+
 /* --- post composition -------------------------------------------------- */
 
 /* Where the film pages live. Used in every post link. */

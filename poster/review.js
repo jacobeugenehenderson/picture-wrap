@@ -19,8 +19,8 @@ import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 
 import { load, save, paths, longDate, year, detailsFor, compose, groupQueue,
-         tmdbCastCount, coverage, sleep } from './lib.js';
-import { login, post, measure, LIMIT } from './bluesky.js';
+         tmdbCastCount, coverage, sleep, imagesFor } from './lib.js';
+import { login, post, measure, LIMIT, uploadImage } from './bluesky.js';
 
 const args = process.argv.slice(2);
 const listOnly = args.includes('--list');
@@ -307,11 +307,30 @@ for (const [i, group] of groups.entries()) {
   }
 
   try {
+    /* Upload the face and the posters, then post. Anything that fails to
+       upload is simply left out — a post without its pictures is still
+       true, and a failed image should never block a closing. */
+    let blobs = [];
+    if (!dryRun) {
+      const wanted = await imagesFor(group);
+      blobs = [];
+      for (const set of wanted) {
+        const uploaded = [];
+        for (const img of set) {
+          const blob = await uploadImage(img.url, session);
+          if (blob) uploaded.push({ alt: img.alt, image: blob });
+        }
+        blobs.push(uploaded);
+      }
+      const n = blobs.reduce((a, b) => a + b.length, 0);
+      if (n) console.log(`   ${n} image(s) uploaded`);
+    }
+
     let url = null;
     if (dryRun) {
       console.log(`   [dry run] would have posted ${text.length} skeet(s) covering ${group.items.length} picture(s).`);
     } else {
-      ({ url } = await post(text, session));
+      ({ url } = await post(text, session, blobs));
       console.log(`   posted → ${url}`);
     }
 

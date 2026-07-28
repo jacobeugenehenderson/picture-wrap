@@ -72,7 +72,34 @@ export function measure(text) {
 
 export const byteLength = text => new TextEncoder().encode(text).length;
 
-async function createRecord(text, session, reply) {
+/* Bluesky stores images as blobs: upload the bytes first, then reference
+   the returned blob in the post record. Max 4 per post, ~1 MB each — TMDB
+   posters at w500 run 60-120 KB, so there is plenty of room. */
+export async function uploadImage(url, session) {
+  try {
+    const img = await fetch(url);
+    if (!img.ok) return null;
+    const type = img.headers.get('content-type') || 'image/jpeg';
+    const bytes = new Uint8Array(await img.arrayBuffer());
+    if (bytes.length > 950_000) return null;
+
+    const res = await fetch(`${HOST}/xrpc/com.atproto.repo.uploadBlob`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': type,
+        Authorization: `Bearer ${session.accessJwt}`,
+      },
+      body: bytes,
+    });
+    if (!res.ok) return null;
+    const { blob } = await res.json();
+    return blob;
+  } catch {
+    return null;
+  }
+}
+
+async function createRecord(text, session, reply, images) {
   const { facets } = linkFacets(text);
   const length = measure(text);
   if (length > LIMIT) {
@@ -95,6 +122,9 @@ async function createRecord(text, session, reply) {
         langs: ['en'],
         createdAt: new Date().toISOString(),
         ...(reply ? { reply } : {}),
+        ...(images?.length
+          ? { embed: { $type: 'app.bsky.embed.images', images } }
+          : {}),
       },
     }),
   });
@@ -111,18 +141,20 @@ async function createRecord(text, session, reply) {
    A thread needs BOTH refs on every reply: `root` stays the first post
    throughout, `parent` is the post immediately above. Setting parent
    without root produces a reply that renders detached from its thread. */
-export async function post(text, session) {
+/* `images` is an array matching `parts` — images[i] belongs to parts[i].
+   Each entry is already-uploaded blobs with alt text. */
+export async function post(text, session, images = []) {
   const parts = Array.isArray(text) ? text.filter(Boolean) : [text];
   if (!parts.length) throw new Error('Nothing to post.');
 
-  const root = await createRecord(parts[0], session);
+  const root = await createRecord(parts[0], session, null, images[0]);
   let parent = root;
 
-  for (const part of parts.slice(1)) {
+  for (const [i, part] of parts.slice(1).entries()) {
     parent = await createRecord(part, session, {
       root:   { uri: root.uri, cid: root.cid },
       parent: { uri: parent.uri, cid: parent.cid },
-    });
+    }, images[i + 1]);
   }
 
   /* at://did:plc:xxx/app.bsky.feed.post/ID -> a link you can open */
