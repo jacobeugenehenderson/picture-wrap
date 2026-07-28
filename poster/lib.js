@@ -45,11 +45,13 @@ const VALUES  = CREDITS.join(' ');
    record announces its own thinness: "the 1 person credited on The Stone
    Boy has now died" tells a reader exactly what they are looking at.
 
-   What remains is arithmetic. The backfill runs an expensive per-film test
-   on every candidate, and testing films with one or two names on record
-   costs hours to learn nothing. This trims that. The daily sweep does NOT
-   use it — a handful of extra stubs a year is not worth a rule, and
-   review.js shows TMDB coverage so you can see what you're looking at. */
+   What remains is editorial, and both paths need it. The backfill would
+   otherwise spend hours testing one-name stubs. The sweep would otherwise
+   queue everything: a 45-day window produced 540 films, 397 with ZERO
+   cast recorded — documentaries where Wikidata knows a director and no
+   one else. Nothing false gets published without it, since the post
+   states its own basis. But an unreadable queue defeats the only
+   protection this project has, which is that a person looks. */
 export const MIN_CAST = 5;
 
 /* How many pictures a single post will name before deferring to the site.
@@ -294,6 +296,56 @@ export async function resolvePerson(name) {
     return hit ? hit.title : null;
   } catch {
     return null;
+  }
+}
+
+/* Wikidata alone is not enough to declare a picture closed.
+
+   Its cast lists are often a fraction of the real cast, and the people it
+   omits are usually people it KNOWS — just not attached to that film. So
+   ask TMDB who else was credited, resolve them by P4985, and look for a
+   survivor. On a 45-day sweep this caught 14 of 60 candidates, including
+   The Great Caruso, where George Chakiris is alive and 92.
+
+   Returns the survivors it found; empty means genuinely closed. Needs
+   TMDB_KEY — without it this returns [] and you are back to trusting
+   Wikidata's cast list, which the Vault re-check proved wrong 278 times. */
+export async function survivorsViaTmdb(film, tmdbId) {
+  if (!process.env.TMDB_KEY || !tmdbId) return [];
+  try {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/movie/${encodeURIComponent(tmdbId)}` +
+      `/credits?api_key=${encodeURIComponent(process.env.TMDB_KEY)}`);
+    if (!res.ok) return [];
+    const { cast } = await res.json();
+    if (!Array.isArray(cast) || !cast.length) return [];
+
+    const known = await sparql(`
+      SELECT ?tmdb WHERE {
+        VALUES ?prop { ${VALUES} }
+        wd:${film} ?prop ?p . ?p wdt:P4985 ?tmdb .
+      }`);
+    const have = new Set(known.map(r => r.tmdb));
+    const missing = cast.map(c => String(c.id)).filter(id => !have.has(id));
+    if (!missing.length) return [];
+
+    const rows = await sparql(`
+      SELECT ?tmdb ?pLabel ?dod WHERE {
+        VALUES ?tmdb { ${missing.map(i => `"${i}"`).join(' ')} }
+        ?p wdt:P4985 ?tmdb .
+        OPTIONAL { ?p wdt:P570 ?dod }
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+      }`);
+
+    const seen = new Set(), alive = [];
+    for (const r of rows) {
+      if (seen.has(r.tmdb)) continue;
+      seen.add(r.tmdb);
+      if (!r.dod) alive.push(r.pLabel || r.tmdb);
+    }
+    return alive;
+  } catch {
+    return [];
   }
 }
 

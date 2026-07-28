@@ -458,13 +458,17 @@ main,
   cursor: help;
 }
 
+/* Always its own line under the name, and always allowed to wrap. It was
+   inline with nowrap, which put short credits beside the name and long
+   ones beneath it — and let a voice actor with nine characters run clean
+   off the right edge. The Simpsons is the case that found this: Dan
+   Castellaneta has ten. */
 .who-role {
+  display: block;
   font-size: var(--size-small);
   font-style: italic;
+  line-height: 1.4;
   color: var(--ink-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* --- the date column -------------------------------------------------- */

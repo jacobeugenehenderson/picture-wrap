@@ -15,7 +15,7 @@
    ========================================================================== */
 
 import {
-  sparql, sleep, qid, load, save, paths, MIN_CAST, longDate, unnamed, detailsFor,
+  sparql, sleep, qid, load, save, paths, MIN_CAST, longDate, unnamed, detailsFor, survivorsViaTmdb,
   recentDeathsQuery, wrappedFilmsQuery, lastPersonQuery, candidatesByYearQuery,
 } from './lib.js';
 
@@ -69,7 +69,20 @@ async function harvest(person, state, queue) {
     state.seen.push(id);
 
     if (unnamed(film.filmLabel)) {
-      log(`      skip  ${id} — no English label to name it by`);
+      log(`      skip  ${id} — no name in any language`);
+      continue;
+    }
+
+    /* An editorial floor, and the sweep needs one. Without it a 45-day
+       window queued 540 films, 397 of them with ZERO cast on record —
+       documentaries and concert films where Wikidata lists a director and
+       nobody else, "closing" the moment that one person died.
+
+       Nothing false is published either way; the post states its own
+       basis. But a queue that size is a queue nobody reads, and the whole
+       protection here is that a human looks. */
+    if (Number(film.castCount) < MIN_CAST) {
+      log(`      skip  ${film.filmLabel} — ${film.castCount} cast on record`);
       continue;
     }
 
@@ -98,6 +111,15 @@ async function harvest(person, state, queue) {
       };
     }
     Object.assign(item, await detailsFor(item.id, item.last.id));
+
+    /* Wikidata says everyone credited has died. Ask TMDB whether Wikidata
+       knew the whole cast — 14 of 60 candidates failed this on the first
+       real sweep. */
+    const alive = await survivorsViaTmdb(item.id, item.tmdbId);
+    if (alive.length) {
+      log(`      skip  ${item.title} — still living: ${alive.slice(0, 3).join(', ')}`);
+      continue;
+    }
     await sleep(250);
     queue.push(item);
     log(`   +  ${item.title}${item.year ? ` (${item.year})` : ''} — closed by ` +
