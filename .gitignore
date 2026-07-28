@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+._*
+
+# Poster runtime state — local to whichever machine runs the cron.
+# state.json is the poster's memory of every film it has considered;
+# losing it means a backfill would re-offer everything. Back it up
+# somewhere, but it doesn't belong in version control — it changes on
+# every run and would make the history unreadable.
+poster/state.json
+poster/queue.json
+
+# Logs and backups
+*.log
+*.before-recheck
+
+# Credentials live in ~/.picture-wrap.env, outside this folder entirely.
+.env
+.env.*

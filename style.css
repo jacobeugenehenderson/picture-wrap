@@ -1,0 +1,932 @@
+/* ==========================================================================
+   PICTURE WRAP
+   --------------------------------------------------------------------------
+   Everything visual lives in this file. Start at THEME below — nearly every
+   change you'll want to make is a value in that first block.
+
+   Sections
+     1. THEME ................ colours, type, spacing. Edit here first.
+     2. RESET ................ boring baseline
+     3. LAYOUT ............... page frame
+     4. MASTHEAD ............. title, tagline
+     5. SEARCH ............... input + suggestion dropdown
+     6. TITLE CARD ........... the header of a film or person view
+     7. ROSTER ............... the single list
+     8. THE BAR .............. the gold divider
+     9. LANDING & STATES ..... intro, loading, empty, error
+    10. COLOPHON ............. footer
+   ========================================================================== */
+
+
+/* 1. THEME =============================================================== */
+
+:root {
+  /* --- colour: paper & ink ------------------------------------------- */
+  --paper:        #f4f1ea;   /* page background, warm off-white         */
+  --paper-raised: #faf8f3;   /* search field, hovered rows              */
+  --ink:          #16130e;   /* primary text                            */
+  --ink-soft:     #6f665a;   /* dates, characters, secondary text       */
+  --ink-faint:    #a49a8b;   /* hints, placeholders                     */
+  --rule:         rgba(30, 24, 14, 0.13);  /* hairlines between rows    */
+
+  /* --- colour: the gold bar ------------------------------------------ */
+  /* The bar is the whole idea. It's a 3-stop gradient so it has a sheen
+     rather than reading as a flat block. Keep the middle lightest.      */
+  --gold-dark:  #8a6a16;
+  --gold:       #c9a227;
+  --gold-light: #f0d67a;
+  --bar-height: 7px;
+
+  /* --- type ----------------------------------------------------------- */
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino,
+                  "Book Antiqua", Georgia, serif;
+  --font-ui:      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                  Helvetica, Arial, sans-serif;
+
+  --size-wordmark: clamp(1.9rem, 5vw, 2.9rem);
+  --size-title:    clamp(1.7rem, 4.4vw, 2.6rem);
+  --size-name:     1.06rem;
+  --size-small:    0.8rem;
+  --size-tiny:     0.7rem;
+
+  /* --- spacing & frame ------------------------------------------------ */
+  --measure:  46rem;   /* max content width                              */
+  --gutter:   1.5rem;
+  --row-pad:  0.72rem; /* vertical padding inside a roster row           */
+  --portrait-w: 38px;
+  --portrait-h: 48px;
+
+  /* --- portraits ------------------------------------------------------ */
+  /* Commons photos come from wildly different decades and processes.
+     Desaturating all of them is what makes the list read as one object.
+     Set to `none` if you'd rather have the mess.                        */
+  --portrait-filter: grayscale(1) contrast(1.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper:        #12100c;
+    --paper-raised: #1b1813;
+    --ink:          #ece7db;
+    --ink-soft:     #948b7b;
+    --ink-faint:    #635b4e;
+    --rule:         rgba(236, 231, 219, 0.14);
+
+    --gold-dark:  #7a5c12;
+    --gold:       #c9a227;
+    --gold-light: #f5dc8c;
+
+    --portrait-filter: grayscale(1) contrast(0.96) brightness(0.92);
+  }
+}
+
+
+/* 2. RESET =============================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body, h1, h2, h3, p, ul, li, figure {
+  margin: 0;
+  padding: 0;
+}
+
+ul { list-style: none; }
+
+a { color: inherit; text-decoration: none; }
+
+img { display: block; max-width: 100%; }
+
+button, input {
+  font: inherit;
+  color: inherit;
+}
+
+
+/* 3. LAYOUT ============================================================== */
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding: 0 var(--gutter) 5rem;
+}
+
+.masthead,
+.search,
+main,
+.colophon {
+  max-width: var(--measure);
+  margin-inline: auto;
+}
+
+
+/* 4. MASTHEAD ============================================================ */
+
+.masthead {
+  padding: 3.2rem 0 2rem;
+  text-align: center;
+}
+
+.wordmark { display: block; }
+
+.wordmark h1 {
+  font-family: var(--font-display);
+  font-size: var(--size-wordmark);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+/* A short gold rule above the title — a quiet echo of the bar itself. */
+.wordmark-rule {
+  display: block;
+  width: 54px;
+  height: 3px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(90deg,
+    var(--gold-dark), var(--gold-light), var(--gold-dark));
+}
+
+.tagline {
+  margin-top: 0.85rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.98rem;
+  color: var(--ink-soft);
+}
+
+
+/* 5. SEARCH ============================================================== */
+
+.search {
+  position: relative;
+  margin-bottom: 3rem;
+}
+
+.search input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  font-size: 1rem;
+  transition: border-color 0.15s;
+}
+
+.search input::placeholder { color: var(--ink-faint); }
+
+.search input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.16);
+}
+
+.suggestions {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  max-height: 340px;
+  overflow-y: auto;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.16);
+}
+
+.suggestions li {
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+.suggestions li:last-child { border-bottom: none; }
+
+.suggestions li:hover,
+.suggestions li[aria-selected="true"] {
+  background: var(--paper);
+}
+
+.sg-label {
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+
+.sg-note {
+  font-size: var(--size-small);
+  color: var(--ink-soft);
+}
+
+/* Tiny FILM / PERSON tag on the left of each suggestion. */
+.sg-kind {
+  display: inline-block;
+  min-width: 3.6em;
+  margin-right: 0.6rem;
+  font-size: var(--size-tiny);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+
+/* 6. TITLE CARD ========================================================== */
+
+.card {
+  padding-bottom: 1.6rem;
+  margin-bottom: 0.4rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.card h2 {
+  font-family: var(--font-display);
+  font-size: var(--size-title);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: 0.01em;
+}
+
+.card-meta {
+  margin-top: 0.5rem;
+  font-size: var(--size-small);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* A line that's a line, not a label. The uppercase .card-meta treatment
+   would flatten it into a category heading. */
+.card-quote {
+  margin-top: 0.55rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+  color: var(--ink-soft);
+}
+
+
+/* --- person variant: portrait beside the name ------------------------ */
+
+.card-person {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.1rem;
+}
+
+.card-person-text { flex: 1 1 auto; min-width: 0; }
+
+.card-portrait {
+  flex: 0 0 84px;
+  width: 84px;
+  height: 108px;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  object-fit: cover;
+  object-position: center 20%;
+  filter: var(--portrait-filter);
+}
+
+/* The in-between state: every face is gone, but someone behind the camera
+   is still with us. */
+.card-thin {
+  margin-top: 0.9rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--ink-faint);
+}
+
+/* Shown only when a film has fully wrapped. */
+.card-wrapped {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.34rem 0.7rem;
+  border: 1px solid var(--gold);
+  border-radius: 2px;
+  font-size: var(--size-tiny);
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+  .card-wrapped { color: var(--gold-light); }
+}
+
+
+/* 6b. CREW FOLD ========================================================== */
+
+/* The cast is the picture. The crew is a card you open — on an old film
+   it's a who's who of its own, so it gets real presentation, but the
+   gold bar stays unique to the cast list above it. */
+
+.fold {
+  margin: 1.3rem 0 0.9rem;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--paper-raised);
+}
+
+.fold summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  list-style: none;              /* hide the default triangle    */
+  transition: color 0.15s;
+}
+
+.fold summary::-webkit-details-marker { display: none; }
+
+.fold-title {
+  font-size: var(--size-tiny);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Our own marker: a count, and a caret that turns when opened. */
+.fold-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: var(--size-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+}
+
+.fold-hint::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.18s;
+}
+
+.fold[open] .fold-hint::after { transform: translateY(1px) rotate(-135deg); }
+
+.fold summary:hover .fold-title { color: var(--ink); }
+
+.fold-note {
+  padding: 0 1rem 0.8rem;
+  font-family: var(--font-display);
+  font-size: var(--size-small);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.fold-note a { border-bottom: 1px solid var(--rule); }
+.fold-note a:hover { border-bottom-color: var(--gold); }
+
+.fold .roster {
+  padding: 0 1rem 0.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+/* The crew's own living/dead divider. Deliberately a hairline, not the
+   bar — there's only one gold bar per picture and it belongs to the cast. */
+.hairline {
+  height: 1px;
+  margin: 0.5rem 0;
+  border: none;
+  background: linear-gradient(90deg,
+    transparent, var(--gold), transparent);
+  opacity: 0.65;
+}
+
+
+/* 7. ROSTER ============================================================== */
+
+.roster li {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: var(--row-pad) 0.4rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.roster li:last-child { border-bottom: none; }
+
+.roster li.is-link { cursor: pointer; }
+
+.roster li.is-link:hover { background: var(--paper-raised); }
+
+/* --- portrait ------------------------------------------------------- */
+
+.portrait {
+  flex: 0 0 var(--portrait-w);
+  width: var(--portrait-w);
+  height: var(--portrait-h);
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  object-fit: cover;
+  object-position: center 22%;
+  filter: var(--portrait-filter);
+}
+
+/* --- name & character ----------------------------------------------- */
+
+.who { flex: 1 1 auto; min-width: 0; }
+
+.who-name {
+  font-family: var(--font-display);
+  font-size: var(--size-name);
+  line-height: 1.25;
+}
+
+/* Marks a name that came from TMDB's cast list rather than Wikidata's.
+   Their dates are Wikidata's; only their presence in this film is TMDB's. */
+.via {
+  margin-left: 0.35rem;
+  font-style: normal;
+  color: var(--ink-faint);
+  cursor: help;
+}
+
+.who-role {
+  font-size: var(--size-small);
+  font-style: italic;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- the date column -------------------------------------------------- */
+
+/* Every row carries a life span in the same slot. A closed span belongs to
+   the dead; an open one — "1940–" — belongs to the living. Tabular figures
+   keep the dashes in a column so the open ones are visible at a glance. */
+
+.when {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  text-align: right;
+}
+
+.when-span {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+/* The open span sits back — it's the quieter half of the list. */
+.when-open { color: var(--ink-faint); }
+
+/* Exact death date, under the closed span. This is what makes the row
+   directly below the bar mean "just went". */
+.when-exact {
+  font-size: var(--size-tiny);
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+
+/* Second visual signal, quieter than the dates: the dead sit further back
+   in the portrait column too. */
+.roster li.gone .portrait { opacity: 0.72; }
+
+
+/* 8. THE BAR ============================================================= */
+
+/* Not a section heading. No label, no count. Its position is the message:
+   it rises as the living list shrinks, and reaching the top is the end. */
+
+.bar {
+  height: var(--bar-height);
+  margin: 0;
+  border: none;
+  background: linear-gradient(90deg,
+    var(--gold-dark)  0%,
+    var(--gold)      22%,
+    var(--gold-light) 50%,
+    var(--gold)      78%,
+    var(--gold-dark) 100%);
+}
+
+/* Give it a little air, but less than a normal row so it reads as a
+   boundary inside one list rather than a gap between two lists. */
+.roster .bar { margin: 0.5rem 0; }
+
+
+/* 9. LANDING & STATES ==================================================== */
+
+.landing {
+  padding-top: 0.5rem;
+  text-align: center;
+}
+
+.landing-picks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.landing-picks button {
+  padding: 0.42rem 0.85rem;
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.landing-picks button:hover {
+  background: var(--paper-raised);
+  border-color: var(--gold);
+}
+
+.landing-label,
+.landing-more {
+  font-size: var(--size-tiny);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.landing-label { margin-bottom: 1rem; }
+
+.landing-more {
+  margin-top: 2rem;
+  cursor: pointer;
+}
+
+.landing-more a { border-bottom: 1px solid var(--rule); }
+.landing-more a:hover { color: var(--ink-soft); border-bottom-color: var(--gold); }
+
+/* The year a picture closed, trailing its title on a chip. */
+.pick-year {
+  margin-left: 0.5rem;
+  font-size: var(--size-tiny);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+}
+
+
+/* --- ARCHIVE ---------------------------------------------------------- */
+
+/* No gold bar here. Everything on this page has already crossed it, and
+   putting one on the page would dilute the one place it means something. */
+
+/* Which country's pictures to show. Text toggles rather than a dropdown —
+   the set is small, the counts are worth seeing, and a row you can read at
+   a glance beats a control you have to open. */
+.vault-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1.2rem 0 0.6rem;
+}
+
+.vault-filters button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-size: var(--size-tiny);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.vault-filters button span {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  color: var(--ink-faint);
+}
+
+.vault-filters button:hover {
+  background: var(--paper-raised);
+  border-color: var(--gold);
+}
+
+.vault-filters button[aria-current="true"] {
+  color: var(--ink);
+  border-color: var(--gold);
+  background: var(--paper-raised);
+}
+
+.vault-filters button[aria-current="true"] span { color: var(--ink-soft); }
+
+
+/* Years nested inside decades. Quieter than the decade heading — a
+   sub-drawer, not a section. */
+.yr { border-top: 1px solid var(--rule); }
+
+.yr > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: 0.6rem 0.4rem 0.6rem 0.9rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.yr > summary::-webkit-details-marker { display: none; }
+
+.yr-label {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+
+.yr-count {
+  font-size: var(--size-tiny);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+}
+
+.yr > summary:hover .yr-label { color: var(--ink); }
+
+.yr[open] > summary .yr-label { color: var(--ink); }
+
+.yr > ul { padding: 0 0 0.6rem 0.9rem; }
+
+
+/* A decade of closings, folded. The newest opens by default. */
+.decade { border-bottom: 1px solid var(--rule); }
+
+.decade > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  padding: 1.4rem 0.4rem 0.9rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.decade > summary::-webkit-details-marker { display: none; }
+
+.decade-label {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+.decade-count {
+  font-size: var(--size-tiny);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+}
+
+/* A rule running out to the margin, and a caret that turns when opened. */
+.decade > summary::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--rule);
+}
+
+.decade > summary:hover .decade-label { color: var(--gold-dark); }
+
+.decade[open] > summary { padding-bottom: 0.4rem; }
+
+.decade > ul { padding-bottom: 0.8rem; }
+
+/* Retained for the old flat markup; harmless if unused. */
+.roster.archive .year {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.9rem 0.4rem 0.5rem;
+  border-bottom: none;
+}
+
+.roster.archive .year::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--rule);
+}
+
+.roster.archive .year span {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+/* First divider shouldn't push the list away from the title card. */
+.roster.archive .year:first-child { padding-top: 0.6rem; }
+
+/* A closing: the person who ended it, and the picture or pictures it
+   ended. Four films under one name is the archive's most telling shape. */
+.roster.archive .closing {
+  display: block;
+  padding: 0.9rem 0.4rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.closing-who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.55rem;
+  margin-bottom: 0.35rem;
+}
+
+.closing-name {
+  font-family: var(--font-display);
+  font-size: 1.06rem;
+  color: var(--ink);
+}
+
+.closing-role {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--size-small);
+  color: var(--ink-soft);
+}
+
+/* The date sits to the right of the name, not in a column — the films
+   below own the right-hand edge. */
+.closing-date {
+  margin-left: auto;
+  font-size: var(--size-tiny);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+
+/* Indented under the name, with a hairline stem tying them to it. */
+.closing-films {
+  padding-left: 0.9rem;
+  border-left: 1px solid var(--rule);
+}
+
+.closing-films li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.22rem 0.4rem 0.22rem 0;
+  border-bottom: none;
+  cursor: pointer;
+}
+
+.closing-films li:hover { background: var(--paper-raised); }
+
+.closing-film { min-width: 0; }
+
+.closing-films .who-name { font-size: 1rem; }
+
+/* What kind of thing it is. Load-bearing for anything foreign or obscure —
+   "French film" or "Canadian miniseries" is often the whole identification. */
+.closing-kind {
+  display: block;
+  font-size: var(--size-tiny);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* The names you'd actually recognise. A title alone rarely places a film —
+   "Casablanca" needs "Bogart" beside it. */
+.closing-stars {
+  display: block;
+  font-size: var(--size-small);
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.closing-films .when-span {
+  flex: 0 0 auto;
+  color: var(--ink-faint);
+  font-size: var(--size-small);
+}
+
+.state {
+  padding: 3rem 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+
+/* 9b. PROSE ============================================================== */
+
+/* The About page. The only long-form text in the project, so it gets a
+   measure narrower than the roster and rather more air. */
+.prose {
+  max-width: 34rem;
+  padding-top: 0.4rem;
+}
+
+.prose p {
+  margin-top: 0.9rem;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  line-height: 1.62;
+  color: var(--ink-soft);
+}
+
+.prose h3 {
+  margin-top: 2.2rem;
+  font-size: var(--size-tiny);
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.prose strong { color: var(--ink); font-weight: 400; }
+
+.prose a {
+  color: var(--ink);
+  border-bottom: 1px solid var(--rule);
+}
+
+.prose a:hover { border-bottom-color: var(--gold); }
+
+.prose-close {
+  margin-top: 2rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--rule);
+  font-style: italic;
+}
+
+
+/* 10. COLOPHON =========================================================== */
+
+.colophon {
+  margin-top: 4rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--rule);
+  font-size: var(--size-small);
+  line-height: 1.6;
+  color: var(--ink-faint);
+}
+
+.colophon a {
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+.colophon p + p { margin-top: 0.5rem; }
+
+/* Links on one line, separated by middots. */
+.colophon span { color: var(--ink-faint); }
+
+/* The one caveat worth keeping: every guard in the project exists because
+   the underlying records are incomplete, and a visitor should know that
+   before trusting a bar sitting at the top of a list. */
+.colophon-caveat {
+  font-family: var(--font-display);
+  font-style: italic;
+}
+
+
+/* SMALL SCREENS ========================================================== */
+
+@media (max-width: 480px) {
+  :root {
+    --gutter: 1rem;
+    --portrait-w: 32px;
+    --portrait-h: 40px;
+  }
+
+  .masthead { padding-top: 2.2rem; }
+
+  /* This slot was hidden on narrow screens back when it only held a
+     character name. It now also carries crew job titles — Director,
+     Cinematography — so hiding it removes the only thing telling you why
+     a person is on the page. It stays; it just gets smaller. */
+  /* Marks a name that came from TMDB's cast list rather than Wikidata's.
+   Their dates are Wikidata's; only their presence in this film is TMDB's. */
+.via {
+  margin-left: 0.35rem;
+  font-style: normal;
+  color: var(--ink-faint);
+  cursor: help;
+}
+
+.who-role { font-size: var(--size-tiny); }
+
+  .card-portrait { flex-basis: 62px; width: 62px; height: 80px; }
+}
