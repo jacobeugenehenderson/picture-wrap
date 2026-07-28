@@ -5,45 +5,79 @@ Roughly in the order they're worth doing.
 
 ---
 
-## Alt text that actually describes the image
+## Alt text worth reading
 
-**Priority: high.** Currently the alt text is a caption, not a description:
+**Priority: high.** Currently it is a caption, not a description — both
+lines merely repeat the post text, so a screen reader gets nothing the
+sighted reader didn't already have in words.
 
-```
-portrait   "Ann Blyth"
-poster     "Poster for Mildred Pierce (1945)"
-```
+**What it should carry.** A sighted reader glancing at a 1945 noir poster
+picks up era, genre and mood instantly: colour, shadow, typography. That
+impression is what alt text can deliver and the post text can't. Not
+"what is literally depicted" — describing pixels conveys nothing — but
+what the image *does*.
 
-Someone using a screen reader learns nothing from that beyond what the
-post already says. Alt text should describe what is *in* the picture.
+**The rule to hold.** Never put information *only* in alt. If "this film
+shaped a generation of young women" is worth saying, it belongs in the
+post where everyone gets it. Alt text carrying the good version while
+sighted readers get the thin one is backwards, however well meant.
 
-Better:
+**The hard limit: we cannot see the images.** No description of a poster's
+visual character is derivable from Wikidata or TMDB. Routes, in order of
+honesty:
 
-```
-"Ann Blyth in a 1952 studio publicity photograph, in three-quarter
- profile against a plain backdrop."
+1. **Build from real metadata** — director, country, genre, era, cast.
+   Verifiable, no fabrication, much better than a bare title:
+   *"Poster for Mildred Pierce, 1945. American film noir directed by
+   Michael Curtiz, starring Joan Crawford."*
+2. **Commons structured data for portraits.** `wbgetentities` on a file's
+   `M`-id returns `P180` (depicts) and a caption. Often real; sometimes
+   only a filename, though *"Studio publicity Ann Blyth 1952.jpg"* still
+   gives era and context.
+3. **A vision model reading each poster.** The only route to genuine
+   visual description, and also a new dependency that invents things — on
+   a project that spent its whole development removing confident
+   wrongness. If used, review the output like a post, don't trust it like
+   data.
+4. **Hand-written**, for the few pictures that deserve it.
 
-"Theatrical poster for Mildred Pierce, 1945. Joan Crawford in a fur
- coat, a gun and a beach house behind her."
-```
+Falling back to *"Portrait of Ann Blyth"* beats an invented description.
+Never guess at image contents.
 
-Where the material could come from:
+**Related:** the site's roster portraits use `alt=""`, treating them as
+decorative. Defensible — the name sits adjacent in the DOM — but it
+deserves the same scrutiny.
 
-- **Commons file descriptions.** `wbgetentities` on the `M`-id of a
-  Commons file returns structured data, including `P180` (depicts) and a
-  caption. Many portraits have a real description; some have only a
-  filename, which is often still informative — *"Studio publicity Ann
-  Blyth.jpg"* gives you year and context.
-- **TMDB has no alt text for posters**, so poster descriptions would have
-  to be built from what we know — title, year, the two star names we
-  already fetch — or written by hand for the handful that recur.
-- **Falling back honestly** matters: if nothing is known, `"Portrait of
-  Ann Blyth"` is better than an invented description. Never guess at
-  image contents.
+---
 
-Related: the site's `<img>` tags use `alt=""` on portraits, treating them
-as decorative. That's defensible since the name is adjacent in the DOM,
-but worth revisiting with the same care.
+## Poster art credits
+
+Poster designers are exactly the people this project is about. Saul Bass
+is remembered; whoever painted the 1952 Mexican one-sheet for *Acapulco*
+is credited nowhere the film's page would show, and when they died nobody
+marked it. The same silence the archive already documents, one layer up.
+
+Sources worth investigating:
+
+- **MoviePosterDB** — 740,000+ posters, searchable by designer, and it
+  has an API at `api.movieposterdb.com`. The most promising.
+- **CineMaterial** — artist and designer sections, ~13,000 posters.
+- **IMP Awards** — an index of design companies, artists and
+  photographers going back to 1912.
+- **Posteritati** — 40,000+ originals, but a commercial gallery.
+
+**Two constraints, both settled:**
+
+- **It must never count toward wraps.** A poster artist isn't credited on
+  the picture in the production sense, and folding them into the survivor
+  test would quietly change what "wrapped" means.
+- **Coverage will fail where the archive is densest.** Attribution is
+  best for prestige American work and worst for the old, foreign and
+  obscure — which is most of the Vault. The same shape as every other
+  data problem here.
+
+Best as its own layer: a credit line on the film page, perhaps eventually
+a person page of their own.
 
 ---
 

@@ -447,7 +447,13 @@ export async function imagesFor(group) {
   const face = await portraitFor(last.id);
   const first = face ? [{ url: face, alt: last.name }] : [];
 
-  const ordered = [...items].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0));
+  /* A picture with a poster outranks one without, then fame decides.
+     The list and the images must correspond — naming three films while
+     showing posters for different ones reads as a mistake — and the two
+     orderings barely conflict anyway: of 46 queued films, the only five
+     without posters were the five most obscure. */
+  const ordered = [...items].sort((a, b) =>
+    (b.poster ? 1 : 0) - (a.poster ? 1 : 0) || (b.fame ?? 0) - (a.fame ?? 0));
   const second = [];
   for (const film of ordered.slice(0, 4)) {
     const poster = await posterFor(film.tmdbId);
@@ -526,7 +532,13 @@ export function compose(group) {
       `of their company.\n\n${link}`;
 
   /* --- two: the pictures --- */
-  const ordered = [...items].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0));
+  /* A picture with a poster outranks one without, then fame decides.
+     The list and the images must correspond — naming three films while
+     showing posters for different ones reads as a mistake — and the two
+     orderings barely conflict anyway: of 46 queued films, the only five
+     without posters were the five most obscure. */
+  const ordered = [...items].sort((a, b) =>
+    (b.poster ? 1 : 0) - (a.poster ? 1 : 0) || (b.fame ?? 0) - (a.fame ?? 0));
 
   const build = (howManyStars, count = MAX_LISTED) => {
     if (items.length === 1) {

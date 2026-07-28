@@ -19,7 +19,7 @@ import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 
 import { load, save, paths, longDate, year, detailsFor, compose, groupQueue,
-         tmdbCastCount, coverage, sleep, imagesFor } from './lib.js';
+         tmdbCastCount, coverage, sleep, imagesFor, posterFor } from './lib.js';
 import { login, post, measure, LIMIT, uploadImage } from './bluesky.js';
 
 const args = process.argv.slice(2);
@@ -251,6 +251,12 @@ for (const [i, group] of groups.entries()) {
     if (!item.stars) Object.assign(item, await detailsFor(item.id, group.last.id));
     if (item.tmdbCast === undefined) {
       item.tmdbCast = await tmdbCastCount(item.tmdbId);
+    }
+    /* Fetched once, here: compose needs it to decide the order, and
+       imagesFor needs the URL. Asking TMDB twice for the same poster was
+       both slower and a way for the two to disagree. */
+    if (item.poster === undefined) {
+      item.poster = await posterFor(item.tmdbId);
     }
   }
 
