@@ -74,7 +74,13 @@ async function recheck(entry) {
     return { verdict: 'reopened', survivors: ['(in Wikidata cast list)'], unknown: 0 };
   }
 
-  if (!entry.tmdbId) return { verdict: 'closed', survivors: [], unknown: 0 };
+  /* No TMDB id, no verification possible — the entry stays, because the
+     Wikidata test above did pass, but it must not be reported as checked.
+     Counting these as 'closed' put 96 untested entries into the "still
+     closed" total and set their unknownCount to 0, which reads as "nothing
+     unaccounted for" on a picture nobody asked a second database about.
+     Same species as every other bug here: silence presented as an answer. */
+  if (!entry.tmdbId) return { verdict: 'unchecked' };
 
   const { alive, unknown } = await survivorsViaTmdb(entry.id, entry.tmdbId);
   return {
