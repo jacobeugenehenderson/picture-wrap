@@ -534,10 +534,13 @@ export function compose(group) {
   const { last, items } = group;
   const when = longDate(last.died);
   const url = `${SITE}/#/${slug(last.name)}/${last.id}`;
-  /* Just the domain. Naming the person again — "Barbara Adolph at
-     picture-wrap.com" — repeats the first three words of the post, and a
-     label that isn't a fake path is the whole point. See linkFacets. */
-  const link = `[[picture-wrap.com|${url}]]`;
+  /* The visible text is the real address, minus the scheme. A label like
+     "picture-wrap.com" is prettier but strands anyone reading the post as
+     plain text — copied, screenshotted, syndicated — on the homepage with
+     no way to reach the page it meant. The address has to be the thing on
+     screen. */
+  const bare = u => u.replace(/^https?:\/\//, '');
+  const link = `[[${bare(url)}|${url}]]`;
 
   /* Name alone is a stranger. Nationality, trade and age are what make a
      reader able to place someone they've never heard of — which is most
@@ -573,7 +576,7 @@ export function compose(group) {
       const stars = (film.stars || []).slice(0, howManyStars || 2);
       const line = stars.length ? `\n\nWith ${and(stars)}.` : '';
       const fu = `${SITE}/#/${slug(film.title)}/${film.id}`;
-      return `${named(film)}${line}\n\n[[picture-wrap.com|${fu}]]`;
+      return `${named(film)}${line}\n\n[[${bare(fu)}|${fu}]]`;
     }
     const listed = ordered.slice(0, count);
     const rest = ordered.length - listed.length;
@@ -583,7 +586,7 @@ export function compose(group) {
        301 of 300 characters with one star name each, and lost all five
        names over a single character. */
     const more = rest
-      ? `\n\n[[+${rest} more at picture-wrap.com|${url}]]`
+      ? `\n\n+${rest} more\n[[${bare(url)}|${url}]]`
       : '';
     return listed.map(i => `\u00b7 ${named(i, howManyStars)}`).join('\n') + more;
   };
