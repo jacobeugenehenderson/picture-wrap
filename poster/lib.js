@@ -413,30 +413,65 @@ export function longDate(iso) {
    because everyone has half a dozen and only one is the reason they're
    here. "actor" is used regardless of gender; guessing gendered nouns from
    P21 is a choice this project doesn't need to make. */
-const OCCUPATION_ORDER = [
-  'actor', 'film actor', 'television actor', 'stage actor', 'voice actor',
-  'film director', 'director', 'screenwriter', 'cinematographer',
-  'film producer', 'producer', 'composer', 'film editor',
+/* Taken from how they are credited on THIS picture, not from P106.
+
+   P106 lists everything a person ever was, and picking from it means
+   guessing what they are known for — which gets Woody Allen wrong, since
+   an alphabetical or actor-first order calls a director an actor.
+
+   Crew outranks cast: if you directed a picture and appeared in it, you
+   are its director. */
+const CREDIT_NOUNS = [
+  ['wdt:P57',   'director'],
+  ['wdt:P58',   'screenwriter'],
+  ['wdt:P344',  'cinematographer'],
+  ['wdt:P86',   'composer'],
+  ['wdt:P162',  'producer'],
+  ['wdt:P1040', 'editor'],
+  ['wdt:P2554', 'production designer'],
+  ['wdt:P4805', 'costume designer'],
+  ['wdt:P161',  'actor'],
+  ['wdt:P725',  'voice actor'],
 ];
 
 export const personContextQuery = person => `
-SELECT ?dob (GROUP_CONCAT(DISTINCT ?dem; separator="|") AS ?dems)
-       (GROUP_CONCAT(DISTINCT ?occLabel; separator="|") AS ?occs) WHERE {
+SELECT ?dob (GROUP_CONCAT(DISTINCT ?dem; separator="|") AS ?dems) WHERE {
   OPTIONAL { wd:${person} wdt:P569 ?dob }
   OPTIONAL {
     { SELECT (MIN(?cc) AS ?c) WHERE { wd:${person} wdt:P27 ?cc } }
     ?c wdt:P1549 ?dem . FILTER(LANG(?dem) = "en")
   }
-  OPTIONAL { wd:${person} wdt:P106 ?occ . ?occ rdfs:label ?occLabel . FILTER(LANG(?occLabel) = "en") }
 } GROUP BY ?dob`;
 
-export async function personContext(person, diedISO) {
+/* Which of the credit properties actually links this person to this
+   picture — asked directly, one query, highest-ranking wins. */
+export async function creditNoun(person, films) {
+  const list = (Array.isArray(films) ? films : [films]).filter(Boolean);
+  if (!list.length) return null;
+  try {
+    /* Across ALL their pictures in this closing, not whichever happened to
+       be first in the queue — someone who directed one and acted in
+       another should read as a director. */
+    const rows = await sparql(`
+      SELECT DISTINCT ?prop WHERE {
+        VALUES ?prop { ${CREDIT_NOUNS.map(([p]) => p).join(' ')} }
+        VALUES ?film { ${list.map(f => `wd:${f}`).join(' ')} }
+        ?film ?prop wd:${person} .
+      }`);
+    const held = new Set(rows.map(r => r.prop.replace(
+      'http://www.wikidata.org/prop/direct/', 'wdt:')));
+    return CREDIT_NOUNS.find(([p]) => held.has(p))?.[1] || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function personContext(person, diedISO, films) {
   try {
     const [row] = await sparql(personContextQuery(person));
     if (!row) return {};
 
-    const all = (row.occs || '').split('|').map(s => s.trim().toLowerCase());
-    const occupation = OCCUPATION_ORDER.find(o => all.includes(o)) || null;
+    const occupation = await creditNoun(person, films);
 
     let age = null;
     if (row.dob && diedISO) {
@@ -601,11 +636,11 @@ export function compose(group) {
 
   /* --- one: the person --- */
   const lead = items.length === 1
-    ? `${who}, died ${when}${aged} \u2014 the last of ${named(items[0])}.\n\n` +
-      `Nobody who made it is left.\n\n${link}`
+    ? `${who}, died ${when}${aged}.\n\n` +
+      `The last of the makers of ${named(items[0])}.\n\n${link}`
     : `${who}, died ${when}${aged}.\n\n` +
       `${WORDS[items.length] || items.length} pictures have lost the last ` +
-      `of their company.\n\n${link}`;
+      `of their makers.\n\n${link}`;
 
   /* --- two: the pictures --- */
   /* A picture with a poster outranks one without, then fame decides.

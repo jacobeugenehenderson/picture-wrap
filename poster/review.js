@@ -262,7 +262,7 @@ for (const [i, group] of groups.entries()) {
   }
 
   if (!group.last.context) {
-    group.last.context = await personContext(group.last.id, group.last.died);
+    group.last.context = await personContext(group.last.id, group.last.died, group.items.map(i => i.id));
   }
 
   console.log(describe(group, i, groups.length));

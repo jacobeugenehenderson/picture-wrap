@@ -38,7 +38,7 @@ for (const [i, group] of groups.entries()) {
     await sleep(80);
   }
 
-  group.last.context = await personContext(group.last.id, group.last.died);
+  group.last.context = await personContext(group.last.id, group.last.died, group.items.map(i => i.id));
   const parts = compose(group);
   const [face, posters] = await imagesFor(group);
 
