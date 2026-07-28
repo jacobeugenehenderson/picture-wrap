@@ -114,7 +114,7 @@ async function consider(name, source) {
        the one error this project can't take back. */
     const { alive, unknown, ok } = await survivorsViaTmdb(film.id, details.tmdbId);
     if (alive.length) {
-      log(`      skip  ${film.filmLabel} — still living: ${alive.slice(0, 3).join(', ')}`);
+      log(`      skip  ${film.filmLabel} — still living: ${alive.slice(0, 3).map(a => a.name).join(', ')}`);
       continue;
     }
 

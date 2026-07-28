@@ -352,7 +352,7 @@ async function viewFilm(id) {
   }
 
   const extra = await addCharacters(meta.tmdb, people);
-  unrecorded = extra.unknown;
+  undated = extra.unknown;
 
   /* People TMDB credits and Wikidata knows, just not on this picture. They
      belong in the roster — they were in the film and we know their dates. */
@@ -361,11 +361,12 @@ async function viewFilm(id) {
   }
 
   everyone = await repairNames([...people.values()], 'p', 'pLabel');
+  meta.qid = id;                     /* the roster needs it for the edit link */
   filmMeta = meta;
 
   if (!everyone.length) {
     setTitle(filmName(meta));
-    show(titleCard(meta, null) +
+    show(titleCard(meta, null, null) +
       `<p class="state">Wikidata has no one credited on this one.</p>`);
     return;
   }
@@ -379,19 +380,44 @@ async function viewFilm(id) {
      until now the browser had its own version of it that quietly counted
      anyone TMDB named and Wikidata couldn't place as dead. Same file now.
      The Wizard of Oz is the page to test on: Caren Marsh is alive. */
-  tmdbAlive = [];
   tmdbFailed = false;
   if (everyone.every(p => p.dod) && meta.tmdb) {
     state('Checking the cast against TMDB…');
     const found = await survivors({
       film: id, tmdbId: meta.tmdb, sparql: sparqlRows, tmdb: tmdbGet,
     });
-    tmdbAlive = found.alive;
 
-    /* A check that didn't run is not a check that found nobody. If we
-       couldn't reach TMDB, we decline to raise the bar rather than make
-       the strongest claim on the site out of a failed request. */
+    /* They go INTO the list. They were in the picture and we know they are
+       living, which is the entire qualification for a row above the bar —
+       and the bar then falls to where it belongs without anything being
+       told to move it.
+
+       They were previously left in "Credited, no record" and explained in
+       a sentence underneath, which was wrong twice over: there IS a record,
+       it is why the picture is not in the Vault, and a person the page is
+       about does not belong in a fold at the bottom. Nothing counts
+       anything for you; the position of the bar is the reading. */
+    const listed = new Set(everyone.map(p => String(p.tmdbPerson || '')));
+    for (const person of found.alive) {
+      if (listed.has(String(person.tmdbId))) continue;
+      everyone.push({
+        p: person.wikidata || '',
+        pLabel: person.name,
+        dob: person.born || '',
+        dod: '',
+        credits: person.role ? [person.role] : [],
+        onScreen: person.onScreen,
+      });
+    }
+
+    /* Not the same as finding nobody. Without an answer we decline to
+       raise the bar rather than make the strongest claim on the site out
+       of a failed request. */
     tmdbFailed = !found.ok;
+
+    /* Anyone now in the list is no longer unaccounted for. */
+    const shown = new Set(found.alive.map(a => String(a.tmdbId)));
+    undated = undated.filter(u => !shown.has(String(u.id)));
   }
 
   renderRoster();
@@ -451,7 +477,6 @@ async function addCharacters(tmdbFilm, people) {
       resolved.push({
         ...r,
         onScreen: true,
-        viaTmdb: true,
         credits: roles2.get(r.tmdb) ? [roles2.get(r.tmdb)] : [],
       });
     }
@@ -472,11 +497,7 @@ async function addCharacters(tmdbFilm, people) {
 /* Held between renders. */
 let everyone = [];
 let filmMeta = {};
-let unrecorded = [];
-
-/* People TMDB records as living whom Wikidata never attached to this film.
-   Non-empty means the picture has not wrapped, whatever Wikidata thinks. */
-let tmdbAlive = [];
+let undated = [];
 
 /* The TMDB check was needed and did not complete. Not the same as finding
    nobody, and it must not read as one. */
@@ -505,22 +526,16 @@ function renderRoster() {
   /* The wrap is always judged on everyone credited, never on what happens
      to be unfolded. Collapsing the crew doesn't close a picture.
 
-     And never on Wikidata alone. tmdbAlive holds people TMDB records as
-     living whom Wikidata did not attach to this film; one of them is
-     enough to keep the bar down, because they were in the picture and
-     they are here. */
+     Survivors TMDB knows and Wikidata did not attach to the film are in
+     `everyone` by the time this runs, so they hold the bar down by being
+     in the list, the same way anybody else does. */
   const allLiving = everyone.filter(p => !p.dod);
-  const wrapDate = allLiving.length === 0 && tmdbAlive.length === 0 && !tmdbFailed
+  const wrapDate = allLiving.length === 0 && !tmdbFailed
     ? everyone.map(p => p.dod).sort().pop()
     : null;
 
   const front = split(cast);
   const back  = split(crew);
-
-  /* The state worth naming: every face is gone, but someone who made it
-     is still here. */
-  const castComplete =
-    cast.length > 0 && front.living.length === 0 && allLiving.length > 0;
 
   const shareText = wrapDate
     ? `Nobody who made ${filmName(filmMeta)} is left.`
@@ -559,39 +574,13 @@ function renderRoster() {
     </details>` : '';
 
   show(
-    titleCard(filmMeta, wrapDate) +
-    (lastOne
-      ? `<p class="closing-line">${esc(lastOne.pLabel)} was the last of its makers.</p>`
-      : '') +
+    titleCard(filmMeta, wrapDate, lastOne) +
     shareControls(shareText, location.hash) +
 
-    /* Wrapped: the bar caps everything, then the crew card, then the cast.
-       Still running: the crew card sits above, and the bar does its usual
-       job inside the cast list. */
-    (wrapped ? `<ul class="roster capped">${bar}</ul>` : '') +
+    /* The bar is under the title when the picture has wrapped, so nothing
+       caps the roster any more. Still running: the crew card sits above,
+       and the bar does its usual job inside the cast list. */
     crewFold +
-
-    (castComplete
-      ? `<p class="card-thin">Everyone on screen is gone. Someone who worked
-         behind the camera is still here.</p>`
-      : '') +
-
-    /* Said plainly, because otherwise the page looks like it simply failed
-       to notice: Wikidata has everyone it lists as dead, and the bar is
-       still down because somebody else was in the picture. */
-    (tmdbFailed
-      ? `<p class="card-thin">Everyone Wikidata lists has died, but the
-         check against TMDB didn&rsquo;t complete, so this page won&rsquo;t
-         call the picture wrapped. Reload to try again.</p>`
-      : '') +
-
-    (tmdbAlive.length
-      ? `<p class="card-thin">Everyone Wikidata lists has died, but TMDB
-         records ${tmdbAlive.length === 1 ? 'someone' : `${tmdbAlive.length} people`}
-         on this picture who ${tmdbAlive.length === 1 ? 'is' : 'are'} still
-         living: ${esc(tmdbAlive.slice(0, 4).join(', '))}${
-           tmdbAlive.length > 4 ? ` and ${tmdbAlive.length - 4} more` : ''}.</p>`
-      : '') +
 
     `<ul class="roster">` +
       front.living.map(personRow).join('') +
@@ -599,30 +588,30 @@ function renderRoster() {
       front.dead.map(personRow).join('') +
     `</ul>` +
 
-    /* People TMDB credits and Wikidata doesn't. Listed, never counted —
-       we can't say whether they're living, and pretending otherwise in
-       either direction would be a guess. */
-    (unrecorded.length ? `
-      <details class="fold">
-        <summary>
-          <span class="fold-title">Credited, no record</span>
-          <span class="fold-hint">${unrecorded.length}</span>
-        </summary>
-        <p class="fold-note">
-          <a href="https://bsky.app/profile/${esc(BLUESKY)}" rel="noopener">Corrections welcome</a>
-        </p>
-        <ul class="roster">
-          ${unrecorded.map(p => `
-            <li>
-              <span class="portrait" aria-hidden="true"></span>
-              <span class="who">
-                <span class="who-name">${esc(p.name)}</span>
-                ${p.character ? `<span class="who-role">${esc(p.character)}</span>` : ''}
-              </span>
-              <span class="when"><span class="when-span when-open">&mdash;</span></span>
-            </li>`).join('')}
-        </ul>
-      </details>` : '')
+    /* The third zone. Above the bar, living; below it, gone; and below the
+       credits entirely, people credited on the picture that nobody has
+       recorded a date for.
+
+       They are in the list because they were in the film, and they are
+       outside the reckoning because a blank is neither a death nor a
+       pulse. Set apart rather than folded away: no heading, no count, no
+       note asking to be corrected — a label like "no record" turns an
+       absence into a finding. The dash is the whole disclosure. */
+    (undated.length
+      ? `<ul class="roster unlisted">${undated.map(undatedRow).join('')}</ul>`
+      : '') +
+
+    /* The way to fix any of this. It points at Wikidata rather than at us
+       because that is where a correction does the most good — the item is
+       read by everything downstream, and this archive is only one of the
+       things reading it. It used to live inside the fold that has just
+       been removed, which meant the one affordance on the page was hidden
+       behind a disclosure triangle. */
+    (filmMeta.qid
+      ? `<p class="correction">A name missing, or a date?
+           <a href="https://www.wikidata.org/wiki/${esc(filmMeta.qid)}"
+              rel="noopener">Edit this picture on Wikidata</a>.</p>`
+      : '')
   );
 }
 
@@ -694,7 +683,7 @@ async function repairNames(rows, idKey, labelKey) {
   return rows;
 }
 
-function titleCard(meta, wrappedOn) {
+function titleCard(meta, wrappedOn, lastOne) {
   /* Type and country first, because on an obscure or foreign title they're
      the difference between recognising what you're looking at and not.
      "1962 · Japanese television series" says more than a director's name
@@ -706,34 +695,62 @@ function titleCard(meta, wrappedOn) {
   ].filter(Boolean).join(' &middot; ');
 
   const stamp = wrappedOn
-    /* No caveat line here. The "Credited, no record" fold below says the
-       same thing and says it better, because it names the people it's
-       talking about. Two versions of one disclosure is one too many. */
     ? `<p class="card-wrapped">Final picture wrap &middot; ${esc(longDate(wrappedOn))}</p>`
     : '';
 
+  /* Where the bar ends up. It rises as the living list shrinks, and when
+     there is nobody left it leaves the roster entirely and comes to rest
+     under the title — which is both the top of the page and the end of
+     the journey the whole design is about.
+
+     So there is exactly one bar per picture and its position is the
+     entire answer. Under the title: wrapped. Anywhere else: not. Nothing
+     needs a badge, a legend or a sentence, and a reader who has seen one
+     wrapped picture can read every other page at a glance. */
   return `
-    <section class="card">
+    <section class="card${wrappedOn ? ' is-wrapped' : ''}">
       <h2>${esc(meta.label || 'Untitled')}</h2>
+      ${wrappedOn
+        ? `<hr class="bar bar-title" aria-label="This picture has wrapped.">`
+        : ''}
       ${bits ? `<p class="card-meta">${bits}</p>` : ''}
       ${stamp}
+      ${lastOne
+        ? `<p class="closing-line">${esc(lastOne.pLabel)} was the last of its makers.</p>`
+        : ''}
     </section>`;
 }
 
+/* Same row, minus everything we don't have: no portrait, no link, no
+   dates. Only a name, whatever they were credited as, and the dash. */
+function undatedRow(p) {
+  return `
+    <li>
+      <span class="portrait" aria-hidden="true"></span>
+      <span class="who">
+        <span class="who-name">${esc(p.name)}</span>
+        ${p.character ? `<span class="who-role">${esc(p.character)}</span>` : ''}
+      </span>
+      <span class="when"><span class="when-span when-open">&mdash;</span></span>
+    </li>`;
+}
+
 function personRow(p) {
-  const qid = p.p.split('/').pop();
+  /* Somebody TMDB credits and Wikidata has no item for still gets a row —
+     they were in the picture. There is just nowhere to send you. */
+  const qid = p.p ? p.p.split('/').pop() : '';
   const gone = Boolean(p.dod);
   return `
-    <li class="is-link ${gone ? 'gone' : 'living'}" data-go="${esc(path(p.pLabel, qid))}">
+    <li class="${qid ? 'is-link ' : ''}${gone ? 'gone' : 'living'}"${
+      qid ? ` data-go="${esc(path(p.pLabel, qid))}"` : ''}>
       ${p.img
         ? `<img class="portrait" src="${esc(thumb(p.img))}" alt="" loading="lazy">`
         : `<span class="portrait" aria-hidden="true"></span>`}
       <span class="who">
         <span class="who-name">${esc(p.pLabel || qid)}</span>
         ${p.credits.length
-          ? `<span class="who-role">${esc(p.credits.join(' &middot; ').replace(/&middot;/g, '·'))}` +
-            `${p.viaTmdb ? '<span class="via" title="Credited on TMDB; not in this film\'s Wikidata cast list">+</span>' : ''}</span>`
-          : (p.viaTmdb ? `<span class="who-role"><span class="via">+</span></span>` : '')}
+          ? `<span class="who-role">${esc(p.credits.join(' &middot; ').replace(/&middot;/g, '·'))}</span>`
+          : ''}
       </span>
       <span class="when">${lifespan(p)}</span>
     </li>`;

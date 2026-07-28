@@ -269,6 +269,19 @@ export async function survivors({ film, tmdbId, sparql, tmdb }) {
 
     const names = new Map(everyone.map(c => [String(c.id), c.name]));
 
+    /* What each person did on the picture, so a survivor can be shown as a
+       row in the roster rather than described in a sentence underneath it.
+       Cast entries carry a character, crew entries carry a job. */
+    const billing = new Map();
+    for (const c of everyone) {
+      const id = String(c.id);
+      if (billing.has(id)) continue;
+      billing.set(id, {
+        role: c.character || c.job || null,
+        onScreen: Array.isArray(cast) && cast.some(x => String(x.id) === id),
+      });
+    }
+
     /* One TMDB id can be claimed by more than one Wikidata item, and when
        it is, taking the first row is not a choice — SPARQL does not order
        results, so it is a coin flip that lands differently between runs.
@@ -291,6 +304,7 @@ export async function survivors({ film, tmdbId, sparql, tmdb }) {
       if (items.size !== 1) continue;       /* Contested. Nobody wins. */
       const r = [...items.values()][0];
       wikidata.set(id, {
+        entity: r.p || null,
         name: r.pLabel || null,
         born: day(r.dob),
         precision: Number(r.prec ?? 0),
@@ -321,6 +335,7 @@ export async function survivors({ film, tmdbId, sparql, tmdb }) {
     const people = missing.map(id => ({
       id,
       name: wikidata.get(id)?.name || names.get(id) || id,
+      wdEntity: wikidata.get(id)?.entity || null,
       wd: wikidata.get(id) || null,
       tmdb: tmdbDates.get(id) || null,
     }));
@@ -329,13 +344,24 @@ export async function survivors({ film, tmdbId, sparql, tmdb }) {
     const buried = await deathsByName(
       people.filter(p => bornYear(p) && statusOf(p) !== 'dead'), sparql);
 
+    /* `alive` carries people, not names. The poster only ever wanted the
+       name, but the site has to put a survivor in the list beside everyone
+       else — and a name alone cannot be a row. */
     const alive = [];
     let unknown = 0;
     for (const person of people) {
       if (buried.has(person.id)) continue;   /* Wikidata knows better. */
       const status = statusOf(person);
-      if (status === 'alive') alive.push(person.name);
-      else if (status === 'unknown') unknown++;
+      if (status === 'alive') {
+        alive.push({
+          tmdbId: person.id,
+          name: person.name,
+          born: person.wd?.born || person.tmdb?.born || null,
+          wikidata: person.wdEntity || null,
+          role: billing.get(person.id)?.role || null,
+          onScreen: billing.get(person.id)?.onScreen ?? true,
+        });
+      } else if (status === 'unknown') unknown++;
     }
 
     return { alive, unknown, ok: true };

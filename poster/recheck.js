@@ -71,7 +71,7 @@ async function recheck(entry) {
   const wdSurvivor = await sparql(survivorQuery(entry.id)).catch(() => null);
   if (wdSurvivor === null) return { verdict: 'unchecked' };
   if (wdSurvivor.length) {
-    return { verdict: 'reopened', survivors: ['(in Wikidata cast list)'], unknown: 0 };
+    return { verdict: 'reopened', survivors: [{ name: '(in Wikidata cast list)' }], unknown: 0 };
   }
 
   /* No TMDB id, no verification possible — the entry stays, because the
@@ -131,7 +131,8 @@ for (let i = 0; i < todo.length; i += CONCURRENCY) {
     if (r.verdict === 'reopened') {
       reopened.push({ entry: r.entry, survivors: r.survivors });
       console.log(`   REOPENED  ${r.entry.title} (${r.entry.year || '????'}) ` +
-        `— ${r.survivors.slice(0, 3).join(', ')}${r.survivors.length > 3 ? `, +${r.survivors.length - 3}` : ''}`);
+        `— ${r.survivors.slice(0, 3).map(x => x.name).join(', ')}` +
+        `${r.survivors.length > 3 ? `, +${r.survivors.length - 3}` : ''}`);
     } else if (r.verdict === 'unchecked') unchecked++;
     else { closed++; r.entry.unknownCount = r.unknown ?? 0; }
   }

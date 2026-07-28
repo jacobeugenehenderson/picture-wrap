@@ -328,12 +328,12 @@ main,
 }
 
 /* Shown only when a film has fully wrapped. */
+/* No box. The bar above the title has already said "wrapped" — this line
+   is only here for the date, and framing it made two announcements out of
+   one fact. It now sits directly under .card-meta as its second line, same
+   treatment, gold instead of grey. */
 .card-wrapped {
-  display: inline-block;
-  margin-top: 1rem;
-  padding: 0.34rem 0.7rem;
-  border: 1px solid var(--gold);
-  border-radius: 2px;
+  margin-top: 0.28rem;
   font-size: var(--size-tiny);
   letter-spacing: 0.17em;
   text-transform: uppercase;
@@ -433,7 +433,7 @@ main,
 /* The one sentence on a closed picture's page. Set like the Vault's line
    — italic serif, the register of something said rather than labelled. */
 .closing-line {
-  margin-top: 0.9rem;
+  margin-top: 0.72rem;
   font-family: var(--font-display);
   font-style: italic;
   font-size: 1.02rem;
@@ -509,15 +509,6 @@ main,
   line-height: 1.25;
 }
 
-/* Marks a name that came from TMDB's cast list rather than Wikidata's.
-   Their dates are Wikidata's; only their presence in this film is TMDB's. */
-.via {
-  margin-left: 0.35rem;
-  font-style: normal;
-  color: var(--ink-faint);
-  cursor: help;
-}
-
 /* Always its own line under the name, and always allowed to wrap. It was
    inline with nowrap, which put short credits beside the name and long
    ones beneath it — and let a voice actor with nine characters run clean
@@ -569,6 +560,60 @@ main,
 .roster li.gone .portrait { opacity: 0.72; }
 
 
+/* --- the third zone -------------------------------------------------- */
+
+/* Credited on the picture, no date on record anywhere. Below the credits
+   rather than inside them, because they take no position relative to the
+   bar — counting a blank as a death is the error this site was built to
+   stop, and counting it as a pulse would hold every old picture open for
+   ever.
+
+   Set back, not hidden. The portrait column goes, which shifts the names
+   left and is most of the signal; the type quietens; the rows tighten. It
+   should read as an appendix to the list, not as rows that failed. */
+.roster.unlisted {
+  margin-top: 1.2rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--rule);
+}
+
+.roster.unlisted li {
+  padding-top: 0.42rem;
+  padding-bottom: 0.42rem;
+  border-bottom: none;
+  gap: 0.6rem;
+}
+
+.roster.unlisted .portrait { display: none; }
+
+.roster.unlisted .who-name {
+  font-size: 0.96rem;
+  color: var(--ink-faint);
+}
+
+.roster.unlisted .who-role { color: var(--ink-faint); }
+
+
+/* The one thing a reader can do about a gap. Quiet, and last — it should
+   be findable by someone who went looking, not offered to everyone who
+   didn't. */
+.correction {
+  margin-top: 1.1rem;
+  font-size: var(--size-small);
+  color: var(--ink-faint);
+}
+
+.correction a { color: var(--ink-soft); }
+
+
+/* The bar's last position: under the title, once the picture has wrapped.
+   Same element and same gradient as the divider in the roster, because it
+   IS that divider — it has simply run out of living names to sit under. */
+.bar-title {
+  margin: 0.42rem 0 0.62rem;
+}
+
+
 /* 8. THE BAR ============================================================= */
 
 /* Not a section heading. No label, no count. Its position is the message:
@@ -590,10 +635,7 @@ main,
    boundary inside one list rather than a gap between two lists. */
 .roster .bar { margin: 0.5rem 0; }
 
-/* The wrapped case: the bar sits alone above everything, capping the page.
-   Slightly more air beneath, because nothing follows it on its own line. */
-.roster.capped { margin-bottom: 0.9rem; }
-.roster.capped .bar { margin: 0.9rem 0 0; }
+
 
 
 /* 9. LANDING & STATES ==================================================== */
@@ -1013,16 +1055,7 @@ main,
      character name. It now also carries crew job titles — Director,
      Cinematography — so hiding it removes the only thing telling you why
      a person is on the page. It stays; it just gets smaller. */
-  /* Marks a name that came from TMDB's cast list rather than Wikidata's.
-   Their dates are Wikidata's; only their presence in this film is TMDB's. */
-.via {
-  margin-left: 0.35rem;
-  font-style: normal;
-  color: var(--ink-faint);
-  cursor: help;
-}
-
-.who-role { font-size: var(--size-tiny); }
+  .who-role { font-size: var(--size-tiny); }
 
   .card-portrait { flex-basis: 62px; width: 62px; height: 80px; }
 }

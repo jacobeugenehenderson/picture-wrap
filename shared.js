@@ -141,12 +141,46 @@ export function longDate(iso) {
 }
 
 /* Wikidata lists several demonym forms and we want the adjective:
-   "Danish film", not "Dane film" or "Danes film". Prefer the longest
-   non-plural form with an adjective ending — length alone isn't enough,
-   since "Spaniard" is longer than "Spanish". */
+   "Danish film", not "Dane film" or "Danes film". Prefer the longest form
+   that isn't a plural — that gives Danish over Dane, American over
+   Americans, British over Briton — falling back to whatever exists for
+   countries with only a plural-looking form (Swiss).
+
+   PREFERRED overrides that, because longest-adjective is a rule of thumb
+   and rules of thumb have a tail. Two kinds of entry, and the difference
+   is worth keeping straight:
+
+   Argentina is the one that is wrong today. Wikidata offers "Argentine"
+   and "Argentinian"; the heuristic takes the longer, and 83 Vault entries
+   read "Argentinian film" where a film writer would put "Argentine".
+
+   The rest are right at the moment and would break if Wikidata gained a
+   longer form. Each of these countries currently publishes exactly one
+   English demonym, none of which matches the adjective pattern — Swiss,
+   Thai, Dutch, Slovak, Czechoslovak all fail it and survive only because
+   the code falls through to "whatever is in the pool". Add "Swissish" or
+   "Czechoslovakian" upstream and the heuristic would take it. Naming them
+   here costs nothing and removes the trapdoor.
+
+   Checked against Wikidata on 28 July 2026. Anything added later should
+   be checked the same way rather than assumed. */
+const PREFERRED = new Set([
+  'Argentine',      /* not Argentinian — the only one currently wrong */
+  'Yugoslav',       /* the rest are protective, not corrective */
+  'Czechoslovak',
+  'Slovak',
+  'Swiss',
+  'Thai',
+  'Dutch',
+]);
+
 export function pickDemonym(forms) {
   const all = String(forms || '').split('|').map(s => s.trim()).filter(Boolean);
   if (!all.length) return null;
+
+  const preferred = all.find(f => PREFERRED.has(f));
+  if (preferred) return preferred;
+
   const singular = all.filter(f => !f.endsWith('s'));
   const pool = singular.length ? singular : all;
   const adjective = pool.filter(f => /(ish|ian|ean|ese|an|ch|sh|ic)$/i.test(f));

@@ -114,7 +114,7 @@ async function harvest(person, state, queue) {
        real sweep. */
     const { alive, unknown, ok } = await survivorsViaTmdb(item.id, item.tmdbId);
     if (alive.length) {
-      log(`      skip  ${item.title} — still living: ${alive.slice(0, 3).join(', ')}`);
+      log(`      skip  ${item.title} — still living: ${alive.slice(0, 3).map(a => a.name).join(', ')}`);
       continue;
     }
 
@@ -265,7 +265,7 @@ async function backfill(range) {
            278 of them, last time. */
         const { alive, unknown, ok } = await survivorsViaTmdb(id, details.tmdbId);
         if (alive.length) {
-          log(`   -  ${match.filmLabel} — still living: ${alive.slice(0, 2).join(', ')}`);
+          log(`   -  ${match.filmLabel} — still living: ${alive.slice(0, 2).map(a => a.name).join(', ')}`);
           continue;
         }
 
