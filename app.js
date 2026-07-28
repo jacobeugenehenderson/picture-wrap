@@ -568,7 +568,7 @@ function personRow(p) {
   const qid = p.p.split('/').pop();
   const gone = Boolean(p.dod);
   return `
-    <li class="is-link ${gone ? 'gone' : 'living'}" data-go="#/person/${esc(slug(p.pLabel || ''))}/${esc(qid)}">
+    <li class="is-link ${gone ? 'gone' : 'living'}" data-go="#/${esc(slug(p.pLabel || ''))}/${esc(qid)}">
       ${p.img
         ? `<img class="portrait" src="${esc(thumb(p.img))}" alt="" loading="lazy">`
         : `<span class="portrait" aria-hidden="true"></span>`}
@@ -777,7 +777,7 @@ async function viewPerson(id) {
 function filmRow(f, wrapped) {
   const qid = f.film.split('/').pop();
   return `
-    <li class="is-link ${wrapped ? 'gone' : 'living'}" data-go="#/film/${esc(slug(f.filmLabel || ''))}/${esc(qid)}">
+    <li class="is-link ${wrapped ? 'gone' : 'living'}" data-go="#/${esc(slug(f.filmLabel || ''))}/${esc(qid)}">
       <span class="who">
         <span class="who-name">${esc(f.filmLabel || qid)}</span>
       </span>
@@ -993,7 +993,7 @@ function archiveRow(group) {
       </p>
       <ul class="closing-films">
         ${films.map(f => `
-          <li class="is-link" data-go="#/film/${esc(slug(f.title || ''))}/${esc(f.id)}">
+          <li class="is-link" data-go="#/${esc(slug(f.title || ''))}/${esc(f.id)}">
             <span class="closing-film">
               <span class="who-name">${esc(f.title)}</span>
               ${[
@@ -1134,9 +1134,9 @@ async function viewLanding() {
   const recent = archive.slice(0, 5);
 
   const picks = recent.length
-    ? recent.map(f => `<button data-go="#/film/${esc(slug(f.title || ''))}/${esc(f.id)}">${esc(f.title)}` +
+    ? recent.map(f => `<button data-go="#/${esc(slug(f.title || ''))}/${esc(f.id)}">${esc(f.title)}` +
         `<span class="pick-year">${esc(year(f.wrapped))}</span></button>`).join('')
-    : PICKS.map(p => `<button data-go="#/film/${esc(slug(p.name))}/${p.id}">${esc(p.name)}</button>`).join('');
+    : PICKS.map(p => `<button data-go="#/${esc(slug(p.name))}/${p.id}">${esc(p.name)}</button>`).join('');
 
   /* The way through sits below the pictures, not up in the masthead —
      you should meet a few closings before you're offered all of them. */
@@ -1168,24 +1168,48 @@ document.addEventListener('click', e => {
   if (el) location.hash = el.dataset.go;
 });
 
+/* Is this Q-id a person or a picture? One query, ~0.16s, and it lands
+   inside the loading state the page already shows — so the URL doesn't
+   have to carry a word explaining itself. */
+const kindCache = new Map();
+
+async function kindOfId(id) {
+  if (kindCache.has(id)) return kindCache.get(id);
+  try {
+    const rows = await sparql(`
+      SELECT (IF(BOUND(?human), "person", "title") AS ?kind) WHERE {
+        OPTIONAL { wd:${id} wdt:P31 wd:Q5 . BIND(1 AS ?human) }
+      }`);
+    const kind = flat(rows[0] || {}).kind || 'title';
+    kindCache.set(id, kind);
+    return kind;
+  } catch {
+    return 'title';
+  }
+}
+
 async function route() {
-  /* The Q-id can sit anywhere after the kind, so the readable part comes
-     first: #/person/barbara-adolph/Q807328. Scanning for it rather than
-     reading a fixed position also keeps every URL ever published working,
-     including the older #/person/Q807328/barbara-adolph form. */
+  /* URLs are #/barbara-adolph/Q807328 — the readable part, then the id.
+     The Q-id is found wherever it sits, so every URL ever published still
+     works, including #/person/Q807328/barbara-adolph and bare #/film/Q…. */
   const segments = location.hash.split('/').slice(1);
-  const kind = segments[0];
   const id = segments.find(s => /^Q\d+$/.test(s));
+  let kind = segments.find(s => ['film', 'person', 'archive', 'about'].includes(s));
   window.scrollTo(0, 0);
 
   try {
     if (kind === 'archive') { await viewArchive(); return; }
     if (kind === 'about') { viewAbout(); return; }
-    if (!id || !/^Q\d+$/.test(id)) { await viewLanding(); return; }
+    if (!id) { await viewLanding(); return; }
+
+    /* No kind in the URL: ask what the id is. */
+    if (kind !== 'film' && kind !== 'person') {
+      state('Looking…');
+      kind = (await kindOfId(id)) === 'person' ? 'person' : 'film';
+    }
 
     if (kind === 'film') await viewFilm(id);
-    else if (kind === 'person') await viewPerson(id);
-    else await viewLanding();
+    else await viewPerson(id);
   } catch (err) {
     state('Wikidata didn’t answer. Give it a moment and try again.');
     console.error(err);
