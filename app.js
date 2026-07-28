@@ -16,7 +16,7 @@
 
 import {
   CREW, CREDITS, CREDIT_PROPS, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
-  qid, year, longDate, pickDemonym, slug, sentence,
+  CREDIT_NOUNS, qid, year, longDate, pickDemonym, slug, sentence,
 } from './shared.js';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
@@ -698,7 +698,8 @@ SELECT (SAMPLE(?b) AS ?dob) (SAMPLE(?d) AS ?dod)
    and MAX(death date) gives the film its wrap date. */
 const filmographyQuery = id => `
 SELECT ?film ?filmLabel (SAMPLE(?y) AS ?year) (COUNT(DISTINCT ?c) AS ?credited)
-       (COUNT(DISTINCT ?cd) AS ?dead) (MAX(?dv) AS ?wrapped) WHERE {
+       (COUNT(DISTINCT ?cd) AS ?dead) (MAX(?dv) AS ?wrapped)
+       (GROUP_CONCAT(DISTINCT ?mine; separator="|") AS ?roles) WHERE {
   VALUES ?mine { ${VALUES} }
   ?film ?mine wd:${id} .
   ?film ?any ?c .
@@ -774,12 +775,29 @@ async function viewPerson(id) {
   );
 }
 
+/* What they did on this picture. The filmography query already binds the
+   property that links them; it was simply being thrown away. Several
+   roles are possible on one film — Woody Allen directs, writes and
+   appears — and all of them are worth showing. */
+function rolesOn(f) {
+  const held = new Set(String(f.roles || '').split('|')
+    .map(u => 'wdt:' + u.split('/').pop()));
+  const seen = new Set();
+  return CREDIT_NOUNS
+    .filter(([p]) => held.has(p))
+    .map(([, noun]) => noun)
+    .filter(n => !seen.has(n) && seen.add(n))
+    .map(sentence);
+}
+
 function filmRow(f, wrapped) {
   const qid = f.film.split('/').pop();
+  const roles = rolesOn(f);
   return `
     <li class="is-link ${wrapped ? 'gone' : 'living'}" data-go="#/${esc(slug(f.filmLabel || ''))}/${esc(qid)}">
       <span class="who">
         <span class="who-name">${esc(f.filmLabel || qid)}</span>
+        ${roles.length ? `<span class="who-role">${esc(roles.join(' &middot; ').replace(/&middot;/g, '·'))}</span>` : ''}
       </span>
       <span class="when">${wrapped ? esc(longDate(f.wrapped)) : esc(f.year || '')}</span>
     </li>`;
