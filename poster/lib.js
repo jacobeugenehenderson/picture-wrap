@@ -533,7 +533,7 @@ export function groupQueue(queue) {
 export function compose(group) {
   const { last, items } = group;
   const when = longDate(last.died);
-  const url = `${SITE}/#/person/${last.id}/${slug(last.name)}`;
+  const url = `${SITE}/#/person/${slug(last.name)}/${last.id}`;
   /* A label, not a fake address. See linkFacets in bluesky.js. */
   const link = `[[${last.name} at picture-wrap.com|${url}]]`;
 
@@ -570,7 +570,7 @@ export function compose(group) {
       const film = items[0];
       const stars = (film.stars || []).slice(0, howManyStars || 2);
       const line = stars.length ? `\n\nWith ${and(stars)}.` : '';
-      const fu = `${SITE}/#/film/${film.id}/${slug(film.title)}`;
+      const fu = `${SITE}/#/film/${slug(film.title)}/${film.id}`;
       return `${named(film)}${line}\n\n[[${named(film)} at picture-wrap.com|${fu}]]`;
     }
     const listed = ordered.slice(0, count);
