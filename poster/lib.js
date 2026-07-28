@@ -286,7 +286,17 @@ export async function resolvePerson(name) {
    there is no reason to ask twice. */
 const personCache = new Map();
 
-const OLDEST = 112;   /* no verified human has passed this */
+/* The age past which we stop claiming to know. Not "nobody has lived this
+   long" — Jeanne Calment reached 122, and the comment that used to sit
+   here saying otherwise was simply wrong. It is the age past which a birth
+   date and no death record stops being evidence of anything in either
+   direction, and the answer becomes 'unknown'.
+
+   It is still a chosen number, which is the honest thing to say about it.
+   The reason it is defensible is that it decides between 'alive' and
+   'unknown' — never 'dead' — so being wrong here costs a picture its
+   closing, not a false claim about a real person. */
+const OLDEST = 112;
 
 async function tmdbPerson(id) {
   if (personCache.has(id)) return personCache.get(id);
@@ -304,40 +314,64 @@ async function tmdbPerson(id) {
   return out;
 }
 
-/* January the first is not a birthday. It is what a cataloguer types when
-   the only thing known is a year, and in TMDB's older records it is
-   overwhelmingly that rather than a real date.
+/* Is this date a real date, or a year with a placeholder stapled to it?
 
-   Past this age we stop reading a bare 1 January as evidence of anything.
-   Bill Alcorn — "Soldier (uncredited)" in Mildred Pierce, born 1920-01-01,
-   nothing on IMDb, nothing on Wikidata — was vetoing the picture at 106.
-   That is not a survivor; it is a year with a placeholder stapled to it.
+   Wikidata answers this properly: every time value carries a precision,
+   and 11 means "to the day" while 9 means "only the year is known" — in
+   which case it still serialises as 1 January, because it has to
+   serialise as something. We ask for the precision rather than guessing
+   from the string.
 
-   Below the threshold the date is taken at face value, because there a
-   1 January birthday is mostly people actually born on 1 January, and the
-   cost of demoting them is a picture wrongly declared closed. */
-const PLACEHOLDER_AGE = 100;
-const placeholder = born => /-01-01$/.test(String(born));
+   TMDB publishes no precision at all, so there the 1 January ending is
+   the only signal available and it is a proxy, not a fact. That is the
+   limit of what the source supports, and it is why an uncorroborated
+   TMDB birthday on 1 January is treated as a year rather than a date. */
+const WD_PRECISION_DAY = 11;
+const toTheDay = date => !/-01-01$/.test(String(date));
 
-/* Was this person, as far as TMDB is concerned, alive?
+/* Dead, alive, or unknown — and the three are not interchangeable.
 
-   'dead'    — TMDB has a death date, or a birth date so old that no living
-               person could match it (a missing death date, not a survivor).
-   'alive'   — a birth date within a human lifespan and no death date.
-   'unknown' — TMDB has neither date, the date is a placeholder too old to
-               credit, or the lookup failed. NOT an answer. This is the
-               honest bucket and it must never be read as 'dead'. */
+   'dead'    — a death date, from either database. Only a recorded death
+               makes anyone dead. Nothing is inferred into this bucket.
+   'alive'   — a birth date we can actually credit, and no death anywhere.
+   'unknown' — no usable evidence. Not an answer, never read as 'dead'.
+
+   A birth date is creditable if it is precise, or if both databases give
+   one and agree on the year. A lone imprecise date is a year somebody
+   typed, and a year is not a person: Bill Alcorn, "Soldier (uncredited)"
+   in Mildred Pierce, exists as `1920-01-01` in TMDB and nowhere else at
+   all. That is not a survivor to set against a picture.
+
+   Note which way the errors run. 'alive' is what vetoes a closing, so
+   over-crediting a birth date costs a picture its wrap, while
+   under-crediting one risks closing a picture on somebody's silence. The
+   second is the expensive mistake, which is why corroboration is what
+   moves someone out of 'alive' — evidence, not arithmetic. */
 function statusOf(person) {
   if (!person) return 'unknown';
-  if (person.died) return 'dead';
-  if (!person.born) return 'unknown';
-  const born = Number(String(person.born).slice(0, 4));
-  if (!born) return 'unknown';
 
-  const age = new Date().getUTCFullYear() - born;
-  if (age > OLDEST) return 'dead';
-  if (age > PLACEHOLDER_AGE && placeholder(person.born)) return 'unknown';
-  return 'alive';
+  const died = person.wd?.died || person.tmdb?.died || null;
+  if (died) return 'dead';
+
+  const births = [
+    person.wd?.born
+      ? { year: Number(person.wd.born.slice(0, 4)),
+          exact: person.wd.precision >= WD_PRECISION_DAY }
+      : null,
+    person.tmdb?.born
+      ? { year: Number(person.tmdb.born.slice(0, 4)),
+          exact: toTheDay(person.tmdb.born) }
+      : null,
+  ].filter(b => b && b.year);
+
+  if (!births.length) return 'unknown';
+
+  const corroborated = births.length === 2 && births[0].year === births[1].year;
+  if (!births.some(b => b.exact) && !corroborated) return 'unknown';
+
+  /* Old enough that neither 'alive' nor 'dead' is a claim we can make. */
+  const age = new Date().getUTCFullYear() - Math.max(...births.map(b => b.year));
+  return age > OLDEST ? 'unknown' : 'alive';
 }
 
 /* Which of these people does Wikidata know to be dead, found by name?
@@ -352,19 +386,25 @@ function statusOf(person) {
    good key, but it is the key we have, and it is far better than deciding
    from TMDB's silence alone.
 
-   Guarded by birth year, which is why only people TMDB gave a birth date
-   to are asked about. An exact name match is common enough to be dangerous
-   on its own — there are several of most names — but a name AND a birth
-   year inside two years of each other is a different claim. If more than
-   one person clears that guard we have found ambiguity, not an answer, and
-   the caller keeps whatever it already believed.
+   Guarded on the birth year matching exactly, which is why only people
+   with a birth date are asked about. An exact name match is common enough
+   to be dangerous on its own — there are several of most names — but a
+   name and a birth year together is a different claim. If more than one
+   person clears the guard we have found ambiguity, not an answer, and the
+   caller keeps whatever it already believed.
 
-   Takes { id, name, record } and returns the set of TMDB ids that Wikidata
-   buries. Any failure returns an empty set: this pass can only ever move
-   someone from 'alive' to 'dead', so losing it is a false survivor, never
-   a false closing. */
+   The guard used to allow two years either side, on the reasoning that
+   sources disagree about birth years. They do — but "within two" is a
+   number chosen to feel safe rather than derived from anything, and its
+   effect is to widen a name match into a neighbourhood. A disagreement in
+   the year now simply means no match, which leaves the person exactly as
+   they were: still standing, still vetoing the picture. That is the
+   direction to fail in.
+
+   Takes { id, name, wd, tmdb } and returns the set of TMDB ids Wikidata
+   buries. Any failure returns an empty set: this pass can only move
+   someone out of 'alive', so losing it costs a closing, never a claim. */
 const NAME_BATCH = 60;
-const BIRTH_SLACK = 2;
 
 async function deathsByName(people) {
   const buried = new Set();
@@ -372,7 +412,7 @@ async function deathsByName(people) {
   /* Quotes and backslashes would break out of the SPARQL literal, and a
      name that long is a data error rather than a person. */
   const asking = people.filter(p =>
-    p.name && p.name.length <= 60 && !/["\\\n]/.test(p.name) && bornYear(p.record));
+    p.name && p.name.length <= 60 && !/["\\\n]/.test(p.name) && bornYear(p));
   if (!asking.length) return buried;
 
   for (let i = 0; i < asking.length; i += NAME_BATCH) {
@@ -398,11 +438,9 @@ async function deathsByName(people) {
     }
 
     for (const person of batch) {
-      const born = bornYear(person.record);
-      const candidates = (byName.get(person.name) || []).filter(r => {
-        const theirs = Number(String(r.dob || '').slice(0, 4));
-        return theirs && Math.abs(theirs - born) <= BIRTH_SLACK;
-      });
+      const born = bornYear(person);
+      const candidates = (byName.get(person.name) || []).filter(r =>
+        Number(String(r.dob || '').slice(0, 4)) === born);
 
       /* One match, and it has a death date. Anything else is a guess. */
       if (candidates.length === 1 && candidates[0].dod) buried.add(person.id);
@@ -412,11 +450,12 @@ async function deathsByName(people) {
   return buried;
 }
 
-const bornYear = record => Number(String(record?.born || '').slice(0, 4)) || 0;
+/* The year either database gives, preferring Wikidata where both do. */
+const bornYear = person =>
+  Number(String(person?.wd?.born || person?.tmdb?.born || '').slice(0, 4)) || 0;
 
 /* Wikidata hands back "1944-01-02T00:00:00Z"; TMDB hands back "1944-01-02".
-   Everything downstream — the placeholder test especially — wants the
-   second shape. */
+   Everything downstream wants the second shape. */
 const day = iso => (iso ? String(iso).slice(0, 10) : null);
 
 async function mapLimit(items, limit, fn) {
@@ -487,12 +526,20 @@ export async function survivorsViaTmdb(film, tmdbId) {
        LANGS, not "en": the label service hands back the bare Q-number when
        a person has no label in the language asked for, and this list is
        largely people who don't. A survivor reported as "Q134235006" in the
-       review queue is a name nobody can check. */
+       review queue is a name nobody can check.
+
+       The birth date comes through the full statement path rather than
+       `wdt:`, because that is the only way to reach its precision. A
+       truncated value serialises as 1 January whether the editor knew the
+       day or only the year, and those two are different evidence. */
     const rows = await sparql(`
-      SELECT ?tmdb ?pLabel ?dob ?dod WHERE {
+      SELECT ?tmdb ?pLabel ?dob ?prec ?dod WHERE {
         VALUES ?tmdb { ${missing.map(i => `"${i}"`).join(' ')} }
         ?p wdt:P4985 ?tmdb .
-        OPTIONAL { ?p wdt:P569 ?dob }
+        OPTIONAL {
+          ?p p:P569/psv:P569 ?birth .
+          ?birth wikibase:timeValue ?dob ; wikibase:timePrecision ?prec .
+        }
         OPTIONAL { ?p wdt:P570 ?dod }
         SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
       }`).catch(() => []);
@@ -501,7 +548,12 @@ export async function survivorsViaTmdb(film, tmdbId) {
     const wikidata = new Map();
     for (const r of rows) {
       if (wikidata.has(r.tmdb)) continue;   /* First item wins, as before. */
-      wikidata.set(r.tmdb, { name: r.pLabel || null, born: day(r.dob), died: day(r.dod) });
+      wikidata.set(r.tmdb, {
+        name: r.pLabel || null,
+        born: day(r.dob),
+        precision: Number(r.prec ?? 0),
+        died: day(r.dod),
+      });
     }
 
     /* Pass two — TMDB's own dates, for everyone Wikidata has not buried.
@@ -514,31 +566,29 @@ export async function survivorsViaTmdb(film, tmdbId) {
     const tmdb = new Map(
       await mapLimit(unburied, 8, async id => [id, await tmdbPerson(id)]));
 
-    /* One record per person, out of both. Neither database is preferred —
-       a date either of them holds is a date we have, and the only way to
-       get this wrong is to stop asking early. */
-    const people = missing.map(id => {
-      const w = wikidata.get(id) || {};
-      const t = tmdb.get(id) || {};
-      return {
-        id,
-        name: w.name || names.get(id) || id,
-        record: { born: w.born || t.born || null, died: w.died || t.died || null },
-      };
-    });
+    /* Both records, kept apart rather than merged. Whether two sources
+       independently give the same birth year is itself evidence, and
+       flattening them into one field throws that away — which is what a
+       tuned age threshold was standing in for before. */
+    const people = missing.map(id => ({
+      id,
+      name: wikidata.get(id)?.name || names.get(id) || id,
+      wd: wikidata.get(id) || null,
+      tmdb: tmdb.get(id) || null,
+    }));
 
     /* Pass three — Wikidata again, by name, for anyone still standing.
        Only those with a birth date: it is the guard against name
        collisions, and without it this would be guessing rather than
        matching. */
     const buried = await deathsByName(
-      people.filter(p => p.record.born && statusOf(p.record) !== 'dead'));
+      people.filter(p => bornYear(p) && statusOf(p) !== 'dead'));
 
     const alive = [];
     let unknown = 0;
     for (const person of people) {
       if (buried.has(person.id)) continue;   /* Wikidata knows better. */
-      const status = statusOf(person.record);
+      const status = statusOf(person);
       if (status === 'alive') alive.push(person.name);
       else if (status === 'unknown') unknown++;
     }
