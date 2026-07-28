@@ -112,11 +112,28 @@ async function harvest(person, state, queue) {
     /* Wikidata says everyone credited has died. Ask TMDB whether Wikidata
        knew the whole cast — 14 of 60 candidates failed this on the first
        real sweep. */
-    const { alive, unknown } = await survivorsViaTmdb(item.id, item.tmdbId);
+    const { alive, unknown, ok } = await survivorsViaTmdb(item.id, item.tmdbId);
     if (alive.length) {
       log(`      skip  ${item.title} — still living: ${alive.slice(0, 3).join(', ')}`);
       continue;
     }
+
+    /* An empty survivor list from a test that never ran is not evidence of
+       anything. When there IS a TMDB id and we still got no answer, the
+       lookup failed — leave the picture alone and let the next sweep have
+       it. It isn't recorded as seen, so it will come back round.
+
+       A picture with no TMDB id is a different case: there was nothing to
+       ask, that will be just as true tomorrow, and refusing it forever
+       would quietly drop the obscure and non-English end of cinema, which
+       is most of what closes. Those go through on Wikidata's answer alone,
+       flagged, the way the 113 already in the Vault did. */
+    if (!ok && item.tmdbId) {
+      log(`      defer ${item.title} — TMDB didn't answer; will retry`);
+      continue;
+    }
+    if (!item.tmdbId) item.unverified = true;
+
     item.unknownCount = unknown;
     await sleep(250);
     queue.push(item);
@@ -246,9 +263,17 @@ async function backfill(range) {
         /* Same verification the sweep does. Without it a backfill refills
            the Vault with exactly the false closings the re-check removed —
            278 of them, last time. */
-        const { alive, unknown } = await survivorsViaTmdb(id, details.tmdbId);
+        const { alive, unknown, ok } = await survivorsViaTmdb(id, details.tmdbId);
         if (alive.length) {
           log(`   -  ${match.filmLabel} — still living: ${alive.slice(0, 2).join(', ')}`);
+          continue;
+        }
+
+        /* Same rule as the sweep. A backfill runs for hours, so a TMDB
+           wobble in the middle of it would otherwise file a whole year on
+           an answer nobody gave. Unrecorded, so --resume picks it up. */
+        if (!ok && details.tmdbId) {
+          log(`   ?  ${match.filmLabel} — TMDB didn't answer; left for a re-run`);
           continue;
         }
 
@@ -258,6 +283,7 @@ async function backfill(range) {
         queue.push({
           id,
           unknownCount: unknown,
+          ...(details.tmdbId ? {} : { unverified: true }),
           title: match.filmLabel,
           year: match.year || String(y),
           wrapped: match.wrapped,

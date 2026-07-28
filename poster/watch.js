@@ -112,15 +112,24 @@ async function consider(name, source) {
        whether Wikidata knew the whole cast — without this the watcher
        drafts posts about pictures that still have living people, which is
        the one error this project can't take back. */
-    const { alive, unknown } = await survivorsViaTmdb(film.id, details.tmdbId);
+    const { alive, unknown, ok } = await survivorsViaTmdb(film.id, details.tmdbId);
     if (alive.length) {
       log(`      skip  ${film.filmLabel} — still living: ${alive.slice(0, 3).join(', ')}`);
+      continue;
+    }
+
+    /* The watcher drafts from a newsroom report rather than from Wikidata,
+       so it is already the least corroborated path here. A survivor test
+       that didn't run is the last thing it should treat as a pass. */
+    if (!ok && details.tmdbId) {
+      log(`      defer ${film.filmLabel} — TMDB didn't answer; not drafting`);
       continue;
     }
     queued++;
 
     queue.push({
       unknownCount: unknown,
+      ...(details.tmdbId ? {} : { unverified: true }),
       id: film.id,
       title: film.filmLabel,
       year: film.year || null,

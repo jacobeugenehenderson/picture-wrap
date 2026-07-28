@@ -67,8 +67,13 @@ async function stillClosed(film, tmdbId) {
   const wd = await sparql(survivorQuery(film)).catch(() => null);
   if (wd === null || wd.length) return false;
   if (!tmdbId) return true;
-  const { alive } = await survivorsViaTmdb(film, tmdbId);
-  return alive.length === 0;
+
+  /* Not `alive.length === 0`. This files entries into the Vault, so an
+     empty survivor list from a test that never ran would recover a picture
+     on the strength of a failed request. `ok` is the difference, and every
+     other caller now reads it. */
+  const { alive, ok } = await survivorsViaTmdb(film, tmdbId);
+  return ok && alive.length === 0;
 }
 
 /* --- go ---------------------------------------------------------------- */
