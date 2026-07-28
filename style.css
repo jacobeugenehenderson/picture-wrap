@@ -557,6 +557,11 @@ main,
    boundary inside one list rather than a gap between two lists. */
 .roster .bar { margin: 0.5rem 0; }
 
+/* The wrapped case: the bar sits alone above everything, capping the page.
+   Slightly more air beneath, because nothing follows it on its own line. */
+.roster.capped { margin-bottom: 0.9rem; }
+.roster.capped .bar { margin: 0.9rem 0 0; }
+
 
 /* 9. LANDING & STATES ==================================================== */
 

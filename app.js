@@ -494,27 +494,36 @@ function renderRoster() {
     ? `Nobody who made ${filmMeta.label}${filmMeta.year ? ` (${filmMeta.year})` : ''} is left.`
     : `Who is still with us from ${filmMeta.label}${filmMeta.year ? ` (${filmMeta.year})` : ''}.`;
 
+  /* When a picture has wrapped, the bar rises above everything — the crew
+     card included, since everyone in it is gone too. Nothing should sit
+     above the bar once there is nobody left; a collapsed card up there
+     softens the one moment the whole design exists to state. */
+  const wrapped = !!wrapDate;
+  const bar =
+    `<li class="bar" role="separator" aria-label="Above: living. Below: died."></li>`;
+
+  const crewFold = crew.length ? `
+    <details class="fold">
+      <summary>
+        <span class="fold-title">Behind the camera</span>
+        <span class="fold-hint">${crew.length}</span>
+      </summary>
+      <ul class="roster">
+        ${back.living.map(personRow).join('')}
+        <li class="hairline" role="separator" aria-label="Above: living. Below: died."></li>
+        ${back.dead.map(personRow).join('')}
+      </ul>
+    </details>` : '';
+
   show(
     titleCard(filmMeta, wrapDate) +
     shareControls(shareText, location.hash) +
 
-    /* Crew sits above the cast, the way a title card runs. Collapsed it's
-       a single row, so it costs the cast list almost nothing — and on an
-       old picture it's a who's who in its own right, which is why it's a
-       card rather than a footnote. The gold bar stays unique to the cast;
-       the crew's own divider is a hairline. */
-    (crew.length ? `
-      <details class="fold">
-        <summary>
-          <span class="fold-title">Behind the camera</span>
-          <span class="fold-hint">${crew.length}</span>
-        </summary>
-        <ul class="roster">
-          ${back.living.map(personRow).join('')}
-          <li class="hairline" role="separator" aria-label="Above: living. Below: died."></li>
-          ${back.dead.map(personRow).join('')}
-        </ul>
-      </details>` : '') +
+    /* Wrapped: the bar caps everything, then the crew card, then the cast.
+       Still running: the crew card sits above, and the bar does its usual
+       job inside the cast list. */
+    (wrapped ? `<ul class="roster capped">${bar}</ul>` : '') +
+    crewFold +
 
     (castComplete
       ? `<p class="card-thin">Everyone on screen is gone. Someone who worked
@@ -523,7 +532,7 @@ function renderRoster() {
 
     `<ul class="roster">` +
       front.living.map(personRow).join('') +
-      `<li class="bar" role="separator" aria-label="Above: living. Below: died."></li>` +
+      (wrapped ? '' : bar) +
       front.dead.map(personRow).join('') +
     `</ul>` +
 
