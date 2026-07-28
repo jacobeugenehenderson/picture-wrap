@@ -22,7 +22,7 @@
 
 import { writeFile } from 'node:fs/promises';
 import {
-  sparql, qid, load, save, paths, sleep, CREDITS,
+  sparql, load, save, paths, sleep, CREDITS, survivorsViaTmdb,
 } from './lib.js';
 
 const args = process.argv.slice(2);
@@ -40,7 +40,7 @@ if (!process.env.TMDB_KEY) {
   process.exit(1);
 }
 
-/* --- the three questions asked of each picture ------------------------- */
+/* --- the two questions asked of each picture --------------------------- */
 
 /* 1. Does Wikidata itself now show a survivor? The Vault is a snapshot;
       someone may have added a living name since it was filed. */
@@ -51,35 +51,14 @@ SELECT ?p WHERE {
   FILTER NOT EXISTS { ?p wdt:P570 ?d }
 } LIMIT 1`;
 
-/* 2. Which TMDB people are already in this film's Wikidata cast? */
-const knownTmdbQuery = film => `
-SELECT ?tmdb WHERE {
-  VALUES ?prop { ${VALUES} }
-  wd:${film} ?prop ?p .
-  ?p wdt:P4985 ?tmdb .
-}`;
+/* 2. Does TMDB know anyone Wikidata doesn't, and are they alive?
 
-/* 3. For the rest, who are they and are they dead? */
-const resolveQuery = ids => `
-SELECT ?tmdb ?p ?pLabel ?dod WHERE {
-  VALUES ?tmdb { ${ids.map(i => `"${i}"`).join(' ')} }
-  ?p wdt:P4985 ?tmdb .
-  OPTIONAL { ?p wdt:P570 ?dod }
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}`;
-
-async function tmdbCast(id) {
-  try {
-    const res = await fetch(
-      `https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}` +
-      `/credits?api_key=${encodeURIComponent(process.env.TMDB_KEY)}`);
-    if (!res.ok) return null;
-    const { cast } = await res.json();
-    return Array.isArray(cast) ? cast : null;
-  } catch {
-    return null;
-  }
-}
+   This file used to carry its own copy of that logic — the same three
+   queries, written out again. The copy is why it kept the bug after the
+   original was fixed: it resolved TMDB's cast against Wikidata and let
+   everyone Wikidata couldn't place fall through as dead. It now calls the
+   one implementation in lib.js, which asks TMDB for its own birth and
+   death dates and reports the genuinely unanswerable separately. */
 
 /* Returns { verdict, survivors, unknown } where verdict is
    'closed' | 'reopened' | 'unchecked'. */
@@ -92,27 +71,11 @@ async function recheck(entry) {
 
   if (!entry.tmdbId) return { verdict: 'closed', survivors: [], unknown: 0 };
 
-  const cast = await tmdbCast(entry.tmdbId);
-  if (!cast) return { verdict: 'closed', survivors: [], unknown: 0, noTmdb: true };
-
-  const known = await sparql(knownTmdbQuery(entry.id)).catch(() => []);
-  const have = new Set(known.map(r => r.tmdb));
-  const missing = cast.map(c => String(c.id)).filter(id => !have.has(id));
-  if (!missing.length) return { verdict: 'closed', survivors: [], unknown: 0 };
-
-  const rows = await sparql(resolveQuery(missing)).catch(() => []);
-  const seen = new Set();
-  const survivors = [];
-  for (const r of rows) {
-    if (seen.has(r.tmdb)) continue;
-    seen.add(r.tmdb);
-    if (!r.dod) survivors.push(r.pLabel || qid(r.p));
-  }
-
+  const { alive, unknown } = await survivorsViaTmdb(entry.id, entry.tmdbId);
   return {
-    verdict: survivors.length ? 'reopened' : 'closed',
-    survivors,
-    unknown: missing.length - seen.size,
+    verdict: alive.length ? 'reopened' : 'closed',
+    survivors: alive,
+    unknown,
   };
 }
 

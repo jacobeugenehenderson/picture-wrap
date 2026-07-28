@@ -23,6 +23,7 @@
 import { readFile } from 'node:fs/promises';
 import {
   sparql, qid, load, save, paths, sleep, CREDITS, detailsFor, longDate,
+  survivorsViaTmdb,
 } from './lib.js';
 
 const args = process.argv.slice(2);
@@ -59,42 +60,15 @@ SELECT ?p ?pLabel ?dod ?charLabel WHERE {
   SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
 } ORDER BY DESC(?dod) LIMIT 1`;
 
-const knownTmdbQuery = film => `
-SELECT ?tmdb WHERE {
-  VALUES ?prop { ${VALUES} }
-  wd:${film} ?prop ?p . ?p wdt:P4985 ?tmdb .
-}`;
-
+/* Whether the picture is still closed, asked the same way everywhere else
+   asks it. This file used to carry its own copy — and its own version of
+   the bug, treating anyone Wikidata couldn't resolve as dead. */
 async function stillClosed(film, tmdbId) {
   const wd = await sparql(survivorQuery(film)).catch(() => null);
   if (wd === null || wd.length) return false;
   if (!tmdbId) return true;
-
-  const res = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}` +
-    `/credits?api_key=${encodeURIComponent(process.env.TMDB_KEY)}`).catch(() => null);
-  if (!res || !res.ok) return true;
-  const { cast } = await res.json();
-  if (!Array.isArray(cast) || !cast.length) return true;
-
-  const known = await sparql(knownTmdbQuery(film)).catch(() => []);
-  const have = new Set(known.map(r => r.tmdb));
-  const missing = cast.map(c => String(c.id)).filter(id => !have.has(id));
-  if (!missing.length) return true;
-
-  const rows = await sparql(`
-    SELECT ?tmdb ?dod WHERE {
-      VALUES ?tmdb { ${missing.map(i => `"${i}"`).join(' ')} }
-      ?p wdt:P4985 ?tmdb .
-      OPTIONAL { ?p wdt:P570 ?dod }
-    }`).catch(() => []);
-
-  const seen = new Set();
-  for (const r of rows) {
-    if (seen.has(r.tmdb)) continue;
-    seen.add(r.tmdb);
-    if (!r.dod) return false;      /* a survivor — leave it out */
-  }
-  return true;
+  const { alive } = await survivorsViaTmdb(film, tmdbId);
+  return alive.length === 0;
 }
 
 /* --- go ---------------------------------------------------------------- */
