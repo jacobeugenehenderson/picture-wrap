@@ -18,6 +18,7 @@ import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { load, paths, groupQueue, compose, imagesFor, posterFor,
          detailsFor, longDate, sleep, HERE, personContext } from './lib.js';
+import { renderLinks } from './bluesky.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -51,8 +52,8 @@ for (const [i, group] of groups.entries()) {
   cards.push(`
     <article>
       <h2>${i + 1}. ${esc(group.last.name)} <span>${esc(longDate(group.last.died))}</span></h2>
-      <div class="post">${shot(face)}<p>${esc(parts[0]).replace(/\n/g, '<br>')}</p></div>
-      <div class="post reply">${shot(posters)}<p>${esc(parts[1]).replace(/\n/g, '<br>')}</p></div>
+      <div class="post">${shot(face)}<p>${esc(renderLinks(parts[0])).replace(/\n/g, '<br>')}</p></div>
+      <div class="post reply">${shot(posters)}<p>${esc(renderLinks(parts[1])).replace(/\n/g, '<br>')}</p></div>
       <p class="meta">${group.items.length} picture(s) &middot;
         hover an image for its alt text</p>
     </article>`);

@@ -36,22 +36,52 @@ export async function login() {
 }
 
 /* Bluesky counts and indexes in UTF-8 bytes, not JS characters. Links have
-   to be described as byte ranges or they won't be clickable. */
-function linkFacets(text) {
-  const bytes = new TextEncoder().encode(text);
-  const facets = [];
-  const pattern = /https?:\/\/[^\s]+/g;
+   to be described as byte ranges or they won't be clickable.
 
-  for (const match of text.matchAll(pattern)) {
-    const before = new TextEncoder().encode(text.slice(0, match.index)).length;
-    const length = new TextEncoder().encode(match[0]).length;
+   A facet's displayed text is independent of its target, which is how a
+   readable label can stand in for an unreadable URL. Writing a plausible
+   but non-existent path — "picture-wrap.com/the-raven" — would look like
+   a link and go somewhere else, which is the shape of a phishing link even
+   when the intent is innocent. So the visible text is a plain label and
+   never pretends to be an address.
+
+   Syntax in the post text:  [[label|https://url]]  */
+const LABELLED = /\[\[([^|\]]+)\|(https?:\/\/[^\]]+)\]\]/g;
+
+export function renderLinks(text) {
+  return text.replace(LABELLED, (_, label) => label);
+}
+
+function linkFacets(text) {
+  const facets = [];
+  const enc = s => new TextEncoder().encode(s).length;
+
+  /* Walk the original text, tracking where each piece lands in the
+     rendered output, so byte offsets refer to what a reader actually
+     sees rather than to the markup. */
+  let out = '', cursor = 0;
+  for (const m of text.matchAll(LABELLED)) {
+    out += text.slice(cursor, m.index);
+    const start = enc(out);
+    out += m[1];
     facets.push({
-      index: { byteStart: before, byteEnd: before + length },
-      features: [{ $type: 'app.bsky.richtext.facet#link', uri: match[0] }],
+      index: { byteStart: start, byteEnd: enc(out) },
+      features: [{ $type: 'app.bsky.richtext.facet#link', uri: m[2] }],
+    });
+    cursor = m.index + m[0].length;
+  }
+  out += text.slice(cursor);
+
+  /* Bare URLs still get linked, as before. */
+  for (const m of out.matchAll(/https?:\/\/[^\s]+/g)) {
+    const before = enc(out.slice(0, m.index));
+    facets.push({
+      index: { byteStart: before, byteEnd: before + enc(m[0]) },
+      features: [{ $type: 'app.bsky.richtext.facet#link', uri: m[0] }],
     });
   }
 
-  return { facets, byteLength: bytes.length };
+  return { facets, text: out, byteLength: enc(out) };
 }
 
 export const LIMIT = 300;
@@ -67,7 +97,7 @@ export const LIMIT = 300;
 const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
 
 export function measure(text) {
-  return [...segmenter.segment(text)].length;
+  return [...segmenter.segment(renderLinks(text))].length;
 }
 
 export const byteLength = text => new TextEncoder().encode(text).length;
@@ -99,8 +129,8 @@ export async function uploadImage(url, session) {
   }
 }
 
-async function createRecord(text, session, reply, images) {
-  const { facets } = linkFacets(text);
+async function createRecord(raw, session, reply, images) {
+  const { facets, text } = linkFacets(raw);
   const length = measure(text);
   if (length > LIMIT) {
     throw new Error(`Post is ${length} graphemes; the limit is ${LIMIT}.`);

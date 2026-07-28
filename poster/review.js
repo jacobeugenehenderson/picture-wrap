@@ -21,7 +21,7 @@ import { stdin, stdout } from 'node:process';
 import { load, save, paths, longDate, year, detailsFor, compose, groupQueue,
          tmdbCastCount, coverage, sleep, imagesFor, posterFor,
          personContext } from './lib.js';
-import { login, post, measure, LIMIT, uploadImage } from './bluesky.js';
+import { login, post, measure, LIMIT, uploadImage, renderLinks } from './bluesky.js';
 
 const args = process.argv.slice(2);
 const listOnly = args.includes('--list');
@@ -76,7 +76,7 @@ function describe(group, i, total) {
 
   const shown = parts.map((p, n) =>
     [`   ── ${n + 1}/${parts.length} ${'─'.repeat(34)}  ${measure(p)}/${LIMIT}`,
-     p.split('\n').map(l => `   │ ${l}`).join('\n')].join('\n')).join('\n');
+     renderLinks(p).split('\n').map(l => `   │ ${l}`).join('\n')].join('\n')).join('\n');
 
   const checks = items.map(it => {
     const c = coverage(it.castCount, it.tmdbCast);

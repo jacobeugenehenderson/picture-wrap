@@ -621,7 +621,9 @@ export function groupQueue(queue) {
 export function compose(group) {
   const { last, items } = group;
   const when = longDate(last.died);
-  const link = `${SITE}/#/person/${last.id}/${slug(last.name)}`;
+  const url = `${SITE}/#/person/${last.id}/${slug(last.name)}`;
+  /* A label, not a fake address. See linkFacets in bluesky.js. */
+  const link = `[[${last.name} at picture-wrap.com|${url}]]`;
 
   /* Name alone is a stranger. Nationality, trade and age are what make a
      reader able to place someone they've never heard of — which is most
@@ -656,7 +658,8 @@ export function compose(group) {
       const film = items[0];
       const stars = (film.stars || []).slice(0, howManyStars || 2);
       const line = stars.length ? `\n\nWith ${and(stars)}.` : '';
-      return `${named(film)}${line}\n\n${SITE}/#/film/${film.id}/${slug(film.title)}`;
+      const fu = `${SITE}/#/film/${film.id}/${slug(film.title)}`;
+      return `${named(film)}${line}\n\n[[${named(film)} at picture-wrap.com|${fu}]]`;
     }
     const listed = ordered.slice(0, count);
     const rest = ordered.length - listed.length;
@@ -665,7 +668,9 @@ export function compose(group) {
     /* "+12 more" rather than "and 12 more at" — Ann Blyth's list came to
        301 of 300 characters with one star name each, and lost all five
        names over a single character. */
-    const more = rest ? `\n\n+${rest} more\n${link}` : '';
+    const more = rest
+      ? `\n\n[[+${rest} more at picture-wrap.com|${url}]]`
+      : '';
     return listed.map(i => `\u00b7 ${named(i, howManyStars)}`).join('\n') + more;
   };
 
