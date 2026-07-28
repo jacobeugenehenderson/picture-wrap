@@ -204,19 +204,24 @@ async function deathsByName(people, sparql) {
    every unknown really is dead — but it is the honest measure of how much
    of the claim rests on nothing.
 
-   Without a TMDB id there is nothing to ask, and this returns no
-   objection. Read that as absence, never as agreement. */
+   `ok` says whether the test actually ran. An empty `alive` with ok:false
+   is not a finding of nobody — it is a lookup that failed, or a film with
+   no TMDB id to ask about. The poster can live with the difference,
+   because a human reads its queue. The browser cannot: there, an
+   unchecked picture drawn as wrapped is a false claim on screen. Callers
+   must decide what silence means for them rather than being handed a
+   confident empty list. */
 export async function survivors({ film, tmdbId, sparql, tmdb }) {
-  if (!tmdbId) return { alive: [], unknown: 0 };
+  if (!tmdbId) return { alive: [], unknown: 0, ok: false };
 
   try {
     const credits = await tmdb(`/movie/${encodeURIComponent(tmdbId)}/credits`);
-    if (!credits) return { alive: [], unknown: 0 };
+    if (!credits) return { alive: [], unknown: 0, ok: false };
 
     const { cast, crew } = credits;
     const everyone = [...(Array.isArray(cast) ? cast : []),
                       ...(Array.isArray(crew) ? crew : [])];
-    if (!everyone.length) return { alive: [], unknown: 0 };
+    if (!everyone.length) return { alive: [], unknown: 0, ok: false };
 
     const ids = [...new Set(everyone.map(c => String(c.id)))];
 
@@ -229,7 +234,11 @@ export async function survivors({ film, tmdbId, sparql, tmdb }) {
       }`);
     const have = new Set(known.map(r => r.tmdb));
     const missing = ids.filter(id => !have.has(id));
-    if (!missing.length) return { alive: [], unknown: 0 };
+
+    /* Everyone TMDB names is already linked from the film's own Wikidata
+       item, so Wikidata's test covered all of them. Nothing left to ask,
+       and that IS a complete answer. */
+    if (!missing.length) return { alive: [], unknown: 0, ok: true };
 
     /* Pass one — Wikidata by TMDB id.
 
@@ -329,8 +338,8 @@ export async function survivors({ film, tmdbId, sparql, tmdb }) {
       else if (status === 'unknown') unknown++;
     }
 
-    return { alive, unknown };
+    return { alive, unknown, ok: true };
   } catch {
-    return { alive: [], unknown: 0 };
+    return { alive: [], unknown: 0, ok: false };
   }
 }

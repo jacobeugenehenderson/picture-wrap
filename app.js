@@ -14,6 +14,7 @@
      The bar rises as the living block shrinks. Reaching the top is the end.
    ========================================================================== */
 
+import { survivors } from './verify.js';
 import {
   CREW, CREDITS, CREDIT_PROPS, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
@@ -87,6 +88,34 @@ async function sparql(query) {
 function flat(row) {
   const out = {};
   for (const k in row) out[k] = row[k].value;
+  return out;
+}
+
+/* --- what verify.js needs from this half ------------------------------- */
+
+/* verify.js does no fetching of its own, because fetching is the one thing
+   the two halves genuinely cannot share — the poster sends a User-Agent
+   and retries on 429, and a browser is allowed to do neither. It asks for
+   these two instead. */
+
+const sparqlRows = query => sparql(query).then(rows => rows.map(flat));
+
+/* Memoised per page load: a film page asks for the same credits list twice
+   over, once for character names and once for the survivor test, and a
+   person is often credited on more than one film in a filmography. */
+const tmdbCache = new Map();
+
+async function tmdbGet(path) {
+  if (tmdbCache.has(path)) return tmdbCache.get(path);
+  let out = null;
+  try {
+    const join = path.includes('?') ? '&' : '?';
+    const res = await fetch(
+      `https://api.themoviedb.org/3${path}${join}` +
+      `api_key=${encodeURIComponent(TMDB_KEY)}`);
+    if (res.ok) out = await res.json();
+  } catch { /* null — the caller reads an unanswerable person as unknown */ }
+  tmdbCache.set(path, out);
   return out;
 }
 
@@ -341,6 +370,30 @@ async function viewFilm(id) {
     return;
   }
 
+  /* Only ask when the answer could change what is drawn. If Wikidata
+     already knows somebody living, the bar is not going to the top and no
+     amount of TMDB agreement would move it — so the extra requests only
+     happen on the pages where they can alter the claim.
+
+     This is the check the poster runs before it will queue a closing, and
+     until now the browser had its own version of it that quietly counted
+     anyone TMDB named and Wikidata couldn't place as dead. Same file now.
+     The Wizard of Oz is the page to test on: Caren Marsh is alive. */
+  tmdbAlive = [];
+  tmdbFailed = false;
+  if (everyone.every(p => p.dod) && meta.tmdb) {
+    state('Checking the cast against TMDB…');
+    const found = await survivors({
+      film: id, tmdbId: meta.tmdb, sparql: sparqlRows, tmdb: tmdbGet,
+    });
+    tmdbAlive = found.alive;
+
+    /* A check that didn't run is not a check that found nobody. If we
+       couldn't reach TMDB, we decline to raise the bar rather than make
+       the strongest claim on the site out of a failed request. */
+    tmdbFailed = !found.ok;
+  }
+
   renderRoster();
 }
 
@@ -421,6 +474,14 @@ let everyone = [];
 let filmMeta = {};
 let unrecorded = [];
 
+/* People TMDB records as living whom Wikidata never attached to this film.
+   Non-empty means the picture has not wrapped, whatever Wikidata thinks. */
+let tmdbAlive = [];
+
+/* The TMDB check was needed and did not complete. Not the same as finding
+   nobody, and it must not read as one. */
+let tmdbFailed = false;
+
 /* Living: oldest last, so the oldest is the row touching the divider.
    Unknown birth dates go to the top — a missing date shouldn't win the
    spot next to it, which is meant to say "probably next".
@@ -442,9 +503,14 @@ function renderRoster() {
   const crew = everyone.filter(p => !p.onScreen);
 
   /* The wrap is always judged on everyone credited, never on what happens
-     to be unfolded. Collapsing the crew doesn't close a picture. */
+     to be unfolded. Collapsing the crew doesn't close a picture.
+
+     And never on Wikidata alone. tmdbAlive holds people TMDB records as
+     living whom Wikidata did not attach to this film; one of them is
+     enough to keep the bar down, because they were in the picture and
+     they are here. */
   const allLiving = everyone.filter(p => !p.dod);
-  const wrapDate = allLiving.length === 0
+  const wrapDate = allLiving.length === 0 && tmdbAlive.length === 0 && !tmdbFailed
     ? everyone.map(p => p.dod).sort().pop()
     : null;
 
@@ -508,6 +574,23 @@ function renderRoster() {
     (castComplete
       ? `<p class="card-thin">Everyone on screen is gone. Someone who worked
          behind the camera is still here.</p>`
+      : '') +
+
+    /* Said plainly, because otherwise the page looks like it simply failed
+       to notice: Wikidata has everyone it lists as dead, and the bar is
+       still down because somebody else was in the picture. */
+    (tmdbFailed
+      ? `<p class="card-thin">Everyone Wikidata lists has died, but the
+         check against TMDB didn&rsquo;t complete, so this page won&rsquo;t
+         call the picture wrapped. Reload to try again.</p>`
+      : '') +
+
+    (tmdbAlive.length
+      ? `<p class="card-thin">Everyone Wikidata lists has died, but TMDB
+         records ${tmdbAlive.length === 1 ? 'someone' : `${tmdbAlive.length} people`}
+         on this picture who ${tmdbAlive.length === 1 ? 'is' : 'are'} still
+         living: ${esc(tmdbAlive.slice(0, 4).join(', '))}${
+           tmdbAlive.length > 4 ? ` and ${tmdbAlive.length - 4} more` : ''}.</p>`
       : '') +
 
     `<ul class="roster">` +
