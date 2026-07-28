@@ -537,8 +537,7 @@ function renderRoster() {
           <span class="fold-hint">${unrecorded.length}</span>
         </summary>
         <p class="fold-note">
-          Not counted above.
-          <a href="https://bsky.app/profile/${esc(BLUESKY)}" rel="noopener">Corrections welcome</a>.
+          <a href="https://bsky.app/profile/${esc(BLUESKY)}" rel="noopener">Corrections welcome</a>
         </p>
         <ul class="roster">
           ${unrecorded.map(p => `
