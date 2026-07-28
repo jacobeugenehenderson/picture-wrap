@@ -148,9 +148,14 @@ Pictures that closed before the poster existed will never fire an event —
 there is no future death to react to. Run once:
 
 ```sh
-node run.js --backfill 1930-1965
-node run.js --backfill 1930-1965 --resume    # after an interruption
+node run.js --backfill 1946-1965
+node run.js --backfill 1946-1965 --resume    # after an interruption
 ```
+
+**The range in that command is the coverage.** This example used to read
+`1930-1965`, which had never been run — 1930–1945 is what `state.json`
+records as done, and anyone reading the old line came away believing the
+Vault reached 1965. Write the range you are actually about to run.
 
 **Two passes per year**, because the direct question is too expensive: a
 cast-only rollup to find candidates, then the exact crew-inclusive test on
@@ -168,7 +173,9 @@ file it with `--archive-only` rather than posting.
 The backfill runs the same TMDB verification as the sweep, so it will not
 refill the Vault with false closings.
 
-**Coverage of the archive so far: 1930–1945 releases only.** See
+**Coverage of the archive so far: 1930–1945 releases only** — 98.5% of
+the Vault, with a cliff at the boundary: 230 entries from 1945, two from
+1946. See
 [BACKLOG.md](BACKLOG.md) for what extending it would take.
 
 ---

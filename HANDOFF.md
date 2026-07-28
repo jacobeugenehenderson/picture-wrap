@@ -8,156 +8,101 @@ below is a clean state.
 | | |
 |---|---|
 | `archive.json` | **3,640** — every row judged by one implementation |
-| `poster/queue.json` | **empty** |
+| `poster/queue.json` | **1** — a live closing found this evening, unreviewed |
 | Unverifiable | **113** rows have no TMDB id and never got a second opinion |
 | Bluesky | 26 posts; **37** of the 46 entries survive |
-| Live site | current with `main`, `?v=18` |
+| Live site | current with `main`, `?v=21` |
 | Working tree | clean, pushed |
 
-Nothing is running. No process holds a lock. `caffeinate` released.
+Nothing is running unless a backfill was left going. No process holds a
+lock.
 
-The Vault has been re-checked end to end **twice** under the fixed logic:
-2,819 → 2,754 (65 reopened), then the 887 filed and the whole 3,641
-re-tested, which removed 1. Every entry now standing has been judged by
-the same three passes.
+## What this day was
 
-## What got fixed today
+One bug, found six times in six disguises: **silence read as an answer.**
 
-1. **The backfill gate counted rows, not people** — `COUNT(DISTINCT ?c)`
-   against a row `SUM`, so any film with two release dates failed the
-   `cast === dead` test. It dropped about half of every year.
-2. **Verification only asked Wikidata whether people were alive**, and
-   counted everyone Wikidata couldn't place as dead. 74% of the Vault,
-   8,724 people. TMDB's own `birthday`/`deathday` are now used.
-3. **`recheck.js` and `recover.js` carried their own copies** of that
-   logic and kept the bug after the original was fixed. Both now call
-   `survivorsViaTmdb`.
-4. **`lib.js` re-exported only a subset of `shared.js`** — `VALUES`,
-   `IN_LIST` and `LANGS` were missing, which is *why* those files
-   re-derived them. The derivations broke silently when `CREDITS` became
-   an array of pairs, and `recheck.js` reported "2,819 could not be
-   checked" as if it were a result. Re-export is now complete.
-5. **`review.js` dropped `tmdbId` when posting** and kept it when filing
-   silently, so the pictures we announced were the only ones
-   `recheck.js` could never verify. Both paths now keep it, and
-   `backfill-tmdbids.js` repaired 66 of the 162 entries missing it.
-6. Contrast, mobile type sizes, English-name fallback, the closing line,
-   the Back control, the search placeholder, the tagline.
+Verification asked only Wikidata whether people were alive and counted
+everyone it couldn't place as dead. It stopped at Wikidata even when TMDB
+held the death date. It missed people with no `P4985` link entirely. It
+read a cataloguer's `1920-01-01` placeholder as a pulse. It let whichever
+row SPARQL happened to return first decide a contested identifier. And
+then, having been fixed, its *callers* went on treating a lookup that
+never ran as a lookup that found nobody.
 
-## The over-correction — fixed, `75adfad`
+The last of those was the dangerous one: a TMDB outage during a re-check
+would have stamped untested rows as verified and overwritten their
+unknown counts with zero. Measured on 25 entries with TMDB unreachable —
+before, "21 still closed"; after, "0 still closed, 25 could not be
+checked".
 
-**Superseded. Kept because the numbers it replaces were quoted elsewhere.**
+Two structural fixes came out of it:
 
-The verification had gone too far the other way: an absent death date was
-being read as a pulse. Three separate versions of that one mistake, each
-found by a specific wrong answer.
+- **`verify.js`** now holds the survivor test, and both halves import it.
+  `poster/lib.js` lost 337 lines; `app.js` lost its copy entirely. Three
+  copies of this logic existed at breakfast. There is one.
+- **`state.seen`** was being stamped before a picture was tested, so
+  anything declined because somebody was alive could never be offered
+  again — not even after that person died. 1,367 pictures were sealed off
+  that way. Recording now happens on queueing, and the sealed ids have
+  been cleared. Backup at `poster/state.json.before-unseal`, which is
+  gitignored and therefore the only copy.
 
-| | |
-|---|---|
-| Stopped at pass one | Wikidata knew someone and had no `P570`, so TMDB was never asked. **Robert Amon** — Wikidata item with no dates at all, TMDB record saying he died November 1992 — vetoed *Le chemin des écoliers*. **Helen Hunt**, hairdresser on *Cover Girl*, has no dates in either database and vetoed that. |
-| Stopped at pass two | **Péter Eötvös** died 24 March 2024, recorded on Wikidata, but with no `P4985` link the id lookup missed him and TMDB has no `deathday`. Reopened *Cats' Play*. |
-| Took placeholders literally | **Bill Alcorn**, *Soldier (uncredited)* in *Mildred Pierce*, born `1920-01-01`, nothing on IMDb. Closing out the picture at 106. |
+The three tuned numbers are gone. Corroboration replaced the placeholder
+age test, exact-year matching replaced a ±2 window, and the age ceiling
+now yields *unknown* rather than inventing a death.
 
-`survivorsViaTmdb` now runs three passes and prefers neither database:
-Wikidata by TMDB id for birth *and* death dates, TMDB's own dates for
-everyone Wikidata has not buried, then Wikidata again by name for whoever
-is still standing. The name pass is guarded on birth year within two, and
-only where exactly one person clears the guard.
+## What the site does now
 
-### The ~49% was wrong
+The bar has two homes and its position is the whole answer: inside the
+roster with the living above it, or under the title once nobody is left.
+No badge, no legend, no explanatory prose — all three were tried today and
+all three were wrong.
 
-**It does not reproduce, and it never should have been projected.**
-`poster/recheck-dryrun.log`, the file the earlier version of this note
-cited, reopened **34 of the first 200 (17%)** and **105 of 800 (13%)** —
-not 49%, and so not a projected 1,381 either. Where 49% came from is
-unrecoverable; the log is untracked, so there is no history to read.
+A film page has three zones. Above the bar, living. Below it, gone. Below
+the credits, people credited on the picture that nobody has recorded a
+date for — listed, uncounted, an em-dash and no heading.
 
-Measured on the same first 200, same script, one change at a time:
-
-| | reopened |
-|---|---|
-| the flawed run | 34 *(17%)* |
-| + name matching, + placeholder rule | 30 |
-| + both databases, both ways | **14** *(7%)* |
-
-Nothing newly reopens at any step — every change strictly removed false
-reopens. That projects to roughly **200 of 2,819**. A full dry run is the
-number that counts; this is the shape of it.
-
-Delete `poster/recheck-dryrun.log` once the full run has been diffed
-against it. Its numbers are misleading and its provenance is unknown.
-
-### The two judgment calls, settled
-
-**Placeholder birthdays: `unknown`, not `alive`** — past a hundred years
-old, and only then. Below that threshold a 1 January birthday is mostly
-people actually born on 1 January, and demoting them would wrongly close
-pictures. Above it, the date is a cataloguer typing what they had.
-
-**Uncredited extras still veto.** Considered and rejected. Bill Alcorn's
-problem was never his billing, it was a placeholder read as a pulse — fix
-that and he resolves on his own. Excluding people by credit status would
-quietly change what *wrapped* means, which is the objection `BACKLOG.md`
-already raises against folding poster artists in from the other side.
+Film pages run the real survivor test live, and decline to call a picture
+wrapped when it doesn't complete. Person pages read the Vault rather than
+re-deriving it thirty times a page.
 
 ## The order to work in
 
-1. ~~Add name-matching for TMDB orphans~~ — done, `75adfad`.
-2. ~~Settle the two judgment calls~~ — done, above.
-3. **Full `node recheck.js --dry-run`**, diffed against the old log.
-4. **Run `node recheck.js`** for real. It backs up to
-   `archive.json.before-recheck` and clears reopened ids from
-   `state.seen`.
-5. **`node review.js --archive-only`** — files the 887, posts nothing.
-6. **Commit and push** so the live site picks up `archive.json`.
+1. **Backfill 1946–1965.** The richest remaining ground — 1955 yields more
+   testable candidates than 1945 — and the thing that makes person pages
+   stop under-claiming. Roughly three hours.
+2. **Re-check afterwards**, then file, then commit `archive.json`.
+3. **1966–1985**, then **1986–present** as a cheap sweep-up: forty years
+   for perhaps a hundred candidates, run once so that "not in the Vault"
+   starts meaning "we asked".
 
-Do not do 5 before 4. Filing 887 entries into an unverified Vault means
-re-checking everything twice.
+Never file before re-checking. Filing does not verify anything.
 
-## The nine published entries — no special treatment
+## Known and unfixed
 
-Re-checked all 46 live posts under the fixed logic: **33 hold, 9 reopen,
-4 cannot be verified** (no TMDB id). Down from 14 reopening.
-
-The nine are all post-1950 and mostly non-English — Yugoslav, Greek,
-Iranian, Brazilian, Bulgarian, Hungarian, Mexican — which is the thin end
-of the archive, and exactly where you would expect to be wrong. One is
-not arguable: *The Raven* (1977) lists **Bahman Farmanara**, who is alive
-and well known.
-
-**Decided: they are dropped like any other reopened entry.** No
-retraction, no correction thread, no ceremony. This is a beta with an
-audience of approximately nobody, and the cost of treating 26 early posts
-as a permanent public record is a Vault built on top of known-wrong rows.
-A clean foundation is worth more than a tidy timeline.
-
-Revisit if the project ever has readers who would notice. The etiquette
-question is real; it is just not real *yet*, and answering it now would
-buy nothing and cost the re-check.
+- **`review.js` drops fields when filing** — `backfilled`, `provisional`,
+  and the new `unverified` flag never reach the archive. That flag
+  currently does nothing.
+- **The watcher applies neither filter** — no name check, no cast floor.
+- **The cast floor counts one property** and not voice credits, so
+  animated films with forty voice actors score zero cast.
+- **Backfill is film-only and needs a release date**, so television can
+  never reach the Vault whatever range you give it.
+- **`state.rejected` is written and never read**; rejection works only as
+  a side effect of the seen list.
+- **113 entries cannot be verified** and nothing on the page says so.
 
 ## Backups
 
 | | |
 |---|---|
-| `archive.json.before-refill` | before the overnight sweep |
-| `archive.json.before-tmdbids` | before the id repair |
-| `poster/state.json.before-refill` | before the overnight sweep |
-| `poster/queue.json.old-check` | 265 entries from the broken check — **evidence only, do not review** |
-
-## Known-wrong things still live
-
-- **`app.js:332` and `app.js:664`** carry the old verification bug. A film
-  page can show the bar at the top while TMDB knows someone is alive. The
-  fix is to extract the logic into a module both halves import — not to
-  patch two more copies. Top of `docs/BACKLOG.md`.
-- **14 of the 46 published entries** reopen under the current rule,
-  including *Mildred Pierce*. How many survive the name-matching fix is
-  unknown. Nothing has been retracted, and nothing should be until the
-  number is real.
-- **96 Vault entries have no TMDB id** and cannot be verified at all.
+| `archive.json.before-recheck` | before the last re-check |
+| `poster/state.json.before-unseal` | before the sealed ids were cleared |
+| `poster/state.json.before-recheck-real` | before the first real re-check |
 
 ## Everything else
 
-`docs/DECISIONS.md` has the reasoning, `docs/BACKLOG.md` the queue,
-`docs/OPERATIONS.md` the runbook including `caffeinate` and how to recover
-an interrupted backfill. `README.md` opens with the three rules.
+`docs/VERIFICATION.md` is the plain-prose account of how a wrap is
+decided, audited against the code on 28 July 2026. `docs/DECISIONS.md` has
+the reasoning, `docs/BACKLOG.md` the queue, `docs/OPERATIONS.md` the
+runbook. `README.md` opens with the three rules.
