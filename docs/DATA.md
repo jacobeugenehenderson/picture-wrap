@@ -297,3 +297,42 @@ The poster sends a descriptive `User-Agent` with a contact address, sleeps
 between queries, and backs off on 429/503 with retries. Set it to a real
 address in `poster/lib.js` — it is how Wikidata reaches you instead of
 blocking you.
+
+
+## What we can and cannot know about a person
+
+Three answers, not two. The middle column is the one that took longest to
+admit existed.
+
+| | source | meaning |
+|---|---|---|
+| **dead** | Wikidata `P570`, or TMDB `deathday`, or a birth year older than 112 | safe |
+| **alive** | TMDB `birthday` within a lifespan and no `deathday`; or Wikidata knows them with no `P570` | **veto** |
+| **unknown** | neither database has a birth or death date | recorded, never assumed |
+
+`unknown` runs at roughly **3.4 people per picture**. These are real
+credits — TMDB names them — that nobody has dated. For the 1930s the
+practical risk is small: anyone credited then is past 100. It rises
+steeply with every decade the archive extends, which is the main reason
+1946–1965 has not been attempted yet.
+
+`unknownCount` is stored per Vault entry. It is the honest measure of how
+much of a closing rests on nothing, and it is why coverage on Vault rows
+is worth building.
+
+## Why TMDB is the veto and not the roster
+
+TMDB has fuller cast lists; Wikidata has better structured biography.
+Neither is complete, and they fail differently:
+
+- Wikidata omits people it *knows* — they exist as items, just not attached
+  to that film. Asking by TMDB id finds them.
+- TMDB omits dates. It will name a 1944 bit player and know nothing else
+  about them.
+
+So the roster comes from Wikidata, the completeness check comes from TMDB,
+and **both are asked about life and death** — Wikidata via `P570`, TMDB via
+`deathday`. Asking only one was the bug of 28 July 2026.
+
+Below-the-line crew — grips, gaffers, sound, second unit — is in neither.
+"Everyone" always means everyone recorded, and the colophon says so.

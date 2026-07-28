@@ -318,3 +318,75 @@ has closed verifies against TMDB first. There are six, listed in
 [DECISIONS.md](DECISIONS.md). This has been missed three times — for the
 sweep, the person page, and the watcher — and each time it produced false
 claims about whether real people are alive.
+
+
+## Keeping the machine awake
+
+Long runs die if the Mac sleeps. `caffeinate` holds it open. The useful
+form ties the assertion to the process, so it releases by itself:
+
+```sh
+caffeinate -i -m -w $(pgrep -f "run.js --backfill" | head -1)
+```
+
+Or wrap the command, which is tidier and needs no PID:
+
+```sh
+caffeinate -i node run.js --backfill 1930-1945
+```
+
+| | |
+|---|---|
+| `-i` | no idle sleep |
+| `-d` | no display sleep — usually not wanted; the screen can lock |
+| `-m` | no disk sleep |
+| `-w PID` | hold until that process exits |
+| `-t N` | hold for N seconds |
+
+Confirm it is actually holding:
+
+```sh
+pmset -g assertions | grep PreventUserIdleSystemSleep
+```
+
+Laptops on battery still sleep when the lid closes, regardless. The iMac
+this runs on has no lid, so `-i -m -w` is sufficient.
+
+## Recovering an interrupted backfill
+
+`run.js --backfill` saves `state.json` and `queue.json` at the end of each
+year, so an interruption costs at most one year.
+
+- **`--resume`** skips years already in `state.yearsDone`.
+- **Without `--resume`** it redoes every year in the range — but
+  `state.seen` still holds everything already considered, so previously
+  handled films are skipped instantly and only newly-found ones cost time.
+  This is the right mode after a *finder* fix.
+- **After a *verification* fix**, neither is enough: films already judged
+  are in `state.seen` and will not be re-offered. Restore `state.json` from
+  a backup taken before the bad run, discard the queue it produced, and
+  start over. This is what was done on 28 July 2026.
+
+Back up before any run that writes:
+
+```sh
+cp poster/state.json poster/state.json.before-<name>
+cp archive.json archive.json.before-<name>
+```
+
+`queue.json.old-check` holds 265 entries produced by the broken
+verification on 28 July 2026. Kept only as evidence — do not review it.
+
+## What can and cannot happen unattended
+
+Worth being explicit, because it is what makes it safe to leave running.
+
+| | |
+|---|---|
+| `run.js` | writes `queue.json` and `state.json`. **Cannot post.** |
+| `watch.js` | writes `queue.json`. **Cannot post.** |
+| `recheck.js` | rewrites `archive.json`, backing it up first. Deletes entries. |
+| `review.js` | the only script holding Bluesky credentials. Needs a human. |
+
+Nothing reaches `archive.json` except through `review.js` or `recheck.js`.
+Nothing reaches Bluesky except through `review.js`, one keypress at a time.

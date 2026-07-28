@@ -408,3 +408,70 @@ English Wikipedia article title before settling for another script, since
 the article title *is* the English name. Applied only when a label has no
 Latin characters at all — a French or Swedish name is left alone, because
 it's readable and may be the only name the person ever had.
+
+
+## Both databases answer both questions
+
+*The most consequential bug this project has had. Found 28 July 2026.*
+
+`survivorsViaTmdb` asked TMDB **who was in a film**, resolved those people
+against Wikidata, and asked Wikidata **whether they were alive**. Anyone
+TMDB named that Wikidata could not match to a person record fell out of
+the loop entirely — not flagged, not deferred, silently counted as dead.
+
+It affected **74% of Vault entries**, 8,724 people in total. One picture
+was filed with 107 unresolved names.
+
+TMDB carries `birthday` and `deathday` on its own `/person/{id}` records.
+The information was always there and was never asked for.
+
+**The rule now: each database answers what it is good at, and neither is
+asked to answer for the other's gaps.** Wikidata resolves the people it
+knows, with real death dates. TMDB answers for everyone else.
+
+### Three states, not two
+
+| | |
+|---|---|
+| `dead` | a death date, or a birth date beyond `OLDEST` (112) |
+| `alive` | a birth date within a human lifespan, no death date — **veto** |
+| `unknown` | neither date, or the lookup failed |
+
+`unknown` is the point. Two states force a guess, and the guess was always
+"dead", because that is what silence looked like. It is now counted and
+stored as `unknownCount` and it is **never** read as dead. For a 1935
+picture nearly every unknown really has died; for a 1965 picture that
+assumption is worthless. The number is what lets a page say so.
+
+The age test cuts both ways deliberately: someone born in 1890 with no
+death date is a missing record, not a survivor.
+
+### The worked example
+
+*The Wizard of Oz* was minutes from being filed. Wikidata has 32 people on
+it, all with death dates, Jerry Maren last on 24 May 2018 — which is why
+it was described as closed more than once, including in this repository.
+
+TMDB credits **Caren Marsh**, Judy Garland's stand-in, born 16 April 1919,
+no death date. She is 107. The picture has not wrapped.
+
+### Crew counts on both sides
+
+The check now reads TMDB's `crew` as well as its `cast`. The Wikidata side
+has counted crew since the eight crew properties were added, so cast-only
+was the inconsistency, not the fix. On a 40-picture sample it reopens 5%.
+
+## A second copy of the logic is a second copy of the bug
+
+`recheck.js` and `recover.js` each carried their own version of the TMDB
+check — the same three queries, written out again. Both kept the bug after
+the original was fixed, because fixing one did nothing to the others.
+
+Both now call `survivorsViaTmdb`. `recheck.js` went from 185 lines to 148.
+
+This is the same lesson as `shared.js`, learned again in a place where it
+mattered more: a drifting constant produces a cosmetic difference, but
+drifting *logic* produces two different answers to "is this person alive".
+
+**The site is still wrong in this exact way** — `app.js:332` and
+`app.js:664` are two more copies. See the backlog.

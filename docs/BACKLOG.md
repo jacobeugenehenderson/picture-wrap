@@ -5,6 +5,55 @@ Roughly in the order they're worth doing.
 
 ---
 
+## The site still has the old verification bug
+
+**Priority: highest. Do this first.**
+
+`app.js:332` (`addCharacters`, film pages) and `app.js:664` (`survivingIds`,
+person pages) each carry their own copy of the TMDB check, both with the
+flaw fixed in `lib.js` on 28 July 2026: they resolve TMDB's cast against
+Wikidata and treat anyone unresolved as dead.
+
+**Consequence:** a film page can show the gold bar at the top — the picture
+declared wrapped — while TMDB knows someone in it is alive. *The Wizard of
+Oz* is the case to test with; Caren Marsh (TMDB person 1743897) is alive
+and the site does not know it.
+
+Nothing publishes from the browser, so this is a display error rather than
+a Bluesky error. It is still the most visible thing we can get wrong.
+
+**The fix is not to patch them.** It is to move the logic somewhere both
+halves read, the way `shared.js` already holds the definitions. The
+obstacle is that `lib.js` is Node-only — it does file IO and sends a
+User-Agent the browser can't. Extract the pure verification into
+`shared.js` (or a new `verify.js`) taking `fetch` as the only dependency,
+and have `lib.js` and `app.js` both call it.
+
+Three copies of this logic existed this morning. Two are gone. Do not
+leave the third.
+
+---
+
+## Re-check the whole Vault under the fixed logic
+
+**Priority: high.** All 2,819 entries were filed by the broken check. A
+40-picture sample reopened 5% — roughly 140 wrong entries.
+
+`recheck.js` is fixed and calls the shared function. It needs a full pass:
+
+```sh
+node recheck.js --dry-run --limit 200    # confirm the rate first
+node recheck.js
+```
+
+It backs up to `archive.json.before-recheck` and clears reopened ids from
+`state.seen` so they can close again later. Run it after the backfill, not
+alongside it — they compete for the same TMDB quota.
+
+Expect the Vault to shrink. That is the point.
+
+---
+
 ## Alt text worth reading
 
 **Priority: high.** Currently it is a caption, not a description — both
@@ -124,12 +173,21 @@ work the facts already do.
 
 ## Coverage on the Vault rows
 
-The re-check computed `unknownCount` per entry and it's stored, but only
-film pages show the caveat. A Vault row claiming a picture closed on 36%
-of its cast looks identical to one that closed on 100%.
+**Now worth more than it was.** `unknownCount` used to mean "people TMDB
+named that Wikidata couldn't place" — a mix of the genuinely unanswerable
+and the merely unlooked-up. Since the verification fix it means only the
+first: people **neither** database has a birth or death date for, about
+3.4 per picture.
+
+That makes it a real confidence measure rather than a proxy for one. A
+Vault row claiming a picture closed on 36% of its cast still looks
+identical to one that closed on 100%.
 
 Either show the number, or mark the thin ones, or filter them out. The
 data is already in `archive.json`.
+
+Pairs naturally with the gaps page: an entry with a high `unknownCount` is
+exactly an entry someone could improve.
 
 ---
 
@@ -203,6 +261,16 @@ invites contribution rather than surveillance — the better version of the
 analytics idea that was rejected.
 
 Would pair with a "help fill this in" link on thin film pages.
+
+**Contact: link to Wikidata, not to us.** Someone who knows a missing death
+date should be sent to the item itself, where the fix helps everyone
+downstream rather than only this archive. A `mailto:` is the fallback for
+people who won't edit Wikidata — it needs no backend, so the no-server
+property survives.
+
+Not Bluesky DMs: it would mean either publishing a handle that invites
+everything, or enabling DM access on the app password, which was
+deliberately left unchecked.
 
 ---
 

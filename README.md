@@ -91,6 +91,14 @@ entered are alive. Every guard here exists because of that gap.
 **Wikidata alone never decides that a picture has closed.** Its cast lists
 are routinely a fraction of the real cast, and the people it omits are
 usually people it *knows* — just not attached to that film. Every path that
-concludes "no one is left" verifies against TMDB first. There are six of
-them, listed in DECISIONS.md. Adding a seventh without the check will
-publish something false about whether a real person is alive.
+concludes "no one is left" verifies against TMDB first.
+
+**And both databases are asked about life and death.** Wikidata via `P570`,
+TMDB via `deathday` on its own person records. Asking only Wikidata — and
+counting everyone it couldn't place as dead — was this project's worst bug,
+affecting 74% of the archive. There is **one** implementation,
+`survivorsViaTmdb` in `poster/lib.js`. Call it; do not copy it. Every copy
+that has ever existed kept the bug after the original was fixed.
+
+**A person has three possible states, not two:** dead, alive, or unknown.
+Unknown is counted and stored, never read as dead.

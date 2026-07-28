@@ -208,3 +208,28 @@ Two things would require a real server — per-film link previews for
 clients other than Bluesky, and search analytics. They are the *same*
 crossing, and if it happens it should happen once.
 See [DECISIONS.md](DECISIONS.md#the-single-tool-constraint).
+
+
+## Where shared logic lives, and where it doesn't yet
+
+`shared.js` holds everything both halves must agree *about*: credit
+properties, kinds, occupations, language order, date and slug helpers. It
+is pure — no fetching, no file IO — because the two runtimes fetch
+differently. Node sends a User-Agent and retries on 429; the browser can do
+neither.
+
+That boundary was drawn around **constants**, and it should have been drawn
+around **decisions**. The verification logic — "is anyone from this picture
+still alive" — is a decision both halves make, and it lives in `lib.js`,
+which the browser cannot import. So the site has its own copy.
+
+Copies drift, and this one drifted into a bug that survived three separate
+fixes because each fix only touched one copy. See DECISIONS.md.
+
+**The intended shape:** extract the verification into a pure module that
+takes `fetch` as its only dependency, and have both `lib.js` and `app.js`
+call it. Tracked as the top item in BACKLOG.md.
+
+The test for whether something belongs in shared code is not "is it a
+constant" — it is **"can the two halves give different answers, and would
+that be a bug?"**
