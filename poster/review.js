@@ -173,6 +173,22 @@ if (archiveOnly) {
   console.log(`${work.length} picture(s) in ${groups.length} closing(s).`);
   console.log('These will be filed in the vault. Nothing will be posted.\n');
 
+  /* --dry-run is documented as "posts nothing, writes nothing", and on
+     this path it wrote. It guarded the posting branch only, so
+     `--archive-only --dry-run` filed the queue into the archive and
+     cleared it — the one flag combination a person reaches for precisely
+     because they don't yet trust what is about to happen.
+
+     Same shape as everything else here: a thing that reports safety
+     without providing it. */
+  if (dryRun) {
+    const already = work.filter(w => filed.has(w.item.id)).length;
+    console.log(`   Dry run — nothing written. ${work.length - already} would be filed` +
+                `${already ? `, ${already} already in the vault` : ''}.`);
+    rl.close();
+    process.exit(0);
+  }
+
   if (!assumeYes) {
     const ok = await ask('   File them all? [y/N] > ');
     if (ok !== 'y') { console.log('   Left alone.'); rl.close(); process.exit(0); }
@@ -209,6 +225,23 @@ if (archiveOnly) {
         tmdbId: item.tmdbId ?? null, unknownCount: item.unknownCount ?? null,
         type: item.type ?? null, country: item.country ?? null,
         last: item.last, postedAt: null, postUrl: null, filedOnly: true,
+        /* Provenance. Every one of these was set by the finder and then
+           dropped here, because both filing paths build an entry from a
+           fixed field list and neither list named them.
+
+           It cost real information. 3,586 entries came out of a backfill
+           and twelve say so — which is why `backfilled` could not be used
+           to check the archive's own composition. `unverified` marks an
+           entry no second database could confirm, and silently losing it
+           makes an unverifiable row identical to a corroborated one.
+           `provisional` means a newsroom said it and Wikidata has not
+           caught up.
+
+           Undefined rather than false when absent, so the archive stays
+           readable — a flag is present when it means something. */
+        ...(item.backfilled  ? { backfilled: true }  : {}),
+        ...(item.provisional ? { provisional: true } : {}),
+        ...(item.unverified  ? { unverified: true }  : {}),
       });
       added++; sinceSave++;
     }
@@ -362,6 +395,23 @@ for (const [i, group] of groups.entries()) {
            only ones that could never be re-tested. Exactly backwards. */
         tmdbId: item.tmdbId ?? null,
         unknownCount: item.unknownCount ?? null,
+        /* Provenance. Every one of these was set by the finder and then
+           dropped here, because both filing paths build an entry from a
+           fixed field list and neither list named them.
+
+           It cost real information. 3,586 entries came out of a backfill
+           and twelve say so — which is why `backfilled` could not be used
+           to check the archive's own composition. `unverified` marks an
+           entry no second database could confirm, and silently losing it
+           makes an unverifiable row identical to a corroborated one.
+           `provisional` means a newsroom said it and Wikidata has not
+           caught up.
+
+           Undefined rather than false when absent, so the archive stays
+           readable — a flag is present when it means something. */
+        ...(item.backfilled  ? { backfilled: true }  : {}),
+        ...(item.provisional ? { provisional: true } : {}),
+        ...(item.unverified  ? { unverified: true }  : {}),
         type: item.type ?? null,
         country: item.country ?? null,
         last: item.last,
