@@ -150,12 +150,18 @@ main,
     var(--gold-dark), var(--gold-light), var(--gold-dark));
 }
 
+/* Set as a label, not as a line — deliberately unlike the Vault's italic
+   serif quote. Both were display serif with an italic line beneath, which
+   made the same gesture twice and turned a voice into a formula. The
+   masthead is a fixed identity element, so uppercase reads as branding
+   here rather than as a section heading. */
 .tagline {
-  margin-top: 0.85rem;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 0.98rem;
-  color: var(--ink-soft);
+  margin-top: 1rem;
+  font-size: var(--size-tiny);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  text-indent: 0.28em;          /* balance the trailing letter-space */
+  color: var(--ink-faint);
 }
 
 
