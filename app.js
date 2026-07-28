@@ -537,11 +537,7 @@ function renderRoster() {
           <span class="fold-hint">${unrecorded.length}</span>
         </summary>
         <p class="fold-note">
-          These ${unrecorded.length === 1 ? 'name is' : 'names are'} credited on
-          the picture but ${unrecorded.length === 1 ? 'has' : 'have'} no record
-          anywhere &mdash; no dates, nothing. They are listed here and left out of
-          everything above, because counting them as living or as dead would
-          both be a guess.
+          Not counted above.
           <a href="https://bsky.app/profile/${esc(BLUESKY)}" rel="noopener">Corrections welcome</a>.
         </p>
         <ul class="roster">
