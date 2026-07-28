@@ -58,6 +58,7 @@ Full setup, credentials and cron in [poster/README.md](poster/README.md).
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Every significant choice and why |
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Daily running, backfill, deployment, failure modes |
 | [poster/README.md](poster/README.md) | The poster in detail |
+| [docs/BACKLOG.md](docs/BACKLOG.md) | Deferred work, with enough context to pick it up cold |
 
 ---
 
