@@ -761,78 +761,16 @@ function lifespan(p) {
 
 /* --- verifying a filmography ------------------------------------------- */
 
-/* The filmography query asks Wikidata alone, and Wikidata's cast lists are
-   often a fraction of the real cast. The Glove (1979) looked closed there
-   while TMDB knew Joanna Cassidy, Rosey Grier and Tony Lorea, all living —
-   so the person page said "wrapped" about a picture whose own page showed
-   survivors.
+/* survivingIds used to live here: the browser's own copy of the survivor
+   test, and the last one standing. It resolved TMDB's cast against
+   Wikidata and let anyone unresolved fall through as dead — the original
+   bug, still here long after lib.js had been fixed twice.
 
-   Only the films that LOOK closed need checking, which is usually a
-   handful. Done in three round trips rather than three per film: their
-   TMDB ids in one query, their cast lists in parallel, then every
-   unmatched person resolved in one more. */
-async function survivingIds(candidates) {
-  if (!TMDB_KEY || !candidates.length) return new Set();
-  const ids = candidates.map(f => qid(f.film));
+   It is gone rather than ported. Person pages now read the Vault, which
+   is that same test already run, and film pages call verify.js directly.
+   There is one implementation again. */
 
-  try {
-    const rows = await sparql(`
-      SELECT ?f ?tmdb ?castTmdb WHERE {
-        VALUES ?f { ${ids.map(i => `wd:${i}`).join(' ')} }
-        OPTIONAL { ?f wdt:P4947 ?tmdb }
-        OPTIONAL {
-          VALUES ?prop { ${VALUES} }
-          ?f ?prop ?p . ?p wdt:P4985 ?castTmdb .
-        }
-      }`);
 
-    const filmTmdb = new Map();
-    const known = new Map();
-    for (const row of rows) {
-      const r = flat(row);
-      const f = qid(r.f);
-      if (r.tmdb) filmTmdb.set(f, r.tmdb);
-      if (r.castTmdb) {
-        if (!known.has(f)) known.set(f, new Set());
-        known.get(f).add(r.castTmdb);
-      }
-    }
-
-    const missing = new Map();
-    await Promise.all([...filmTmdb].map(async ([f, tmdbId]) => {
-      try {
-        const res = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}` +
-          `/credits?api_key=${encodeURIComponent(TMDB_KEY)}`);
-        if (!res.ok) return;
-        const { cast } = await res.json();
-        const have = known.get(f) || new Set();
-        for (const c of cast || []) {
-          const id = String(c.id);
-          if (have.has(id)) continue;
-          if (!missing.has(id)) missing.set(id, new Set());
-          missing.get(id).add(f);
-        }
-      } catch { /* leave this film alone */ }
-    }));
-
-    if (!missing.size) return new Set();
-
-    const alive = await sparql(`
-      SELECT ?tmdb WHERE {
-        VALUES ?tmdb { ${[...missing.keys()].map(i => `"${i}"`).join(' ')} }
-        ?p wdt:P4985 ?tmdb .
-        FILTER NOT EXISTS { ?p wdt:P570 ?d }
-      }`);
-
-    const reopened = new Set();
-    for (const row of alive) {
-      for (const f of missing.get(flat(row).tmdb) || []) reopened.add(f);
-    }
-    return reopened;
-  } catch {
-    return new Set();
-  }
-}
 
 
 /* --- person view ------------------------------------------------------- */
@@ -909,12 +847,26 @@ async function viewPerson(id) {
     return;
   }
 
-  const isWrapped = f => Number(f.credited) > 0 && f.credited === f.dead;
+  const wikidataClosed = f => Number(f.credited) > 0 && f.credited === f.dead;
 
-  /* Anything Wikidata thinks is closed gets checked against TMDB before we
-     put it below the bar. */
-  const reopened = await survivingIds(films.filter(isWrapped));
-  const closed = f => isWrapped(f) && !reopened.has(qid(f.film));
+  /* Below the bar means verified, and the Vault is what verification
+     produces. A filmography can hold sixty closed-looking pictures, and
+     the survivor test is per-film — running it here would be hundreds of
+     requests on a page load to re-derive an answer the poster already
+     worked out offline. So we read that answer instead.
+
+     Both conditions, not either. The Vault says a picture was closed when
+     it was filed; Wikidata is live and may since have gained a living
+     name. Whichever of them still says "running" wins, because the claim
+     we must not make is the one that says everybody is gone.
+
+     The cost is honest and worth naming: the Vault only reaches where the
+     backfill has run, so a picture that closed outside those years stays
+     above the bar until somebody asks about its years. That reads as
+     "we don't know", which is true, rather than "someone is alive", which
+     we would be inventing. */
+  const vault = new Set((await loadArchive()).map(e => e.id));
+  const closed = f => wikidataClosed(f) && vault.has(qid(f.film));
 
   /* Newest first, both sides — which makes this bar mean what the bar
      means everywhere else. Running films newest-first put the OLDEST
@@ -1258,13 +1210,21 @@ function viewAbout() {
         Both are written by volunteers. Neither is complete.
       </p>
       <p id="about-tmdb" hidden>
-        Character names are filled in from
-        <a href="https://www.themoviedb.org" rel="noopener">TMDB</a>, which
-        records them far more thoroughly &mdash; Wikidata has none at all for
-        <em>The Umbrellas of Cherbourg</em>, TMDB has the lot. Nothing else
-        comes from there. Who is credited and who has died is Wikidata&rsquo;s
-        answer alone. This product uses the TMDB API but is not endorsed or
-        certified by TMDB.
+        <a href="https://www.themoviedb.org" rel="noopener">TMDB</a> is
+        asked as well, and about more than one thing. Character names, which
+        Wikidata barely records &mdash; it has none at all for <em>The
+        Umbrellas of Cherbourg</em>, TMDB has the lot. A fuller cast list,
+        so people who worked on a picture but were never linked to it here
+        still appear. And its own birth and death dates.
+      </p>
+      <p id="about-tmdb-2" hidden>
+        That last one decides things. Before any picture is called wrapped,
+        both databases are asked whether the people on it are living, and
+        one recorded death anywhere is enough to say someone has died &mdash;
+        while a missing death date is never enough to say they haven&rsquo;t.
+        Asking only Wikidata, and quietly counting everyone it couldn&rsquo;t
+        place as dead, was this site&rsquo;s worst mistake. This product uses
+        the TMDB API but is not endorsed or certified by TMDB.
       </p>
 
       <h3>What &ldquo;everyone&rdquo; means</h3>
@@ -1306,6 +1266,14 @@ function viewAbout() {
         Which means it can drift. If someone adds a living cast member to a
         film in the Vault, that film&rsquo;s own page will show it correctly as
         open while the Vault still lists it as closed, until the next check.
+      </p>
+      <p>
+        It is also not the whole of cinema. Working out which pictures have
+        closed has been done for <strong>1930 to 1945</strong> and, so far,
+        no further &mdash; everything else here is a closing that happened
+        while this site was watching. So a picture&rsquo;s absence from the
+        Vault means one of two things, and the Vault cannot tell you which:
+        somebody who made it is alive, or nobody has looked yet.
       </p>
 
       <h3>Mistakes</h3>
@@ -1441,6 +1409,7 @@ function revealTmdb() {
   if (!TMDB_KEY) return;
   document.getElementById('tmdb-credit')?.removeAttribute('hidden');
   document.getElementById('about-tmdb')?.removeAttribute('hidden');
+  document.getElementById('about-tmdb-2')?.removeAttribute('hidden');
 }
 revealTmdb();
 
