@@ -462,20 +462,29 @@ export function compose(group) {
 
   /* --- two: the pictures --- */
   const ordered = [...items].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0));
-  const listed = ordered.slice(0, MAX_LISTED);
-  const rest = ordered.length - listed.length;
-  const more = rest ? `\n\nand ${rest} more at ${SITE}` : '';
 
-  const build = withStars => {
+  const build = (count, withStars) => {
     if (items.length === 1) {
       const film = items[0];
       const stars = withStars && film.stars?.length
         ? `\n\nWith ${and(film.stars)}.` : '';
       return `${named(film, false)}${stars}\n\n${SITE}/#/film/${film.id}`;
     }
+    const listed = ordered.slice(0, count);
+    const rest = ordered.length - listed.length;
+    /* The "more" link goes to the PERSON, not the site root — it's the
+       page that actually holds the rest of their pictures. */
+    const more = rest ? `\n\nand ${rest} more at ${link}` : '';
     return listed.map(i => `\u00b7 ${named(i, withStars)}`).join('\n') + more;
   };
 
-  const starred = build(true);
-  return [lead, measure(starred) <= LIMIT ? starred : build(false)];
+  /* Naming who was in a picture is what lets a reader place it — "Mildred
+     Pierce" alone leaves them guessing, "with Joan Crawford" doesn't. So
+     shed titles before shedding stars: five with stars, then four, then
+     three, and only fall back to a bare list if even two won't fit. */
+  for (const count of [MAX_LISTED, 4, 3, 2]) {
+    const text = build(count, true);
+    if (measure(text) <= LIMIT) return [lead, text];
+  }
+  return [lead, build(MAX_LISTED, false)];
 }
