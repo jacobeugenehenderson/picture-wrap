@@ -6,6 +6,11 @@ the last person who made it is gone.*
 **[picture-wrap.com](https://picture-wrap.com)** ·
 **[@picture-wrap.bsky.social](https://bsky.app/profile/picture-wrap.bsky.social)**
 
+> **Picking this up mid-flight? Read [HANDOFF.md](HANDOFF.md) first.**
+> It records the current state, what is unfinished, and the decision that
+> is currently blocking the Vault re-check. Do not run `recheck.js` or
+> `review.js --archive-only` before reading it.
+
 A film's page is a single list of everyone credited on it, divided by a gold
 bar: the living above, the dead below. As people die the bar rises. When it
 reaches the top, the picture has wrapped, and it enters the Vault.
@@ -63,6 +68,7 @@ There are launchers on the Desktop for the three things done by hand:
 | `recheck.js` | Re-tests the Vault; removes pictures that turn out to have survivors. |
 | `recover.js` | Re-files pictures an earlier bug dropped. |
 | `coverage.js` | Measures how complete Wikidata's cast list is, against TMDB. |
+| `backfill-tmdbids.js` | Fills in missing `tmdbId`, without which an entry can't be verified. |
 | `check.js` | Verifies Bluesky credentials. Posts nothing. |
 
 ---
@@ -78,6 +84,7 @@ There are launchers on the Desktop for the three things done by hand:
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Daily running, backfill, deployment, failure modes |
 | [docs/BACKLOG.md](docs/BACKLOG.md) | Deferred work, with enough context to pick it up cold |
 | [poster/README.md](poster/README.md) | The poster in detail |
+| [HANDOFF.md](HANDOFF.md) | Current state and what's unfinished — **read first** |
 
 ---
 

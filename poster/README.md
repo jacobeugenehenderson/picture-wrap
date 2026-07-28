@@ -128,3 +128,77 @@ not finished while its director is alive.
 always means everyone recorded, and the site's colophon says so.
 
 Keep `CREDITS` and `MIN_CAST` in step with `app.js` in the site root.
+
+
+## The rest of the scripts
+
+`run.js` and `review.js` are covered above. These are the others, all of
+which have run against live data.
+
+### `watch.js` — breaking news
+
+Streams posts from eight newsrooms on Bluesky (`PW_WATCH`), extracts names
+from anything that reads like a death notice, resolves them, and drafts
+ahead of Wikidata. Drafts land in the queue flagged `provisional`.
+
+It has never caught a real death. The first one is worth being present
+for — the name extraction is crude and an unverified newsroom claim is a
+weaker source than anything else here.
+
+```sh
+node watch.js            # leave running
+node watch.js --test     # replay recent posts and exit
+```
+
+### `preview.js` — the queue as a page
+
+Renders `queue.json` as HTML with real posters and portraits, so you can
+look at a sweep before deciding anything. Writes `preview.html`, which is
+gitignored.
+
+### `recheck.js` — re-test the Vault
+
+Re-runs verification over every filed entry and removes any with a
+survivor. **Deletes Vault entries**, so it backs up to
+`archive.json.before-recheck` first and clears reopened ids from
+`state.seen` — otherwise a reopened picture could never close again.
+
+```sh
+node recheck.js --dry-run --limit 40    # always start here
+node recheck.js
+```
+
+**Do not run this before reading HANDOFF.md.** As of 28 July 2026 it
+reopens ~49% of the Vault, and most of that is a known bug, not a finding.
+
+### `recover.js` — re-file what a bug dropped
+
+One-shot repair for the 319 films an English-only label query silently
+deleted. Reads a list of ids from `/tmp/naming-losses.json`. Kept because
+the failure mode it fixes could recur.
+
+### `coverage.js` — how complete is the roster
+
+Compares Wikidata's cast list against TMDB's per film. Measured across
+2,415 entries: median 64%, 919 under half.
+
+### `backfill-tmdbids.js` — fill in missing ids
+
+An entry with no `tmdbId` cannot be verified at all — `recheck.js` passes
+it straight through as closed. This fills the gap from Wikidata `P4947`
+first, then TMDB search matched on title **and** release year, because a
+wrong id is worse than none.
+
+Recovered 66 of 162 on its first run. The other 96 have no TMDB presence
+and stay honestly unverifiable.
+
+### `check.js` — credentials
+
+Logs in and prints the handle. Posts nothing. Run it after changing an app
+password.
+
+## What can post
+
+**Only `review.js`, and only with a human keypress.** Everything else
+writes to `queue.json` or `archive.json`. This is the property that makes
+it safe to leave the sweep on a cron and the watcher running overnight.
