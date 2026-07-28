@@ -17,7 +17,7 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { load, paths, groupQueue, compose, imagesFor, posterFor,
-         detailsFor, longDate, sleep, HERE } from './lib.js';
+         detailsFor, longDate, sleep, HERE, personContext } from './lib.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -38,6 +38,7 @@ for (const [i, group] of groups.entries()) {
     await sleep(80);
   }
 
+  group.last.context = await personContext(group.last.id, group.last.died);
   const parts = compose(group);
   const [face, posters] = await imagesFor(group);
 

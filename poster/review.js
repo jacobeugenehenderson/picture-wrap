@@ -19,7 +19,8 @@ import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 
 import { load, save, paths, longDate, year, detailsFor, compose, groupQueue,
-         tmdbCastCount, coverage, sleep, imagesFor, posterFor } from './lib.js';
+         tmdbCastCount, coverage, sleep, imagesFor, posterFor,
+         personContext } from './lib.js';
 import { login, post, measure, LIMIT, uploadImage } from './bluesky.js';
 
 const args = process.argv.slice(2);
@@ -258,6 +259,10 @@ for (const [i, group] of groups.entries()) {
     if (item.poster === undefined) {
       item.poster = await posterFor(item.tmdbId);
     }
+  }
+
+  if (!group.last.context) {
+    group.last.context = await personContext(group.last.id, group.last.died);
   }
 
   console.log(describe(group, i, groups.length));

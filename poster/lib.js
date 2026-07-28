@@ -403,6 +403,75 @@ export function longDate(iso) {
 }
 
 
+/* --- who this person was ------------------------------------------------ */
+
+/* "Barbara Adolph died 19 June 2026" tells a reader nothing. Wikidata
+   knows she was German, an actor, and 95 — the difference between a name
+   and a person.
+
+   Occupation is taken in a fixed priority order rather than alphabetically,
+   because everyone has half a dozen and only one is the reason they're
+   here. "actor" is used regardless of gender; guessing gendered nouns from
+   P21 is a choice this project doesn't need to make. */
+const OCCUPATION_ORDER = [
+  'actor', 'film actor', 'television actor', 'stage actor', 'voice actor',
+  'film director', 'director', 'screenwriter', 'cinematographer',
+  'film producer', 'producer', 'composer', 'film editor',
+];
+
+export const personContextQuery = person => `
+SELECT ?dob (GROUP_CONCAT(DISTINCT ?dem; separator="|") AS ?dems)
+       (GROUP_CONCAT(DISTINCT ?occLabel; separator="|") AS ?occs) WHERE {
+  OPTIONAL { wd:${person} wdt:P569 ?dob }
+  OPTIONAL {
+    { SELECT (MIN(?cc) AS ?c) WHERE { wd:${person} wdt:P27 ?cc } }
+    ?c wdt:P1549 ?dem . FILTER(LANG(?dem) = "en")
+  }
+  OPTIONAL { wd:${person} wdt:P106 ?occ . ?occ rdfs:label ?occLabel . FILTER(LANG(?occLabel) = "en") }
+} GROUP BY ?dob`;
+
+export async function personContext(person, diedISO) {
+  try {
+    const [row] = await sparql(personContextQuery(person));
+    if (!row) return {};
+
+    const all = (row.occs || '').split('|').map(s => s.trim().toLowerCase());
+    const occupation = OCCUPATION_ORDER.find(o => all.includes(o)) || null;
+
+    let age = null;
+    if (row.dob && diedISO) {
+      const born = new Date(row.dob), died = new Date(diedISO);
+      if (!isNaN(born) && !isNaN(died)) {
+        age = died.getUTCFullYear() - born.getUTCFullYear();
+        const before = died.getUTCMonth() < born.getUTCMonth() ||
+          (died.getUTCMonth() === born.getUTCMonth() && died.getUTCDate() < born.getUTCDate());
+        if (before) age -= 1;
+      }
+    }
+
+    /* pickDemonym needs ALL the forms to choose between — grouping by the
+       demonym instead produced one row per form and took whichever came
+       first, which is how Louise Lasser became "Americans". */
+    return { nationality: pickDemonym(row.dems), occupation, age };
+  } catch {
+    return {};
+  }
+}
+
+/* A readable tail on an otherwise opaque URL. The router splits the hash
+   and reads only the first two segments, so anything after the Q-id is
+   decoration — but it turns /#/person/Q807328 into something a person can
+   read before clicking. */
+export function slug(name) {
+  return String(name || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+}
+
+
 /* --- pictures for the posts -------------------------------------------- */
 
 /* The first post carries the person's face, the second carries the
@@ -517,17 +586,24 @@ export function groupQueue(queue) {
 export function compose(group) {
   const { last, items } = group;
   const when = longDate(last.died);
-  const link = `${SITE}/#/person/${last.id}`;
+  const link = `${SITE}/#/person/${last.id}/${slug(last.name)}`;
 
+  /* Name alone is a stranger. Nationality, trade and age are what make a
+     reader able to place someone they've never heard of — which is most
+     of the people this account will ever post about. */
+  const c = last.context || {};
+  const desc = [c.nationality, c.occupation].filter(Boolean).join(' ');
   const who = last.character
-    ? `${last.name}, who played ${last.character},`
-    : last.name;
+    ? `${last.name}, who played ${last.character}`
+    : desc ? `${last.name}, ${/^[aeiou]/i.test(desc) ? 'an' : 'a'} ${desc}`
+           : last.name;
+  const aged = c.age ? ` aged ${c.age}` : '';
 
   /* --- one: the person --- */
   const lead = items.length === 1
-    ? `${who} died ${when} \u2014 the last of ${named(items[0])}.\n\n` +
+    ? `${who}, died ${when}${aged} \u2014 the last of ${named(items[0])}.\n\n` +
       `Nobody who made it is left.\n\n${link}`
-    : `${who} died ${when}.\n\n` +
+    : `${who}, died ${when}${aged}.\n\n` +
       `${WORDS[items.length] || items.length} pictures have lost the last ` +
       `of their company.\n\n${link}`;
 
@@ -545,7 +621,7 @@ export function compose(group) {
       const film = items[0];
       const stars = (film.stars || []).slice(0, howManyStars || 2);
       const line = stars.length ? `\n\nWith ${and(stars)}.` : '';
-      return `${named(film)}${line}\n\n${SITE}/#/film/${film.id}`;
+      return `${named(film)}${line}\n\n${SITE}/#/film/${film.id}/${slug(film.title)}`;
     }
     const listed = ordered.slice(0, count);
     const rest = ordered.length - listed.length;
