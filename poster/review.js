@@ -33,9 +33,20 @@ const dryRun = args.includes('--dry-run');
    stays reserved for closings that actually just happened. */
 const archiveOnly = args.includes('--archive-only');
 
-/* Skips the confirmation prompt. For scripted or unattended filing —
-   readline discards piped input, so there's no way to answer otherwise. */
+/* Skips the confirmation prompt. For scripted or unattended runs, since
+   readline discards piped input.
+
+   Refused on a real posting run, deliberately. The entire protection this
+   project has is that a person looks at each item before it is published;
+   a flag that bypasses that is a flag that will eventually get used by
+   accident at two in the morning. Allowed only with --dry-run or
+   --archive-only, neither of which can publish anything. */
 const assumeYes = args.includes('--yes');
+if (assumeYes && !dryRun && !archiveOnly) {
+  console.error('--yes is only allowed with --dry-run or --archive-only.');
+  console.error('A real posting run requires a keystroke per post. That is the point.');
+  process.exit(1);
+}
 
 const rl = createInterface({ input: stdin, output: stdout });
 
@@ -245,7 +256,9 @@ for (const [i, group] of groups.entries()) {
 
   console.log(describe(group, i, groups.length));
 
-  const answer = await ask('   [a]pprove  [s]kip  [r]eject  [e]dit  [q]uit  > ');
+  const answer = (assumeYes && dryRun)
+    ? 'a'
+    : await ask('   [a]pprove  [s]kip  [r]eject  [e]dit  [q]uit  > ');
 
   if (answer === 'q') {
     /* Everything unvisited stays queued. */

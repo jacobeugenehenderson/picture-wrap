@@ -158,7 +158,7 @@ function thumb(url, w = 120) {
   return url ? url.replace(/^http:/, 'https:') + '?width=' + w : '';
 }
 
-function show(html) { stage.innerHTML = html; }
+function show(html) { stage.innerHTML = html; wireShare(); }
 function state(msg) { show(`<p class="state">${esc(msg)}</p>`); }
 
 
@@ -490,8 +490,13 @@ function renderRoster() {
   const castComplete =
     cast.length > 0 && front.living.length === 0 && allLiving.length > 0;
 
+  const shareText = wrapDate
+    ? `Nobody who made ${filmMeta.label}${filmMeta.year ? ` (${filmMeta.year})` : ''} is left.`
+    : `Who is still with us from ${filmMeta.label}${filmMeta.year ? ` (${filmMeta.year})` : ''}.`;
+
   show(
     titleCard(filmMeta, wrapDate) +
+    shareControls(shareText, location.hash) +
 
     /* Crew sits above the cast, the way a title card runs. Collapsed it's
        a single row, so it costs the cast list almost nothing — and on an
@@ -731,8 +736,12 @@ async function viewPerson(id) {
       </span>
     </section>`;
 
+  const share = shareControls(
+    `${meta.label} on Picture Wrap — which of their pictures still have someone.`,
+    location.hash);
+
   if (!films.length) {
-    show(card + `<p class="state">No screen credits recorded.</p>`);
+    show(card + share + `<p class="state">No screen credits recorded.</p>`);
     return;
   }
 
@@ -751,7 +760,7 @@ async function viewPerson(id) {
   const done = films.filter(isWrapped).sort(byYear);
 
   show(
-    card +
+    card + share +
     `<ul class="roster">` +
       running.map(f => filmRow(f, false)).join('') +
       `<li class="bar" role="separator" aria-label="Above: still running. Below: wrapped."></li>` +
@@ -770,6 +779,59 @@ function filmRow(f, wrapped) {
       <span class="when">${wrapped ? esc(longDate(f.wrapped)) : esc(f.year || '')}</span>
     </li>`;
 }
+
+
+/* --- sharing ----------------------------------------------------------- */
+
+/* Three affordances, not a row of platform badges. The native sheet where
+   the browser offers one — which on a phone covers everything — then copy
+   and Bluesky, which is where this project actually lives.
+
+   The share text carries the fact rather than just the title, because a
+   link travels away from the page that explains it. */
+let shareWhat = { text: '', url: '' };
+
+function shareControls(text, path) {
+  shareWhat = { text, url: `${location.origin}${location.pathname}${path}` };
+  return `
+    <div class="share">
+      <button data-share="native" hidden>Share</button>
+      <button data-share="copy">Copy link</button>
+      <button data-share="bsky">Bluesky</button>
+    </div>`;
+}
+
+function wireShare() {
+  const native = document.querySelector('[data-share="native"]');
+  if (native && navigator.share) native.removeAttribute('hidden');
+}
+
+document.addEventListener('click', async e => {
+  const btn = e.target.closest('[data-share]');
+  if (!btn) return;
+  const { text, url } = shareWhat;
+  const kind = btn.dataset.share;
+
+  if (kind === 'native' && navigator.share) {
+    try { await navigator.share({ text, url }); } catch { /* dismissed */ }
+    return;
+  }
+
+  if (kind === 'copy') {
+    try {
+      await navigator.clipboard.writeText(`${text}\n\n${url}`);
+      const was = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = was; }, 1600);
+    } catch { /* clipboard refused */ }
+    return;
+  }
+
+  if (kind === 'bsky') {
+    window.open('https://bsky.app/intent/compose?text=' +
+      encodeURIComponent(`${text}\n\n${url}`), '_blank', 'noopener');
+  }
+});
 
 
 /* --- archive ----------------------------------------------------------- */

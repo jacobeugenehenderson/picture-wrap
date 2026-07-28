@@ -10,6 +10,15 @@
 poster/state.json
 poster/queue.json
 
+# Working art files — PSDs, exports, anything being made rather than
+# served. Keep them outside the repo; a 169 MB Photoshop file was swept
+# in by `git add -A` and rejected by GitHub's 100 MB limit.
+public/
+*.psd
+
+# Scratch SPARQL
+*.rq
+
 # Logs and backups
 *.log
 *.before-recheck

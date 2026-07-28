@@ -1,4 +1,0 @@
-SELECT ?f ?fLabel WHERE {
-  VALUES ?f { wd:Q16311721 wd:Q12292564 wd:Q16673908 wd:Q132689 }
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en,fr,de,it,es,pt,nl,sv,da,no,fi,is,pl,cs,sk,hu,ro,bg,sr,hr,sl,uk,ru,el,tr,he,ar,fa,hi,bn,ta,te,ml,kn,mr,ur,th,vi,id,ms,ja,ko,zh,ca,eu,gl,et,lv,lt,ga,cy,sq,mk,ka,hy,az,kk,uz,af,sw,yi,la". }
-}

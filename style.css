@@ -410,6 +410,33 @@ main,
 }
 
 
+/* 6c. SHARE ============================================================== */
+
+.share {
+  display: flex;
+  gap: 1.2rem;
+  margin: 0.9rem 0 0.2rem;
+}
+
+.share button {
+  padding: 0.2rem 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  font-size: var(--size-tiny);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.share button:hover {
+  color: var(--ink-soft);
+  border-bottom-color: var(--gold);
+}
+
+
 /* 7. ROSTER ============================================================== */
 
 .roster li {

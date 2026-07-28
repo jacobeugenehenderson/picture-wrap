@@ -405,27 +405,24 @@ export function longDate(iso) {
 
 /* --- post composition -------------------------------------------------- */
 
-/* Where the film pages live. Used in the post link. */
+/* Where the film pages live. Used in every post link. */
 const SITE = process.env.PW_SITE || 'https://picture-wrap.com';
+/* Always two posts: the person, then the pictures.
 
-/* A prolific career takes several pictures over the line at once — Mary
-   Carlisle's death closed four, Margaret Booth's three. Posting those
-   separately would be a burst of near-identical skeets that buries the
-   actual story, which is the person rather than the films.
+   The person is the story — the feed is only ever fresh deaths — and a
+   single picture is still a world that has closed, so it gets the same
+   shape as seventeen. One post for who, one for what.
 
-   So the queue is reviewed and posted by person-and-date, not by film. */
-export function groupQueue(queue) {
-  const groups = new Map();
-  for (const item of queue) {
-    const key = `${item.last.id}|${(item.last.died || '').slice(0, 10)}`;
-    if (!groups.has(key)) groups.set(key, { last: item.last, items: [] });
-    groups.get(key).items.push(item);
-  }
-  return [...groups.values()];
-}
+   On tone: "all 24 people credited have now died" is a coroner's
+   sentence. What has actually happened is that the last living link to a
+   picture is gone — nobody left who was there. The copy says that.
+
+   No pronouns anywhere; we know these people only as database rows. */
 
 const WORDS = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven',
-               'Eight', 'Nine', 'Ten'];
+               'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen',
+               'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen',
+               'Nineteen', 'Twenty'];
 
 const and = names => (names.length === 2
   ? `${names[0]} and ${names[1]}`
@@ -436,68 +433,49 @@ const named = (i, withStars) => {
   return withStars && i.stars?.length ? `${title}, with ${and(i.stars)}` : title;
 };
 
-/* The person first, then the pictures.
+export function groupQueue(queue) {
+  const groups = new Map();
+  for (const item of queue) {
+    const key = `${item.last.id}|${(item.last.died || '').slice(0, 10)}`;
+    if (!groups.has(key)) groups.set(key, { last: item.last, items: [] });
+    groups.get(key).items.push(item);
+  }
+  return [...groups.values()];
+}
 
-   The feed is now only ever fresh deaths — backfill is filed straight to
-   the vault — so the news is the person. "X died today, and these pictures
-   wrapped with them" is the sentence; leading with a film list buries it.
-
-   One picture needs only one post. Several need two: the death, then the
-   list, because four titles with their stars ran to 292 of 300 characters
-   crammed into a single post.
-
-   Deliberately plain throughout: the facts are doing the work, and
-   anything added reads as the project being pleased with itself.
-   No pronouns anywhere — we know these people only as database rows. */
 export function compose(group) {
   const { last, items } = group;
   const when = longDate(last.died);
+  const link = `${SITE}/#/person/${last.id}`;
 
   const who = last.character
     ? `${last.name}, who played ${last.character},`
-    : `${last.name}`;
-  const died = `${who} died ${when}.`;
+    : last.name;
 
-  /* --- one picture: one post --- */
-  if (items.length === 1) {
-    const film = items[0];
-    const link = `${SITE}/#/film/${film.id}`;
-    const n = Number(film.castCount) || 0;
-    const credited = n === 1
-      ? `The 1 person credited on ${named(film, false)} has now died.`
-      : `All ${n} people credited on ${named(film, false)} have now died.`;
+  /* --- one: the person --- */
+  const lead = items.length === 1
+    ? `${who} died ${when} \u2014 the last of ${named(items[0], false)}.\n\n` +
+      `Nobody who made it is left.\n\n${link}`
+    : `${who} died ${when}.\n\n` +
+      `${WORDS[items.length] || items.length} pictures have lost the last ` +
+      `of their company.\n\n${link}`;
 
-    const withStars = film.stars?.length
-      ? `${died}\n\n${credited}\n\nWith ${and(film.stars)}.\n\n${link}`
-      : null;
-
-    return [withStars && measure(withStars) <= LIMIT
-      ? withStars
-      : `${died}\n\n${credited}\n\n${link}`];
-  }
-
-  /* --- several: the death, then the list --- */
-  const count = WORDS[items.length] || String(items.length);
-  const link = `${SITE}/#/person/${last.id}`;
-
-  const lead =
-    `${died}\n\n${count} pictures now have no surviving credited ` +
-    `name on record:\n\n${link}`;
-
-  /* Ordered by the film's own sitelink count, so when someone closes
-     fourteen pictures the five a reader would recognise are the five that
-     show — not whichever five the query happened to return first. */
+  /* --- two: the pictures --- */
   const ordered = [...items].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0));
   const listed = ordered.slice(0, MAX_LISTED);
   const rest = ordered.length - listed.length;
+  const more = rest ? `\n\nand ${rest} more at ${SITE}` : '';
 
   const build = withStars => {
-    const lines = listed.map(i => `\u00b7 ${named(i, withStars)}`);
-    if (rest) lines.push(`\u00b7 and ${rest} more`);
-    return lines.join('\n');
+    if (items.length === 1) {
+      const film = items[0];
+      const stars = withStars && film.stars?.length
+        ? `\n\nWith ${and(film.stars)}.` : '';
+      return `${named(film, false)}${stars}\n\n${SITE}/#/film/${film.id}`;
+    }
+    return listed.map(i => `\u00b7 ${named(i, withStars)}`).join('\n') + more;
   };
 
-  /* Stars are the first thing dropped if long titles overrun the budget. */
   const starred = build(true);
   return [lead, measure(starred) <= LIMIT ? starred : build(false)];
 }
