@@ -467,14 +467,14 @@ export function compose(group) {
   /* --- two: the pictures --- */
   const ordered = [...items].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0));
 
-  const build = howManyStars => {
+  const build = (howManyStars, count = MAX_LISTED) => {
     if (items.length === 1) {
       const film = items[0];
       const stars = (film.stars || []).slice(0, howManyStars || 2);
       const line = stars.length ? `\n\nWith ${and(stars)}.` : '';
       return `${named(film)}${line}\n\n${SITE}/#/film/${film.id}`;
     }
-    const listed = ordered.slice(0, MAX_LISTED);
+    const listed = ordered.slice(0, count);
     const rest = ordered.length - listed.length;
     /* The "more" link goes to the PERSON, not the site root — it's the
        page that actually holds the rest of their pictures. */
@@ -485,12 +485,19 @@ export function compose(group) {
     return listed.map(i => `\u00b7 ${named(i, howManyStars)}`).join('\n') + more;
   };
 
-  /* Always MAX_LISTED pictures. When they won't fit, shed star names
-     rather than titles — two each, then one, then none. The count is the
-     shape of the post; the names are the detail. */
-  for (const stars of [2, 1, 0]) {
-    const text = build(stars);
+  /* Aim for two names per picture and list as many as fit — five when the
+     titles are short, three when they run long. Naming who was in a film
+     is what makes it placeable, and a post crammed to 300 characters
+     reads worse than a shorter one that says more about each entry.
+     Only if even three won't carry two names do we start thinning them. */
+  const attempts = [
+    [2, 5], [2, 4], [2, 3],
+    [1, 5], [1, 4],
+    [0, 5],
+  ];
+  for (const [stars, count] of attempts) {
+    const text = build(stars, count);
     if (measure(text) <= LIMIT) return [lead, text];
   }
-  return [lead, build(0)];
+  return [lead, build(0, 3)];
 }
