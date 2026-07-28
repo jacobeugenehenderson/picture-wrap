@@ -1,7 +1,7 @@
 # Picture Wrap
 
-*Every picture wraps twice. Once when the shooting stops, and once when the
-last person who made it is gone.*
+*Every picture wraps twice: first when the shooting stops, and finally when
+the last person who made it is gone.*
 
 **[picture-wrap.com](https://picture-wrap.com)** ·
 **[@picture-wrap.bsky.social](https://bsky.app/profile/picture-wrap.bsky.social)**

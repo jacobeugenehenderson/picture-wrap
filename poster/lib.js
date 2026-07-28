@@ -277,15 +277,82 @@ export async function resolvePerson(name) {
    Returns the survivors it found; empty means genuinely closed. Needs
    TMDB_KEY — without it this returns [] and you are back to trusting
    Wikidata's cast list, which the Vault re-check proved wrong 278 times. */
+/* TMDB person records, cached for the life of the process. The same bit
+   player turns up across dozens of pictures in a single backfill year and
+   there is no reason to ask twice. */
+const personCache = new Map();
+
+const OLDEST = 112;   /* no verified human has passed this */
+
+async function tmdbPerson(id) {
+  if (personCache.has(id)) return personCache.get(id);
+  let out = null;
+  try {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/person/${encodeURIComponent(id)}` +
+      `?api_key=${encodeURIComponent(process.env.TMDB_KEY)}`);
+    if (res.ok) {
+      const p = await res.json();
+      out = { name: p.name || null, born: p.birthday || null, died: p.deathday || null };
+    }
+  } catch { /* leave it null — the caller counts it as unknown */ }
+  personCache.set(id, out);
+  return out;
+}
+
+/* Was this person, as far as TMDB is concerned, alive?
+
+   'dead'    — TMDB has a death date, or a birth date so old that no living
+               person could match it (a missing death date, not a survivor).
+   'alive'   — a birth date within a human lifespan and no death date.
+   'unknown' — TMDB has neither date, or the lookup failed. NOT an answer.
+               This is the honest bucket and it must never be read as 'dead'. */
+function statusOf(person) {
+  if (!person) return 'unknown';
+  if (person.died) return 'dead';
+  if (!person.born) return 'unknown';
+  const born = Number(String(person.born).slice(0, 4));
+  if (!born) return 'unknown';
+  return (new Date().getUTCFullYear() - born) > OLDEST ? 'dead' : 'alive';
+}
+
+async function mapLimit(items, limit, fn) {
+  const out = [];
+  for (let i = 0; i < items.length; i += limit) {
+    out.push(...await Promise.all(items.slice(i, i + limit).map(fn)));
+  }
+  return out;
+}
+
+/* Everyone TMDB credits who might still be alive, and a count of the ones
+   nobody can answer for.
+
+   Two passes, because the two databases are good at different things.
+   Wikidata resolves the people it knows, with real death dates. TMDB
+   answers for the rest — and it CAN answer, which is the part this got
+   wrong for a long time: it asked TMDB who was in a film and then asked
+   Wikidata whether they were alive, discarding the birth and death dates
+   TMDB was already holding. Anyone Wikidata couldn't match was silently
+   counted as dead. That is how a picture with a living bit player in it
+   ends up in the Vault.
+
+   Returns { alive, unknown }. A non-empty `alive` means DO NOT file.
+   A non-zero `unknown` is not a veto — for a 1935 picture almost every
+   unknown really is dead — but it is the honest measure of how much of
+   the claim rests on nothing, and it belongs on the page. */
 export async function survivorsViaTmdb(film, tmdbId) {
-  if (!process.env.TMDB_KEY || !tmdbId) return [];
+  if (!process.env.TMDB_KEY || !tmdbId) return { alive: [], unknown: 0 };
   try {
     const res = await fetch(
       `https://api.themoviedb.org/3/movie/${encodeURIComponent(tmdbId)}` +
       `/credits?api_key=${encodeURIComponent(process.env.TMDB_KEY)}`);
-    if (!res.ok) return [];
-    const { cast } = await res.json();
-    if (!Array.isArray(cast) || !cast.length) return [];
+    if (!res.ok) return { alive: [], unknown: 0 };
+    const { cast, crew } = await res.json();
+    const everyone = [...(Array.isArray(cast) ? cast : []),
+                      ...(Array.isArray(crew) ? crew : [])];
+    if (!everyone.length) return { alive: [], unknown: 0 };
+
+    const ids = [...new Set(everyone.map(c => String(c.id)))];
 
     const known = await sparql(`
       SELECT ?tmdb WHERE {
@@ -293,26 +360,41 @@ export async function survivorsViaTmdb(film, tmdbId) {
         wd:${film} ?prop ?p . ?p wdt:P4985 ?tmdb .
       }`);
     const have = new Set(known.map(r => r.tmdb));
-    const missing = cast.map(c => String(c.id)).filter(id => !have.has(id));
-    if (!missing.length) return [];
+    const missing = ids.filter(id => !have.has(id));
+    if (!missing.length) return { alive: [], unknown: 0 };
 
+    /* Pass one — Wikidata, in a single query. */
     const rows = await sparql(`
       SELECT ?tmdb ?pLabel ?dod WHERE {
         VALUES ?tmdb { ${missing.map(i => `"${i}"`).join(' ')} }
         ?p wdt:P4985 ?tmdb .
         OPTIONAL { ?p wdt:P570 ?dod }
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-      }`);
+      }`).catch(() => []);
 
-    const seen = new Set(), alive = [];
+    const alive = [];
+    const resolved = new Set();
     for (const r of rows) {
-      if (seen.has(r.tmdb)) continue;
-      seen.add(r.tmdb);
+      if (resolved.has(r.tmdb)) continue;
+      resolved.add(r.tmdb);
       if (!r.dod) alive.push(r.pLabel || r.tmdb);
     }
-    return alive;
+
+    /* Pass two — TMDB itself, for everyone Wikidata could not place.
+       This used to be where people quietly became dead. */
+    const orphans = missing.filter(id => !resolved.has(id));
+    let unknown = 0;
+    const names = new Map(everyone.map(c => [String(c.id), c.name]));
+
+    await mapLimit(orphans, 8, async id => {
+      const status = statusOf(await tmdbPerson(id));
+      if (status === 'alive') alive.push(names.get(id) || id);
+      else if (status === 'unknown') unknown++;
+    });
+
+    return { alive, unknown };
   } catch {
-    return [];
+    return { alive: [], unknown: 0 };
   }
 }
 

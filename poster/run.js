@@ -115,11 +115,12 @@ async function harvest(person, state, queue) {
     /* Wikidata says everyone credited has died. Ask TMDB whether Wikidata
        knew the whole cast — 14 of 60 candidates failed this on the first
        real sweep. */
-    const alive = await survivorsViaTmdb(item.id, item.tmdbId);
+    const { alive, unknown } = await survivorsViaTmdb(item.id, item.tmdbId);
     if (alive.length) {
       log(`      skip  ${item.title} — still living: ${alive.slice(0, 3).join(', ')}`);
       continue;
     }
+    item.unknownCount = unknown;
     await sleep(250);
     queue.push(item);
     log(`   +  ${item.title}${item.year ? ` (${item.year})` : ''} — closed by ` +
@@ -229,7 +230,7 @@ async function backfill(range) {
         /* Same verification the sweep does. Without it a backfill refills
            the Vault with exactly the false closings the re-check removed —
            278 of them, last time. */
-        const alive = await survivorsViaTmdb(id, details.tmdbId);
+        const { alive, unknown } = await survivorsViaTmdb(id, details.tmdbId);
         if (alive.length) {
           log(`   -  ${match.filmLabel} — still living: ${alive.slice(0, 2).join(', ')}`);
           continue;
@@ -237,6 +238,7 @@ async function backfill(range) {
 
         queue.push({
           id,
+          unknownCount: unknown,
           title: match.filmLabel,
           year: match.year || String(y),
           wrapped: match.wrapped,
@@ -258,7 +260,8 @@ async function backfill(range) {
       await sleep(300);
     }
 
-    done.push(y);
+    if (!done.includes(y)) done.push(y);   /* was pushed unconditionally, so
+                                              a re-run duplicated every year */
     state.yearsDone = done;
     await save(paths.state, state);
     await save(paths.queue, queue);

@@ -112,7 +112,7 @@ async function consider(name, source) {
        whether Wikidata knew the whole cast — without this the watcher
        drafts posts about pictures that still have living people, which is
        the one error this project can't take back. */
-    const alive = await survivorsViaTmdb(film.id, details.tmdbId);
+    const { alive, unknown } = await survivorsViaTmdb(film.id, details.tmdbId);
     if (alive.length) {
       log(`      skip  ${film.filmLabel} — still living: ${alive.slice(0, 3).join(', ')}`);
       continue;
@@ -120,6 +120,7 @@ async function consider(name, source) {
     queued++;
 
     queue.push({
+      unknownCount: unknown,
       id: film.id,
       title: film.filmLabel,
       year: film.year || null,

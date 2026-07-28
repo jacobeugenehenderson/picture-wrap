@@ -1103,8 +1103,8 @@ function viewAbout() {
 
     <div class="prose">
       <p>
-        Every picture wraps twice. Once when the shooting stops, and once
-        when the last person who made it is gone. This is a record of the
+        Every picture wraps twice: first when the shooting stops, and
+        finally when the last person who made it is gone. This is a record of the
         second one.
       </p>
 
