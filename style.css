@@ -25,14 +25,14 @@
   --paper:        #f4f1ea;   /* page background, warm off-white         */
   --paper-raised: #faf8f3;   /* search field, hovered rows              */
   --ink:          #16130e;   /* primary text                            */
-  --ink-soft:     #6f665a;   /* dates, characters, secondary text       */
-  --ink-faint:    #a49a8b;   /* hints, placeholders                     */
+  --ink-soft:     #4a443c;   /* dates, characters, secondary text  8.5:1 */
+  --ink-faint:    #605a52;   /* hints, placeholders                6.0:1 */
   --rule:         rgba(30, 24, 14, 0.13);  /* hairlines between rows    */
 
   /* --- colour: the gold bar ------------------------------------------ */
   /* The bar is the whole idea. It's a 3-stop gradient so it has a sheen
      rather than reading as a flat block. Keep the middle lightest.      */
-  --gold-dark:  #8a6a16;
+  --gold-dark:  #7a5e14;
   --gold:       #c9a227;
   --gold-light: #f0d67a;
   --bar-height: 7px;
@@ -68,8 +68,8 @@
     --paper:        #12100c;
     --paper-raised: #1b1813;
     --ink:          #ece7db;
-    --ink-soft:     #948b7b;
-    --ink-faint:    #635b4e;
+    --ink-soft:     #b8b2a8;
+    --ink-faint:    #99938b;
     --rule:         rgba(236, 231, 219, 0.14);
 
     --gold-dark:  #7a5c12;
@@ -430,6 +430,17 @@ main,
 }
 
 
+/* The one sentence on a closed picture's page. Set like the Vault's line
+   — italic serif, the register of something said rather than labelled. */
+.closing-line {
+  margin-top: 0.9rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.02rem;
+  color: var(--ink-soft);
+}
+
+
 /* 6c. SHARE ============================================================== */
 
 .share {
@@ -437,6 +448,8 @@ main,
   gap: 1.2rem;
   margin: 0.9rem 0 0.2rem;
 }
+
+.share button[data-back] { margin-right: auto; }
 
 .share button {
   padding: 0.2rem 0;
@@ -971,6 +984,27 @@ main,
     --gutter: 1rem;
     --portrait-w: 32px;
     --portrait-h: 40px;
+
+    /* The small sizes go UP on a phone, not down. 0.7rem is 11px, and
+       almost every use of it here is uppercase and letterspaced — the two
+       things that cost the most legibility at small sizes, because the
+       word loses its shape and the eye has to read letter by letter.
+       Fine on a desk, not fine one-handed on a bus. */
+    --size-small: 0.86rem;
+    --size-tiny:  0.78rem;
+
+    /* And denser again. A phone is small, often held at arm's length, and
+       frequently outdoors — the one place a soft grey stops being an
+       editorial choice and starts being an obstacle. */
+    --ink-soft:  #38332d;   /* 11.1:1 */
+    --ink-faint: #4d4841;   /*  8.0:1 */
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink-soft:  #cdc9c2;   /* 11.5:1 */
+      --ink-faint: #aeaaa3;   /*  8.2:1 */
+    }
   }
 
   .masthead { padding-top: 2.2rem; }

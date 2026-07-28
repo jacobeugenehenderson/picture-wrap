@@ -216,3 +216,27 @@ list is genuinely hard to read past.
 **Explanations of things the layout already said.** The caveat under the
 wrap stamp restated the fold beneath it. The fold's paragraph restated its
 own title. Both cut to nothing.
+
+
+## Contrast
+
+Every colour clears WCAG AA against its own background in both themes, and
+the secondary tones clear it by a wide margin — 8.5:1 and 6:1 rather than
+the 4.5:1 floor, going to 11:1 and 8:1 below 480px.
+
+AA is the threshold for *legible*, and most of these greys are set small,
+uppercase and letterspaced, which costs more than a contrast ratio knows
+about: the word loses its outline and has to be read letter by letter. A
+phone is also small, often at arm's length, and often in daylight.
+
+| | light | dark |
+|---|---|---|
+| `--ink` | 16.4:1 | 15.4:1 |
+| `--ink-soft` | 8.5:1 *(11.1 mobile)* | 9.0:1 *(11.5 mobile)* |
+| `--ink-faint` | 6.0:1 *(8.0 mobile)* | 6.2:1 *(8.2 mobile)* |
+| `--gold-dark` / `--gold` | 5.4:1 | 7.9:1 |
+
+The small type scale also goes **up** on mobile, not down: `--size-tiny`
+0.7rem → 0.78rem, `--size-small` 0.8rem → 0.86rem.
+
+Hues are fixed. If you change a value, re-measure.

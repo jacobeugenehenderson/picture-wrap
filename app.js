@@ -16,6 +16,7 @@
 
 import {
   CREW, CREDITS, CREDIT_PROPS, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
+  nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, slug, path, sentence,
 } from './shared.js';
 
@@ -308,7 +309,7 @@ async function viewFilm(id) {
     if (!people.has(person.p)) people.set(person.p, person);
   }
 
-  everyone = [...people.values()];
+  everyone = await repairNames([...people.values()], 'p', 'pLabel');
   filmMeta = meta;
 
   if (!everyone.length) {
@@ -441,6 +442,12 @@ function renderRoster() {
      above the bar once there is nobody left; a collapsed card up there
      softens the one moment the whole design exists to state. */
   const wrapped = !!wrapDate;
+
+  /* The sentence the page was missing. The stamp gives a date and the
+     roster gives an order, but nothing said the human thing: that one
+     person outlived everyone else who made this. */
+  const lastOne = wrapped ? front.dead[0] || back.dead[0] : null;
+
   const bar =
     `<li class="bar" role="separator" aria-label="Above: living. Below: died."></li>`;
 
@@ -459,6 +466,9 @@ function renderRoster() {
 
   show(
     titleCard(filmMeta, wrapDate) +
+    (lastOne
+      ? `<p class="closing-line">${esc(lastOne.pLabel)} was the last of its makers.</p>`
+      : '') +
     shareControls(shareText, location.hash) +
 
     /* Wrapped: the bar caps everything, then the crew card, then the cast.
@@ -521,21 +531,56 @@ function renderRoster() {
    SAMPLE() tiers instead, and SAMPLE has no preference, so Meryl Streep
    (who has no English label at all) came out in Chinese. */
 const labelQuery = id => `
-SELECT ?xLabel WHERE {
+SELECT ?xLabel ?article WHERE {
   # VALUES, not BIND — the label service resolves labels for variables bound
   # by VALUES and silently returns the Q-number for ones bound by BIND.
   VALUES ?x { wd:${id} }
+  OPTIONAL { ?article schema:about ?x ; schema:isPartOf <https://en.wikipedia.org/> }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
 }`;
 
 async function labelFor(id) {
   try {
     const rows = await sparql(labelQuery(id));
-    const label = flat(rows[0] || {}).xLabel;
-    return label && !/^Q\d+$/.test(label) ? label : '';
+    const r = flat(rows[0] || {});
+    const label = r.xLabel && !/^Q\d+$/.test(r.xLabel) ? r.xLabel : '';
+    if (!nonLatin(label)) return label;
+    /* See repairNames: a name in another script when an English one exists
+       on Wikipedia but not on Wikidata. */
+    return nameFromArticle(r.article) || label;
   } catch {
     return '';
   }
+}
+
+/* Wikidata's language fallback is honest but occasionally absurd. Anyone
+   whose name came back in a script an English reader can't sound out gets
+   one more chance: the title of their English Wikipedia article, which is
+   their English name even when the label field is empty.
+
+   Batched — one query for a whole roster, and only when someone needs it,
+   which on most pages is nobody. If there's no English article either, the
+   original stands: that really is the only name we have. */
+async function repairNames(rows, idKey, labelKey) {
+  const needy = rows.filter(r => nonLatin(r[labelKey]));
+  if (!needy.length) return rows;
+
+  const ids = [...new Set(needy.map(r => qid(r[idKey])))];
+  try {
+    const found = await sparql(`
+      SELECT ?x ?article WHERE {
+        VALUES ?x { ${ids.map(i => `wd:${i}`).join(' ')} }
+        ?article schema:about ?x ; schema:isPartOf <https://en.wikipedia.org/> .
+      }`);
+    const names = new Map(found.map(flat)
+      .map(r => [qid(r.x), nameFromArticle(r.article)])
+      .filter(([, n]) => n));
+    for (const r of needy) {
+      const better = names.get(qid(r[idKey]));
+      if (better) r[labelKey] = better;
+    }
+  } catch { /* the original name stands */ }
+  return rows;
 }
 
 function titleCard(meta, wrappedOn) {
@@ -719,7 +764,7 @@ async function viewPerson(id) {
 
   const meta = flat(metaRows[0] || {});
   meta.label = await labelFor(id);
-  const films = filmRows.map(flat);
+  const films = await repairNames(filmRows.map(flat), 'film', 'filmLabel');
 
   const life = meta.dob
     ? year(meta.dob) + '&ndash;' + (meta.dod ? year(meta.dod) : '')
@@ -818,6 +863,7 @@ function shareControls(text, path) {
   shareWhat = { text, url: `${location.origin}${location.pathname}${path}` };
   return `
     <div class="share">
+      <button data-back>&larr; Back</button>
       <button data-share="native" hidden>Share</button>
       <button data-share="copy">Copy link</button>
       <button data-share="bsky">Bluesky</button>
@@ -828,6 +874,20 @@ function wireShare() {
   const native = document.querySelector('[data-share="native"]');
   if (native && navigator.share) native.removeAttribute('hidden');
 }
+
+/* Back goes back when there is somewhere to go, and home when there
+   isn't — arriving from a Bluesky link means no in-site history, and a
+   Back button that throws you off the site is worse than none. */
+document.addEventListener('click', e => {
+  if (!e.target.closest('[data-back]')) return;
+  if (window.history.length > 1 && document.referrer.startsWith(location.origin)) {
+    window.history.back();
+  } else if (window.history.length > 1 && !document.referrer) {
+    window.history.back();
+  } else {
+    location.hash = '';
+  }
+});
 
 document.addEventListener('click', async e => {
   const btn = e.target.closest('[data-share]');

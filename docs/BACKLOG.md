@@ -149,6 +149,24 @@ app; those files exist only to be scraped.
 
 ---
 
+## Re-run 1930–1945
+
+**Priority: high.** The backfill's candidate query had a counting bug —
+`?cast` was distinct over people, `?dead` was a row sum — so any film with
+two release dates reported more dead than credited, failed the
+`cast === dead` gate, and was never offered. Fixed in `lib.js`.
+
+It dropped roughly **half of every year**: across 1935, 1939, 1942 and
+1945, the gate admitted 887 films where it should have admitted 1,655.
+*The Wizard of Oz* was one of them, reported as "20 cast, 21 dead" — the
+most recognisable closed picture there is, and the Vault never had it.
+
+The missed films were never marked seen (the finder never returned them),
+so re-running the backfill over 1930–1945 will simply find them. They
+still face TMDB verification, so expect a good share to reopen.
+
+---
+
 ## More backfill
 
 The Vault covers **1930–1945 releases only** — 2,819 pictures. Two obvious

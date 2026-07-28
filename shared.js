@@ -177,5 +177,30 @@ export function path(name, id) {
   return s ? `#/${s}/${id}` : `#/${id}`;
 }
 
+/* Does a label contain no Latin letters at all? Used to spot names the
+   language fallback rendered in another script — Robert Preston, an
+   American actor, arrived as "Роберт Престон" because Q451811 has no
+   English label and no English alias, so "ru" was the first list entry
+   that matched. Wikidata is missing the data; the fallback did its job.
+
+   Deliberately narrow. A French or Swedish label is left alone: it's
+   readable, and it may be the only name the person ever had. This is
+   only about scripts an English reader cannot even sound out. */
+export const nonLatin = s => !!s && !/[A-Za-z]/.test(s);
+
+/* An English Wikipedia URL, turned back into a name. The article title is
+   the English name when the label is missing, and its disambiguator is
+   noise here — "Robert_Preston_(actor)" is on a page that already says he
+   was an actor. */
+export function nameFromArticle(url) {
+  if (!url) return '';
+  try {
+    const title = decodeURIComponent(String(url).split('/wiki/').pop() || '');
+    return title.replace(/_/g, ' ').replace(/\s*\([^)]*\)\s*$/, '').trim();
+  } catch {
+    return '';
+  }
+}
+
 /* Sentence case, for Wikidata's lowercase type labels. */
 export const sentence = s => (s ? s[0].toUpperCase() + s.slice(1) : '');

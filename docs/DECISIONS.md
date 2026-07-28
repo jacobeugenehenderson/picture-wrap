@@ -377,3 +377,34 @@ unattributed deliberately: anyone who recognises it doesn't need the credit.
 **Post text is deliberately plain.** No adjectives, no elegy. Where a
 character name exists it is used; it usually doesn't, so the plain form is
 what's actually written to.
+
+
+## Counts over rows are wrong in every aggregate query
+
+*Recorded after the fourth instance.*
+
+SPARQL returns rows, not entities. Every extra value on any optional
+property multiplies them. This project has now been bitten four times:
+release dates inflating cast counts, To Kill a Mockingbird listed four
+times, demonyms turning "American" into "Americans", and finally the
+backfill's gate reporting more dead people than credited people.
+
+The rule: **any count of people must be `COUNT(DISTINCT ?person)`, and any
+conditional count must be `COUNT(DISTINCT ?boundCopy)` via
+`OPTIONAL { ... BIND(?person AS ?boundCopy) }`.** Never `SUM(IF(BOUND(...)))`.
+
+The failure is silent and one-directional — it inflates, so equality tests
+fail and things get dropped rather than wrongly included. Nothing looks
+broken; the archive is just quietly missing half of what it should hold.
+
+## An English name can exist without an English label
+
+Q451811 — Robert Preston, the American actor — has no English label and no
+English alias on Wikidata. The language fallback therefore walked to the
+next entry in the list and rendered him as "Роберт Престон".
+
+The fallback was right; the data is incomplete. The fix is to try the
+English Wikipedia article title before settling for another script, since
+the article title *is* the English name. Applied only when a label has no
+Latin characters at all — a French or Swedish name is left alone, because
+it's readable and may be the only name the person ever had.

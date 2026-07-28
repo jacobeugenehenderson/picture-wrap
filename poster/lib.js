@@ -319,11 +319,20 @@ export async function survivorsViaTmdb(film, tmdbId) {
 /* Candidate finder for backfill. Cast-only and therefore over-inclusive —
    every hit is re-tested with the full crew query above before it counts.
    Cast-only is the point: the crew-inclusive version of this times out. */
+/* Both counts must be DISTINCT over PEOPLE. They weren't: cast was
+   COUNT(DISTINCT ?c) but dead was SUM over rows, and rows multiply — a
+   film with two P577 release dates matches every cast member twice, so
+   ?dead came back double while ?cast stayed right. The caller's gate is
+   cast === dead, so those films failed it and were never offered.
+
+   It dropped about half of every year. The Wizard of Oz reported "20
+   cast, 21 dead" and was skipped, which is why the most famous closed
+   picture in the archive was never in it. */
 export const candidatesByYearQuery = year => `
-SELECT ?film (COUNT(DISTINCT ?c) AS ?cast) (SUM(IF(BOUND(?dod),1,0)) AS ?dead) WHERE {
+SELECT ?film (COUNT(DISTINCT ?c) AS ?cast) (COUNT(DISTINCT ?cd) AS ?dead) WHERE {
   ?film wdt:P31 wd:Q11424 ; wdt:P577 ?rd ; wdt:P161 ?c .
   FILTER(YEAR(?rd) = ${year})
-  OPTIONAL { ?c wdt:P570 ?dod }
+  OPTIONAL { ?c wdt:P570 ?dod . BIND(?c AS ?cd) }
 } GROUP BY ?film`;
 
 
