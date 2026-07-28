@@ -206,7 +206,7 @@ if (archiveOnly) {
       fileAway({
         id: item.id, title: item.title, year: item.year, wrapped: item.wrapped,
         castCount: item.castCount, stars: item.stars || [], fame: item.fame ?? 0,
-        tmdbId: item.tmdbId ?? null,
+        tmdbId: item.tmdbId ?? null, unknownCount: item.unknownCount ?? null,
         type: item.type ?? null, country: item.country ?? null,
         last: item.last, postedAt: null, postUrl: null, filedOnly: true,
       });
@@ -356,6 +356,12 @@ for (const [i, group] of groups.entries()) {
         castCount: item.castCount,
         stars: item.stars || [],
         fame: item.fame ?? 0,
+        /* Both of these used to be dropped on the posting path and kept on
+           the archive-only path. Without tmdbId, recheck.js cannot verify
+           an entry at all — so the pictures we actually announced were the
+           only ones that could never be re-tested. Exactly backwards. */
+        tmdbId: item.tmdbId ?? null,
+        unknownCount: item.unknownCount ?? null,
         type: item.type ?? null,
         country: item.country ?? null,
         last: item.last,
