@@ -304,21 +304,120 @@ async function tmdbPerson(id) {
   return out;
 }
 
+/* January the first is not a birthday. It is what a cataloguer types when
+   the only thing known is a year, and in TMDB's older records it is
+   overwhelmingly that rather than a real date.
+
+   Past this age we stop reading a bare 1 January as evidence of anything.
+   Bill Alcorn — "Soldier (uncredited)" in Mildred Pierce, born 1920-01-01,
+   nothing on IMDb, nothing on Wikidata — was vetoing the picture at 106.
+   That is not a survivor; it is a year with a placeholder stapled to it.
+
+   Below the threshold the date is taken at face value, because there a
+   1 January birthday is mostly people actually born on 1 January, and the
+   cost of demoting them is a picture wrongly declared closed. */
+const PLACEHOLDER_AGE = 100;
+const placeholder = born => /-01-01$/.test(String(born));
+
 /* Was this person, as far as TMDB is concerned, alive?
 
    'dead'    — TMDB has a death date, or a birth date so old that no living
                person could match it (a missing death date, not a survivor).
    'alive'   — a birth date within a human lifespan and no death date.
-   'unknown' — TMDB has neither date, or the lookup failed. NOT an answer.
-               This is the honest bucket and it must never be read as 'dead'. */
+   'unknown' — TMDB has neither date, the date is a placeholder too old to
+               credit, or the lookup failed. NOT an answer. This is the
+               honest bucket and it must never be read as 'dead'. */
 function statusOf(person) {
   if (!person) return 'unknown';
   if (person.died) return 'dead';
   if (!person.born) return 'unknown';
   const born = Number(String(person.born).slice(0, 4));
   if (!born) return 'unknown';
-  return (new Date().getUTCFullYear() - born) > OLDEST ? 'dead' : 'alive';
+
+  const age = new Date().getUTCFullYear() - born;
+  if (age > OLDEST) return 'dead';
+  if (age > PLACEHOLDER_AGE && placeholder(person.born)) return 'unknown';
+  return 'alive';
 }
+
+/* Which of these people does Wikidata know to be dead, found by name?
+
+   The gap this closes: a person is linked to Wikidata only through P4985,
+   the TMDB person id. Plenty of people Wikidata knows perfectly well have
+   no such link — so they fall past the id lookup to TMDB, TMDB has no
+   death date, and we announce them as a survivor.
+
+   Péter Eötvös is the case that found it. Died 24 March 2024, recorded on
+   Wikidata, no P4985 — and we reopened Cats' Play on him. A name is not a
+   good key, but it is the key we have, and it is far better than deciding
+   from TMDB's silence alone.
+
+   Guarded by birth year, which is why only people TMDB gave a birth date
+   to are asked about. An exact name match is common enough to be dangerous
+   on its own — there are several of most names — but a name AND a birth
+   year inside two years of each other is a different claim. If more than
+   one person clears that guard we have found ambiguity, not an answer, and
+   the caller keeps whatever it already believed.
+
+   Takes { id, name, record } and returns the set of TMDB ids that Wikidata
+   buries. Any failure returns an empty set: this pass can only ever move
+   someone from 'alive' to 'dead', so losing it is a false survivor, never
+   a false closing. */
+const NAME_BATCH = 60;
+const BIRTH_SLACK = 2;
+
+async function deathsByName(people) {
+  const buried = new Set();
+
+  /* Quotes and backslashes would break out of the SPARQL literal, and a
+     name that long is a data error rather than a person. */
+  const asking = people.filter(p =>
+    p.name && p.name.length <= 60 && !/["\\\n]/.test(p.name) && bornYear(p.record));
+  if (!asking.length) return buried;
+
+  for (let i = 0; i < asking.length; i += NAME_BATCH) {
+    const batch = asking.slice(i, i + NAME_BATCH);
+    const values = batch.map(p => `"${p.name}"@en`).join(' ');
+
+    /* wdt:P31 wd:Q5 keeps films, characters and songs that share a name
+       out of it. rdfs:label only, not altLabel: alt labels multiply the
+       match set and the query time, and TMDB records the common form of a
+       name, which is what rdfs:label holds. */
+    const rows = await sparql(`
+      SELECT ?name ?p ?dob ?dod WHERE {
+        VALUES ?name { ${values} }
+        ?p rdfs:label ?name ; wdt:P31 wd:Q5 .
+        OPTIONAL { ?p wdt:P569 ?dob }
+        OPTIONAL { ?p wdt:P570 ?dod }
+      }`).catch(() => []);
+
+    const byName = new Map();
+    for (const r of rows) {
+      if (!byName.has(r.name)) byName.set(r.name, []);
+      byName.get(r.name).push(r);
+    }
+
+    for (const person of batch) {
+      const born = bornYear(person.record);
+      const candidates = (byName.get(person.name) || []).filter(r => {
+        const theirs = Number(String(r.dob || '').slice(0, 4));
+        return theirs && Math.abs(theirs - born) <= BIRTH_SLACK;
+      });
+
+      /* One match, and it has a death date. Anything else is a guess. */
+      if (candidates.length === 1 && candidates[0].dod) buried.add(person.id);
+    }
+  }
+
+  return buried;
+}
+
+const bornYear = record => Number(String(record?.born || '').slice(0, 4)) || 0;
+
+/* Wikidata hands back "1944-01-02T00:00:00Z"; TMDB hands back "1944-01-02".
+   Everything downstream — the placeholder test especially — wants the
+   second shape. */
+const day = iso => (iso ? String(iso).slice(0, 10) : null);
 
 async function mapLimit(items, limit, fn) {
   const out = [];
@@ -331,14 +430,23 @@ async function mapLimit(items, limit, fn) {
 /* Everyone TMDB credits who might still be alive, and a count of the ones
    nobody can answer for.
 
-   Two passes, because the two databases are good at different things.
-   Wikidata resolves the people it knows, with real death dates. TMDB
-   answers for the rest — and it CAN answer, which is the part this got
-   wrong for a long time: it asked TMDB who was in a film and then asked
-   Wikidata whether they were alive, discarding the birth and death dates
-   TMDB was already holding. Anyone Wikidata couldn't match was silently
-   counted as dead. That is how a picture with a living bit player in it
-   ends up in the Vault.
+   Three passes, because neither database is complete and they are
+   incomplete in different places.
+
+     1. Wikidata by TMDB id — birth and death dates for everyone it links.
+     2. TMDB's own dates for everyone Wikidata has not buried.
+     3. Wikidata again, by name, for whoever is still standing.
+
+   Every one of those exists because of a specific wrong answer. Asking
+   TMDB who was in a film and then asking only Wikidata whether they were
+   alive counted everyone unmatched as dead, and put pictures with living
+   bit players in the Vault. Stopping at pass one because Wikidata had
+   heard of someone counted people TMDB had buried as survivors. Stopping
+   at pass two counted people with no P4985 link — Péter Eötvös, dead in
+   2024 and recorded — as survivors too.
+
+   The rule underneath all three: an absent death date is not a pulse. It
+   is an absent death date, and the answer to it is 'unknown'.
 
    Returns { alive, unknown }. A non-empty `alive` means DO NOT file.
    A non-zero `unknown` is not a veto — for a 1935 picture almost every
@@ -367,34 +475,73 @@ export async function survivorsViaTmdb(film, tmdbId) {
     const missing = ids.filter(id => !have.has(id));
     if (!missing.length) return { alive: [], unknown: 0 };
 
-    /* Pass one — Wikidata, in a single query. */
+    /* Pass one — Wikidata by TMDB id, in a single query.
+
+       Birth date as well as death date. An item with no P570 is not a
+       person who is alive, it is a person nobody has buried in public, and
+       reading the one as the other is this project's oldest mistake with
+       the two databases swapped. Helen Hunt — hairdresser on Cover Girl,
+       1944 — has a Wikidata item carrying no dates at all, and used to
+       veto the picture on the strength of it.
+
+       LANGS, not "en": the label service hands back the bare Q-number when
+       a person has no label in the language asked for, and this list is
+       largely people who don't. A survivor reported as "Q134235006" in the
+       review queue is a name nobody can check. */
     const rows = await sparql(`
-      SELECT ?tmdb ?pLabel ?dod WHERE {
+      SELECT ?tmdb ?pLabel ?dob ?dod WHERE {
         VALUES ?tmdb { ${missing.map(i => `"${i}"`).join(' ')} }
         ?p wdt:P4985 ?tmdb .
+        OPTIONAL { ?p wdt:P569 ?dob }
         OPTIONAL { ?p wdt:P570 ?dod }
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
       }`).catch(() => []);
 
-    const alive = [];
-    const resolved = new Set();
+    const names = new Map(everyone.map(c => [String(c.id), c.name]));
+    const wikidata = new Map();
     for (const r of rows) {
-      if (resolved.has(r.tmdb)) continue;
-      resolved.add(r.tmdb);
-      if (!r.dod) alive.push(r.pLabel || r.tmdb);
+      if (wikidata.has(r.tmdb)) continue;   /* First item wins, as before. */
+      wikidata.set(r.tmdb, { name: r.pLabel || null, born: day(r.dob), died: day(r.dod) });
     }
 
-    /* Pass two — TMDB itself, for everyone Wikidata could not place.
-       This used to be where people quietly became dead. */
-    const orphans = missing.filter(id => !resolved.has(id));
-    let unknown = 0;
-    const names = new Map(everyone.map(c => [String(c.id), c.name]));
+    /* Pass two — TMDB's own dates, for everyone Wikidata has not buried.
+       That is a wider net than "everyone Wikidata has never heard of",
+       which is what this used to ask for, and the difference is where the
+       errors were living: Robert Amon has a Wikidata item with no dates
+       and a TMDB record saying he died in November 1992. Wikidata had
+       claimed him, so TMDB was never asked, so he was a survivor. */
+    const unburied = missing.filter(id => wikidata.get(id)?.died == null);
+    const tmdb = new Map(
+      await mapLimit(unburied, 8, async id => [id, await tmdbPerson(id)]));
 
-    await mapLimit(orphans, 8, async id => {
-      const status = statusOf(await tmdbPerson(id));
-      if (status === 'alive') alive.push(names.get(id) || id);
-      else if (status === 'unknown') unknown++;
+    /* One record per person, out of both. Neither database is preferred —
+       a date either of them holds is a date we have, and the only way to
+       get this wrong is to stop asking early. */
+    const people = missing.map(id => {
+      const w = wikidata.get(id) || {};
+      const t = tmdb.get(id) || {};
+      return {
+        id,
+        name: w.name || names.get(id) || id,
+        record: { born: w.born || t.born || null, died: w.died || t.died || null },
+      };
     });
+
+    /* Pass three — Wikidata again, by name, for anyone still standing.
+       Only those with a birth date: it is the guard against name
+       collisions, and without it this would be guessing rather than
+       matching. */
+    const buried = await deathsByName(
+      people.filter(p => p.record.born && statusOf(p.record) !== 'dead'));
+
+    const alive = [];
+    let unknown = 0;
+    for (const person of people) {
+      if (buried.has(person.id)) continue;   /* Wikidata knows better. */
+      const status = statusOf(person.record);
+      if (status === 'alive') alive.push(person.name);
+      else if (status === 'unknown') unknown++;
+    }
 
     return { alive, unknown };
   } catch {
