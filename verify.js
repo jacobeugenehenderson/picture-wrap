@@ -52,7 +52,24 @@ const OLDEST = 112;
 const WD_PRECISION_DAY = 11;
 const toTheDay = date => !/-01-01$/.test(String(date));
 
-const day = iso => (iso ? String(iso).slice(0, 10) : null);
+/* Wikidata hands back "1944-01-02T00:00:00Z"; TMDB hands back
+   "1944-01-02". Everything downstream wants the second shape.
+
+   And sometimes Wikidata hands back neither. P570 can carry "unknown
+   value" — the editor asserting a death without a date — which the query
+   service returns as a skolem IRI. Slicing that to ten characters gave
+   Yumeko Aizome a death date of "http://www". The verdict was right by
+   accident, because a URI is truthy and truthy meant dead, and the whole
+   point of this file is not deciding things by accident. */
+const day = iso => {
+  if (!iso) return null;
+  const text = String(iso);
+  return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : null;
+};
+
+/* Did Wikidata assert a death at all, date or no date? "Unknown value" is
+   an assertion — it says this person is gone and nobody recorded when. */
+const asserted = value => value != null && String(value) !== '';
 
 /* The year either database gives, preferring Wikidata where both do. */
 const bornYear = person =>
@@ -87,6 +104,10 @@ async function mapLimit(items, limit, fn) {
 export function statusOf(person) {
   if (!person) return 'unknown';
 
+  /* A death Wikidata asserts without dating is still a death. Reading it
+     off the date alone worked only because an undatable value happened to
+     be a non-empty string. */
+  if (person.wd?.deathAsserted) return 'dead';
   const died = person.wd?.died || person.tmdb?.died || null;
   if (died) return 'dead';
 
@@ -211,7 +232,7 @@ async function deathsByName(people, sparql) {
    unchecked picture drawn as wrapped is a false claim on screen. Callers
    must decide what silence means for them rather than being handed a
    confident empty list. */
-export async function survivors({ film, tmdbId, sparql, tmdb }) {
+export async function survivors({ film, tmdbId, sparql, tmdb, detail = false }) {
   if (!tmdbId) return { alive: [], unknown: 0, ok: false };
 
   try {
@@ -309,6 +330,7 @@ export async function survivors({ film, tmdbId, sparql, tmdb }) {
         born: day(r.dob),
         precision: Number(r.prec ?? 0),
         died: day(r.dod),
+        deathAsserted: asserted(r.dod),
       });
     }
 
@@ -364,7 +386,24 @@ export async function survivors({ film, tmdbId, sparql, tmdb }) {
       } else if (status === 'unknown') unknown++;
     }
 
-    return { alive, unknown, ok: true };
+    /* Asked for by explain.js, so a verdict can be shown with its
+       evidence rather than asserted. Off by default: the poster wants an
+       answer, and building the working out for six thousand pictures
+       nobody will read is waste. It is the SAME array the decision was
+       made from — a separate diagnostic path would eventually disagree
+       with the real one, which is the mistake this file exists to end. */
+    const working = detail
+      ? people.map(p => ({
+          name: p.name,
+          tmdbId: p.id,
+          status: buried.has(p.id) ? 'dead' : statusOf(p),
+          buriedByName: buried.has(p.id),
+          wikidata: p.wd ? { born: p.wd.born, precision: p.wd.precision, died: p.wd.died } : null,
+          tmdb: p.tmdb ? { born: p.tmdb.born, died: p.tmdb.died } : null,
+        }))
+      : undefined;
+
+    return { alive, unknown, ok: true, ...(detail ? { working } : {}) };
   } catch {
     return { alive: [], unknown: 0, ok: false };
   }
