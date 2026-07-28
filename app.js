@@ -518,7 +518,7 @@ function renderRoster() {
 
     (castComplete
       ? `<p class="card-thin">Everyone on screen is gone. Someone who worked
-         behind the camera is still with us.</p>`
+         behind the camera is still here.</p>`
       : '') +
 
     `<ul class="roster">` +
@@ -537,10 +537,11 @@ function renderRoster() {
           <span class="fold-hint">${unrecorded.length}</span>
         </summary>
         <p class="fold-note">
-          TMDB credits ${unrecorded.length} more ${unrecorded.length === 1 ? 'person' : 'people'}
-          on this picture, and Wikidata has no record of ${unrecorded.length === 1 ? 'them' : 'any of them'}
-          &mdash; no dates, living or otherwise. They are listed here and left out
-          of everything above, because counting them either way would be a guess.
+          These ${unrecorded.length === 1 ? 'name is' : 'names are'} credited on
+          the picture but ${unrecorded.length === 1 ? 'has' : 'have'} no record
+          anywhere &mdash; no dates, nothing. They are listed here and left out of
+          everything above, because counting them as living or as dead would
+          both be a guess.
           <a href="https://bsky.app/profile/${esc(BLUESKY)}" rel="noopener">Corrections welcome</a>.
         </p>
         <ul class="roster">
@@ -562,6 +563,12 @@ function renderRoster() {
    a stamp above a list of one name says exactly what it's worth, and the
    reader can see it. The floor this used to carry was guarding a claim the
    page never really made on its own. */
+/* Small numbers read as words in a sentence — "One more name" rather
+   than "1 more name". */
+const NUMBERS = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven',
+                 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
+const count = n => NUMBERS[n] || String(n);
+
 /* Sentence case: Wikidata's type labels arrive lowercase ("television
    series") except where they start with a proper noun. */
 /* Wikidata lists several demonym forms and we want the adjective:
@@ -617,11 +624,14 @@ function titleCard(meta, wrappedOn) {
   ].filter(Boolean).join(' &middot; ');
 
   const stamp = wrappedOn
-    ? `<p class="card-wrapped">Picture wrapped ${esc(longDate(wrappedOn))}</p>` +
+    ? `<p class="card-wrapped">Final picture wrap &middot; ${esc(longDate(wrappedOn))}</p>` +
       (unrecorded.length
-        ? `<p class="card-thin">Everyone with a record has died. ${unrecorded.length}
-           further credited ${unrecorded.length === 1 ? 'name has' : 'names have'}
-           no record at all, and could be either.</p>`
+        ? `<p class="card-thin">Everyone on record is gone. ${
+             unrecorded.length === 1
+               ? 'One more name is credited'
+               : `${count(unrecorded.length)} more names are credited`
+           }, with nothing known about ${unrecorded.length === 1 ? 'them' : 'them'}
+           either way &mdash; living or otherwise.</p>`
         : '')
     : '';
 
