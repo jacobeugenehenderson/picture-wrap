@@ -8,24 +8,37 @@
                 │  WDQS, search, API   │
                 └──────────┬───────────┘
                        ▲     │     ▲
-          live queries │     │     │ scheduled queries
+          live queries │     │     │ queries by hand
                        │     │     │
    ┌───────────────────┴──┐  │  ┌──┴──────────────────┐
    │      THE SITE        │  │  │     THE POSTER      │
-   │  index.html          │  │  │  run.js    (cron)   │
-   │  style.css           │  │  │  watch.js  (live)   │
-   │  app.js              │  │  │  review.js (human)  │
-   │                      │  │  │  bluesky.js lib.js  │
+   │  index.html          │  │  │  run.js    sweep    │
+   │  style.css           │  │  │  watch.js  listen   │
+   │  app.js              │  │  │  review.js human    │
+   │                      │  │  │  recheck.js explain │
    │  static, no backend  │  │  │  node, no deps      │
    └──────────┬───────────┘  │  └──────────┬──────────┘
               │              │             │
-              └──── shared.js (both) ──────┘
-              │              │             │
-              │   reads      │             │  writes
-              └───────── archive.json ─────┘
-                                            │
-                                            └──► Bluesky
+              ├── shared.js ─┴─ verify.js ─┤
+              │   what both must           │
+              │   agree ABOUT              │  what both must
+              │                            │  agree ON
+              │                            │
+              │   reads                    │  writes
+              └──── vault/ ◄── archive.json ┘
+                    summary                 │
+                    ids                     └──► Bluesky
+                    <decade>
 ```
+
+Two shared files, and the distinction between them is the whole design.
+`shared.js` holds what both halves must agree **about** — property lists,
+languages, pure helpers. `verify.js` holds what they must agree **on**:
+the single judgement of whether anyone who made a picture is still alive.
+
+The site no longer reads `archive.json`. The poster writes it, and writes
+`vault/` beside it in the same breath; the browser fetches only the piece
+its question needs.
 
 The arrow from the poster to Bluesky passes through a human. Nothing posts
 automatically. See [DECISIONS.md](DECISIONS.md#the-approval-gate).
@@ -34,7 +47,8 @@ automatically. See [DECISIONS.md](DECISIONS.md#the-approval-gate).
 
 ## The site
 
-Three files, no build step, no framework, no package manager, no server.
+Four files, no build step, no framework, no server. (There is one dev
+dependency, eslint, which never ships — see *Tooling* below.)
 
 Both Wikidata endpoints send `access-control-allow-origin: *`, verified, so
 the browser talks to them directly. This is why the site can be static.
@@ -44,7 +58,8 @@ the browser talks to them directly. This is why the site can be static.
 | `index.html` | Markup only. Loads `app.js` as `type="module"`. |
 | `style.css` | Everything visual. Labelled sections; a `THEME` block of custom properties at the top is where nearly every change belongs. |
 | `app.js` | Routing, queries, rendering. |
-| `shared.js` | **Single source of truth.** Credit properties, search filters, label languages, pure helpers — imported by `app.js` in the browser and `poster/lib.js` in Node, as a native ES module. |
+| `shared.js` | Credit properties, search filters, label languages, pure helpers — imported by `app.js` in the browser and `poster/lib.js` in Node, as a native ES module. |
+| `verify.js` | **The survivor test.** Whether anyone who made a picture is still alive. Imported by the browser before it will raise the bar, and by the poster before it will queue a closing. |
 
 ### Why shared.js exists
 
@@ -56,6 +71,23 @@ halves can disagree about whether a picture has wrapped.
 What belongs there: constants, and pure functions with no environment
 behind them. What does not: anything that fetches. The poster sends a
 User-Agent and retries on 429; the browser can do neither.
+
+### Why verify.js exists
+
+The same lesson, learned the hard way and at a cost. The survivor test had
+three copies — `lib.js`, `recheck.js`, `recover.js` — and when the
+original was fixed the copies kept the bug. `app.js` held a fourth, and
+kept the *original* bug through three separate fixes to the others, so a
+film page could show a picture wrapped while TMDB knew someone in it was
+alive.
+
+`verify.js` fetches nothing itself. The caller passes in `sparql()` and
+`tmdb()`, because fetching is the one thing the halves genuinely cannot
+share. Everything else — what the answers *mean* — is identical on both
+sides and must stay that way.
+
+The test for whether something belongs here: *can the two halves give
+different answers, and would that be a bug?*
 
 ### Routes
 
@@ -89,15 +121,25 @@ Hash routing has one significant cost: link previews. See
 | Kind lookup | 1 (cached per id) | ~0.16s |
 | Film page | 3 parallel + label + TMDB credits | ~0.8s |
 | Person page | 2 parallel + label + verification | ~4s |
-| Vault | 1 fetch of `archive.json` | instant |
+| Vault, closed | 1 fetch of `vault/summary.json` | ~1 KB |
+| Vault, one decade opened | + that decade's file | 2 KB – 1 MB |
 
 The film page's TMDB call fills in character names *and* returns the cast
-Wikidata never recorded. The person page's verification only runs on
-pictures that look closed — usually a handful — in three round trips
-rather than three per film.
+Wikidata never recorded. It asks `/movie/{id}/credits` for a film and
+`/tv/{id}/aggregate_credits` for a series — a series' plain credits are
+only the billed regulars, five people where the aggregate has 248.
 
-Nothing is cached between page loads beyond `archive.json`. At this scale
-that's fine and it keeps the code honest.
+The film page runs the full survivor test **only when the page would
+otherwise show a wrap.** If Wikidata already knows somebody living, the
+bar is not going to the top and no amount of TMDB agreement would move it,
+so the extra requests never happen.
+
+The person page no longer verifies anything. A filmography can hold sixty
+closed-looking pictures and the test is per-film; it reads `vault/ids.json`
+instead, which is the same test already run offline.
+
+Nothing is cached between page loads. At this scale that's fine and it
+keeps the code honest.
 
 ---
 
@@ -107,7 +149,8 @@ Node 18+, no dependencies. Uses built-in `fetch` and `readline/promises`.
 
 | File | Role |
 |---|---|
-| `lib.js` | All SPARQL, file IO, post composition |
+| `lib.js` | SPARQL, file IO, post composition, and the two writers — `saveArchive()` and `saveState()` |
+| `verify.js` | *(repo root)* The survivor test, shared with the browser |
 | `run.js` | The sweep and the backfill. **Posts nothing.** |
 | `watch.js` | Bluesky firehose from chosen newsrooms. **Posts nothing.** |
 | `review.js` | The approval gate. The only path to Bluesky. |
@@ -117,6 +160,9 @@ Node 18+, no dependencies. Uses built-in `fetch` and `readline/promises`.
 | `recover.js` | Re-files pictures an earlier bug dropped. |
 | `coverage.js` | Measures Wikidata's cast completeness against TMDB. |
 | `check.js` | Verifies credentials. Posts nothing. |
+| `explain.js` | Why one picture got the verdict it got. Reads only the APIs, writes nothing — safe against a live backfill. |
+| `backfill-tmdbids.js` | Fills in missing `tmdbId`, without which an entry cannot be verified. |
+| `watch.command` | The launcher. Restarts node if it dies, and drops the Bluesky password before starting — the watcher reads a public firehose and cannot post. |
 
 ### Why event-driven, not a sweep
 
@@ -131,13 +177,27 @@ A daily run is two query shapes and finishes in about a minute.
 
 | File | Meaning |
 |---|---|
-| `state.json` | Every film ID already **considered**, plus rejections and completed backfill years |
-| `queue.json` | Awaiting human approval |
-| `archive.json` | Approved and posted. **The site reads this.** |
+| `state.json` | Every film ID already **queued**, plus completed backfill years. Gitignored. |
+| `state.backup.json` | The same, sorted one id per line, and committed. |
+| `queue.json` | Awaiting human approval. Gitignored. |
+| `archive.json` | Approved and filed. The poster's record; the site does not read it. |
+| `vault/` | What the site reads: `summary.json`, `ids.json`, and one file per decade. |
 
-`state.json` records a film when it is considered, not when it is posted.
-Without that, a film skipped for a thin cast record would be re-offered on
-every future sweep forever.
+`state.json` records a film when it is **queued**, and nothing earlier. It
+used to be stamped on the way in — before the name check, before the cast
+floor, before the survivor test — so a picture declined because somebody
+was still alive could never be offered again, not even after that person
+died. 1,367 pictures were sealed off that way before it was fixed.
+
+Everything declined is simply left unrecorded, so the next death on that
+picture brings it back round. The cost is re-testing films already
+declined, which is exactly the work that finding them requires.
+
+Two writers keep the derived files from drifting: `saveArchive()` writes
+`archive.json` and republishes `vault/`; `saveState()` writes `state.json`
+and its sorted twin. Nothing calls `save(paths.archive, …)` directly any
+more, because a derived file you can forget to update is one that goes
+stale.
 
 ---
 
@@ -146,8 +206,13 @@ every future sweep forever.
 | | Latency | What it is |
 |---|---|---|
 | `watch.js` | minutes | A newsroom reports a death; the wrap test doesn't need the date, because everyone else is already recorded. Drafts are flagged **provisional**. |
-| `run.js` hourly | ~1 hour | Once Wikidata records the death. The reliable one. |
-| `run.js --days 730` monthly | — | Deaths entered late, which no daily window would ever see. |
+| `run.js --days 3` | ~1 day | Once Wikidata records the death. The reliable one. |
+| `run.js --days 730` | — | Deaths entered late, which no daily window would ever see. |
+
+**None of it is scheduled.** The cron lines in OPERATIONS.md have never
+been installed, and cannot be while the repository lives under `~/Desktop`,
+which macOS gates behind TCC — a launchd agent cannot read even its own
+launcher there. Every run this project has done was typed by hand.
 
 ---
 
@@ -162,14 +227,16 @@ every future sweep forever.
    TMDB credits and Wikidata didn't attach to that film reopens it. On the
    first real sweep this caught 14 of 60 candidates.
 5. Guards apply: at least `MIN_CAST` cast on record, and a name in some
-   language. Failures are logged and recorded as seen.
+   language. Failures are logged and **not** recorded as seen, so they can
+   come back when the picture changes.
 6. The picture is queued with the person who closed it, their character,
    their nationality, age and credit, the film's stars and its poster.
 7. A human runs `preview.js` to see it, then `review.js` to approve.
 8. Two posts go to Bluesky as a thread — the person with their portrait,
    then the pictures with their posters — and each film is appended to
-   `archive.json`.
-9. `archive.json` is committed and pushed; the Vault picks it up.
+   `archive.json`, which republishes `vault/` in the same call.
+9. `archive.json` and `vault/` are committed and pushed; the Vault picks
+   it up.
 
 Latency from death to post is hours to days, dominated by how fast Wikidata
 is edited. This is why the poller is a cron and not a live event stream —
@@ -188,21 +255,31 @@ The site is hosted on **GitHub Pages** from `main`, at
 `.nojekyll` stops Pages processing the files.
 
 The poster writes `archive.json` straight into the site root via
-`PW_ARCHIVE`. **Committing and pushing it is manual** — nothing does that
-for you, and until you do, the Vault won't show what was posted.
+`PW_ARCHIVE`, and `vault/` beside it. **Committing and pushing is manual**
+— nothing does that for you, and until you do, the Vault won't show what
+was posted.
+
+`?v=` on both tags in `index.html` must be bumped whenever `app.js` or
+`style.css` changes, or returning visitors keep the old files.
 
 ---
 
 ## What does not exist, deliberately
 
-No backend, no database, no build step, no dependencies, no accounts, no
-cookies, no analytics, no tracking. The site is three files that will still
-work in ten years.
+No backend, no database, no build step, no accounts, no cookies, no
+analytics, no tracking. The site is four files that will still work in ten
+years.
 
-One thing crossed the line partway: **TMDB**. Its key ships in `app.js`
-and is therefore public — accepted, because a read-only key on a
-non-commercial site is rotatable and the character names were worth it.
-Nothing else changed: still no backend, no build step, no dependencies.
+Two things crossed the line partway.
+
+**TMDB.** Its key ships in `app.js` and is therefore public — accepted,
+because a read-only key on a non-commercial site is rotatable and the
+character names were worth it.
+
+**eslint.** One dev dependency, added after a deleted variable reached
+production. It never ships; `node_modules` is gitignored and the site
+still serves only its own files. But "no dependencies" was a stated
+property and it is now qualified rather than true.
 
 Two things would require a real server — per-film link previews for
 clients other than Bluesky, and search analytics. They are the *same*
@@ -210,7 +287,7 @@ crossing, and if it happens it should happen once.
 See [DECISIONS.md](DECISIONS.md#the-single-tool-constraint).
 
 
-## Where shared logic lives, and where it doesn't yet
+## Where shared logic lives
 
 `shared.js` holds everything both halves must agree *about*: credit
 properties, kinds, occupations, language order, date and slug helpers. It
@@ -219,17 +296,43 @@ differently. Node sends a User-Agent and retries on 429; the browser can do
 neither.
 
 That boundary was drawn around **constants**, and it should have been drawn
-around **decisions**. The verification logic — "is anyone from this picture
-still alive" — is a decision both halves make, and it lives in `lib.js`,
-which the browser cannot import. So the site has its own copy.
+around **decisions**. For most of this project's life the verification
+logic — "is anyone from this picture still alive" — lived in `lib.js`,
+which the browser cannot import, so the site kept its own copy. Copies
+drift, and this one drifted into a bug that survived three separate fixes
+because each fix touched one copy.
 
-Copies drift, and this one drifted into a bug that survived three separate
-fixes because each fix only touched one copy. See DECISIONS.md.
-
-**The intended shape:** extract the verification into a pure module that
-takes `fetch` as its only dependency, and have both `lib.js` and `app.js`
-call it. Tracked as the top item in BACKLOG.md.
+`verify.js` is that boundary redrawn. It fetches nothing; the caller
+supplies `sparql()` and `tmdb()`. Both halves import it, and there is no
+second implementation left anywhere.
 
 The test for whether something belongs in shared code is not "is it a
 constant" — it is **"can the two halves give different answers, and would
 that be a bug?"**
+
+---
+
+## Tooling
+
+One dev dependency, `eslint`, added after a deleted variable reached
+production on the landing page. `node --check` parses a file; it does not
+run it, so a reference to something that no longer exists survives every
+check the project had.
+
+```sh
+npm run lint
+```
+
+Deliberately narrow: `no-undef`, plus a handful of rules for things that
+are unambiguously bugs rather than taste. No formatting opinions, and it
+should not grow any — the moment it has views about how the code reads,
+running it stops being free. The two halves get different globals, so
+`app.js` may say `document` and must not say `process`, and `shared.js`
+and `verify.js` may assume neither.
+
+Nothing lints CSS. A grouped selector was deleted once and every page went
+full-bleed; the check that would have caught it is comparing the sorted set
+of selectors before and after a structural edit.
+
+`node_modules` is gitignored. The site still ships nothing but the files it
+serves.
