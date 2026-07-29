@@ -24,12 +24,15 @@ import { sparql, load, paths, sleep, qid, saveArchive } from './lib.js';
 
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
-const fromIx = args.indexOf('--from');
-const FROM = fromIx === -1 ? 0 : Number(args[fromIx + 1]);
-const limitIx = args.indexOf('--limit');
-const LIMIT = limitIx === -1 ? Infinity : Number(args[limitIx + 1]);
+const review = args.includes('--review');
+const num = (flag, fallback) => {
+  const i = args.indexOf(flag);
+  return i === -1 ? fallback : Number(args[i + 1]);
+};
+const FROM = num('--from', 0);
+const LIMIT = num('--limit', Infinity);
 
-if (!process.env.TMDB_KEY) { console.error('Set TMDB_KEY first.'); process.exit(1); }
+if (!review && !process.env.TMDB_KEY) { console.error('Set TMDB_KEY first.'); process.exit(1); }
 
 /* --- why a year match is not enough -------------------------------------
 
@@ -60,9 +63,34 @@ if (!process.env.TMDB_KEY) { console.error('Set TMDB_KEY first.'); process.exit(
    The bias is deliberate and matches the file's original instinct: a
    missing id costs a re-check, a wrong one costs the truth. */
 
-const EXACT_MIN_OVERLAP = 1;
-const NEAR_MIN_OVERLAP = 2;
+const EXACT_MIN_OVERLAP = num('--min-overlap', 1);
+const NEAR_MIN_OVERLAP = Math.max(2, EXACT_MIN_OVERLAP + 1);
 const YEAR_SLACK = 1;
+
+/* --- and every id records how it was corroborated ------------------------
+
+   One shared name at the exact year is the weakest thing this file will
+   accept. It is usually right — a compilation film or a small cast leaves
+   little to match on — but "usually right" is not a thing to write into the
+   Vault and forget, and the operator cannot personally adjudicate a 1975
+   Punjabi film or an Italian Totò compilation. Nobody can, at volume.
+
+   So the strength of the match is written down beside the id:
+
+     tmdbIdFrom: { shared, how, via, asked }
+
+   The number is the point. An id accepted on one shared name is findable
+   forever with `--review`, and if a doubt ever surfaces about an entry the
+   provenance is right there rather than in a log somebody deleted. That
+   turns an irreversible judgement call into a reversible one, which is the
+   only honest way to accept the weak matches at all.
+
+   The field is absent on the ~10,380 entries whose id came from Wikidata's
+   P4947, and absent on everything that predates this file. Absence
+   therefore means "not established by title search" — it must never be
+   read as "strongly corroborated", which is the mistake unknownCount: 0
+   already made once on 1,030 entries. */
+const WEAK = num('--weak-at', 1);
 
 /* Names are compared with diacritics stripped and punctuation dropped, so
    "Đoko Rosić" matches "Doko Rosic" and "Vassil Kazandjiev" matches
@@ -94,6 +122,43 @@ if (!archive.length) {
 }
 
 const yearOf = e => Number(String(e.year || '').slice(0, 4)) || 0;
+
+/* --- review: which ids rest on thin corroboration? ---------------------- */
+
+/* No network, no key, no writes. This is the affordance that makes
+   accepting a one-name match defensible: the weak ones can be listed on
+   demand, months later, by someone who has forgotten this ever happened.
+
+     node backfill-tmdbids.js --review              everything at or below 1
+     node backfill-tmdbids.js --review --weak-at 3  widen the net           */
+if (review) {
+  const traced = archive.filter(e => e.tmdbIdFrom);
+  const weak = traced.filter(e => (e.tmdbIdFrom.shared ?? 0) <= WEAK)
+    .sort((a, b) => (a.tmdbIdFrom.shared ?? 0) - (b.tmdbIdFrom.shared ?? 0));
+
+  console.log(`${traced.length} of ${archive.length} entries carry a search-derived tmdb id.`);
+  console.log(`${weak.length} rest on ${WEAK} shared cast name(s) or fewer.\n`);
+
+  if (!traced.length) {
+    console.log('None recorded yet. Ids predating this file, and ids from Wikidata\'s');
+    console.log('P4947, carry no provenance — absence is not a strength rating.');
+    process.exit(0);
+  }
+
+  for (const e of weak) {
+    const p = e.tmdbIdFrom;
+    console.log(`  ${String(yearOf(e)).padStart(4)}  ${(e.title || '').slice(0, 34).padEnd(34)}` +
+      `  tmdb ${String(e.tmdbId).padStart(8)}  ${p.shared} shared  ${p.how}, ${p.via}` +
+      (p.asked && p.asked !== e.title ? `, asked "${p.asked}"` : ''));
+  }
+
+  const hist = {};
+  for (const e of traced) { const s = e.tmdbIdFrom.shared ?? 0; hist[s] = (hist[s] || 0) + 1; }
+  console.log(`\nshared-cast distribution across all ${traced.length}: ` +
+    Object.entries(hist).sort((a, b) => Number(a[0]) - Number(b[0]))
+      .map(([k, v]) => `${k}:${v}`).join('  '));
+  process.exit(0);
+}
 
 const missing = archive.filter(f => !f.tmdbId);
 
@@ -319,7 +384,7 @@ for (const f of todo) {
   }
 
   if (match) {
-    accepted.push({ f, id: match.id, via: match.via,
+    accepted.push({ f, id: match.id, via: match.via, asked: match.usedTitle,
       how: match.exact ? 'exact year' : 'year ±1', shared: match.shared,
       why: `${match.shared} shared cast, TMDB "${match.tmdbTitle}" (${match.ry})` +
         (match.via === 'native' ? `, searched as "${match.usedTitle}"` : '') });
@@ -339,6 +404,7 @@ for (const f of todo) {
 
 const viaSearch = accepted.filter(a => a.how !== 'P4947');
 const viaNative = viaSearch.filter(a => a.via === 'native');
+const weakOnes = viaSearch.filter(a => (a.shared ?? 0) <= WEAK);
 const extraTitles = [...titlesOf.values()].reduce((n, s) => n + s.size, 0);
 
 console.log(`  TMDB search supplied ${viaSearch.length}` +
@@ -368,6 +434,15 @@ bucket('COULD NOT CONFIRM — a candidate existed, the cast did not agree', unco
 bucket('NOTHING FOUND — TMDB has no film at that title and year', nothingFound);
 bucket('DEFERRED — a lookup failed, so this is not an answer', deferred);
 
+if (weakOnes.length) {
+  console.log(`THIN CORROBORATION (${weakOnes.length}) — accepted, and recorded as such:`);
+  for (const a of weakOnes) {
+    console.log(`  ${String(yearOf(a.f)).padStart(4)}  ${(a.f.title || '').slice(0, 34).padEnd(34)}  ${a.why}`);
+  }
+  console.log(`  These are written with tmdbIdFrom.shared = ${weakOnes.map(a => a.shared).join('/')},`);
+  console.log('  so `--review` finds them later without anyone having to remember.\n');
+}
+
 console.log(`${accepted.length} to fill, ${unconfirmed.length} unconfirmed, ` +
   `${nothingFound.length} absent, ${deferred.length} deferred.`);
 if (deferred.length) console.log('Deferrals are failed lookups, not results. Re-run for those before believing the totals.');
@@ -377,6 +452,19 @@ if (dryRun) {
   process.exit(0);
 }
 
-for (const a of accepted) a.f.tmdbId = a.id;
+const stamp = new Date().toISOString().slice(0, 10);
+for (const a of accepted) {
+  a.f.tmdbId = a.id;
+  /* Provenance only for ids this file reasoned its way to. An id read off
+     P4947 was not corroborated by us and must not be given a strength. */
+  if (a.how !== 'P4947') {
+    a.f.tmdbIdFrom = {
+      shared: a.shared, how: a.how, via: a.via,
+      asked: a.asked || a.f.title, at: stamp,
+    };
+  }
+}
 await saveArchive(archive);
-console.log(`\nRepaired ${accepted.length} entries. Now run recheck.js.`);
+console.log(`\nRepaired ${accepted.length} entries. ${weakOnes.length} of them rest on ` +
+  `${WEAK} shared name(s) or fewer — list them any time with --review.`);
+console.log('Now run recheck.js.');
