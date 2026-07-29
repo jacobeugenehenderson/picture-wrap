@@ -713,6 +713,10 @@ body.viewing { overflow: hidden; }
 }
 
 
+/* A separator, not a word. */
+.colophon .dot { margin: 0 0.5rem; color: var(--ink-faint); }
+
+
 /* 8. THE BAR ============================================================= */
 
 /* Not a section heading. No label, no count. Its position is the message:

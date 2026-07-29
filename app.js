@@ -1261,7 +1261,7 @@ function viewAbout() {
       <p>
         A film&rsquo;s page is one list of everyone credited on it, divided
         by a gold bar. The living sit above it, the dead below. As people
-        die they cross, the living section shrinks, and the bar rises. When
+        die they cross the bar, the living section shrinks, and it rises. When
         there is nobody left it comes to rest beneath the title, and the
         picture has, finally, wrapped.
       </p>
@@ -1292,7 +1292,7 @@ function viewAbout() {
       <h3>Whose cinema is here?</h3>
       <p>
         Overwhelmingly American and European, and that is a limit of the
-        source rather than a judgement. Of films from 1930 to 1945, Wikidata
+        source, not the importance of the films. Of films from 1930 to 1945, Wikidata
         holds 8,285 American titles and 1,681 French ones. It holds 399
         Japanese titles, from an industry making around five hundred
         pictures a year, and <strong>37 Indian titles across sixteen

@@ -28,7 +28,7 @@
        cache these hard; without a new URL, returning visitors keep the old
        version until they hard-refresh. The number is arbitrary — any change
        works — but keeping them in step makes it one edit to remember. -->
-  <link rel="stylesheet" href="style.css?v=27">
+  <link rel="stylesheet" href="style.css?v=28">
 </head>
 <body>
 
@@ -46,10 +46,10 @@
     <input
       id="q"
       type="search"
-      placeholder="Search a picture or a maker"
+      placeholder="Search by picture or maker"
       autocomplete="off"
       spellcheck="false"
-      aria-label="Search a picture or a maker"
+      aria-label="Search by picture or maker"
       aria-expanded="false"
       aria-controls="suggestions">
     <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
@@ -59,26 +59,28 @@
     <!-- rendered by app.js -->
   </main>
 
+  <!-- The sources used to be listed here on every page. They are on the
+       About page instead, which is where somebody goes when they want to
+       know how much to trust what they are reading — and TMDB's required
+       attribution lives there with them.
+
+       What is left is the two things a footer is actually for: who made
+       this, and the way further in. Corrections are not among them; those
+       are offered on the film page itself and point at Wikidata, where a
+       fix helps everyone downstream rather than only this archive.
+
+       The byline is a mailto until jacobhenderson.studio is ready to be
+       pointed at. Swap the href when it is; nothing else needs to change. -->
   <footer class="colophon">
-    <!-- TMDB's half is hidden until a key is actually set, because
-         crediting a source we never call would be its own small lie. What
-         it says has to stay true as well: since both databases are asked
-         about life and death, "character names from TMDB" understated it
-         to the point of being wrong. -->
     <p>
-      Cast, credits and dates from
-      <a href="https://www.wikidata.org" rel="noopener">Wikidata</a><span
-        id="tmdb-credit" hidden> and
-        <a href="https://www.themoviedb.org" rel="noopener">TMDB</a></span>;
-      portraits from
-      <a href="https://commons.wikimedia.org" rel="noopener">Wikimedia Commons</a>.
-      All are edited by volunteers and none is complete.
+      Made by <a href="mailto:jacob@jacobhenderson.studio">Jacob Henderson</a>
+      <span class="dot">&middot;</span>
       <a href="#/about">More</a>
     </p>
   </footer>
 
   <!-- type="module" so app.js can import shared.js, which the poster imports
        too. Native ES modules in both runtimes; still no build step. -->
-  <script type="module" src="app.js?v=27"></script>
+  <script type="module" src="app.js?v=28"></script>
 </body>
 </html>
