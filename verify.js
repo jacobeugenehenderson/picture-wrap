@@ -232,16 +232,37 @@ async function deathsByName(people, sparql) {
    unchecked picture drawn as wrapped is a false claim on screen. Callers
    must decide what silence means for them rather than being handed a
    confident empty list. */
-export async function survivors({ film, tmdbId, sparql, tmdb, detail = false }) {
+export async function survivors({ film, tmdbId, media = 'movie', sparql, tmdb, detail = false }) {
   if (!tmdbId) return { alive: [], unknown: 0, ok: false };
 
   try {
-    const credits = await tmdb(`/movie/${encodeURIComponent(tmdbId)}/credits`);
+    /* A series is not a long film. TMDB keeps them apart, and so must we:
+       /movie/{id}/credits against a series id answers about whatever film
+       happens to hold that number.
+
+       aggregate_credits, not credits, because a series' /credits is only
+       the billed regulars — five people for BoJack Horseman, against 248
+       cast and 179 crew in the aggregate. Everyone who ever appeared is
+       the question this project asks. */
+    const credits = await tmdb(media === 'tv'
+      ? `/tv/${encodeURIComponent(tmdbId)}/aggregate_credits`
+      : `/movie/${encodeURIComponent(tmdbId)}/credits`);
     if (!credits) return { alive: [], unknown: 0, ok: false };
 
-    const { cast, crew } = credits;
-    const everyone = [...(Array.isArray(cast) ? cast : []),
-                      ...(Array.isArray(crew) ? crew : [])];
+    /* The two endpoints disagree about shape. A film credit carries
+       `character` and `job` directly; an aggregate series credit carries
+       `roles` and `jobs` arrays, because one person may have played three
+       parts across nine years. Flattened here, once. */
+    const flatten = (list, key) => (Array.isArray(list) ? list : []).map(c => ({
+      ...c,
+      character: c.character ?? c.roles?.[0]?.character ?? null,
+      job: c.job ?? c.jobs?.[0]?.job ?? null,
+      _cast: key === 'cast',
+    }));
+
+    const cast = flatten(credits.cast, 'cast');
+    const crew = flatten(credits.crew, 'crew');
+    const everyone = [...cast, ...crew];
     if (!everyone.length) return { alive: [], unknown: 0, ok: false };
 
     const ids = [...new Set(everyone.map(c => String(c.id)))];
@@ -300,7 +321,7 @@ export async function survivors({ film, tmdbId, sparql, tmdb, detail = false }) 
       if (billing.has(id)) continue;
       billing.set(id, {
         role: c.character || c.job || null,
-        onScreen: Array.isArray(cast) && cast.some(x => String(x.id) === id),
+        onScreen: !!c._cast,
       });
     }
 

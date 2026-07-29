@@ -264,11 +264,15 @@ document.addEventListener('click', e => {
    NB: SPARQL comments start with '#'. A JS-style block comment inside one
    of these template literals is a 400 from the query service. */
 const filmMetaQuery = id => `
-SELECT (MIN(?y) AS ?year) (SAMPLE(?t) AS ?tmdb)
+SELECT (MIN(?y) AS ?year) (SAMPLE(?t) AS ?tmdb) (SAMPLE(?tv) AS ?tmdbTv)
        (SAMPLE(?tyl) AS ?type) (GROUP_CONCAT(DISTINCT ?dem; separator="|") AS ?demonyms)
        (GROUP_CONCAT(DISTINCT ?dl; separator=", ") AS ?directors) WHERE {
   BIND(wd:${id} AS ?f)
   OPTIONAL { ?f wdt:P4947 ?t }
+  # P4947 is the TMDB *movie* id. A series carries P4983 instead, and asking
+  # only for the first is why every television page ran on Wikidata alone —
+  # six credited people for BoJack Horseman, where TMDB holds four hundred.
+  OPTIONAL { ?f wdt:P4983 ?tv }
   OPTIONAL { ?f wdt:P31 ?ty . ?ty rdfs:label ?tyl . FILTER(LANG(?tyl) = "en") }
   OPTIONAL {
     { SELECT (MIN(?cc) AS ?c) WHERE { wd:${id} wdt:P495 ?cc } }
@@ -351,7 +355,13 @@ async function viewFilm(id) {
     }
   }
 
-  const extra = await addCharacters(meta.tmdb, people);
+  /* Which TMDB endpoint this picture lives behind. A series id and a film
+     id are different numbering systems; using one against the other
+     answers about a different work entirely. */
+  meta.media  = meta.tmdbTv ? 'tv' : 'movie';
+  meta.tmdbId = meta.tmdbTv || meta.tmdb || null;
+
+  const extra = await addCharacters(meta.tmdbId, meta.media, people);
   undated = extra.unknown;
 
   /* People TMDB credits and Wikidata knows, just not on this picture. They
@@ -381,10 +391,11 @@ async function viewFilm(id) {
      anyone TMDB named and Wikidata couldn't place as dead. Same file now.
      The Wizard of Oz is the page to test on: Caren Marsh is alive. */
   tmdbFailed = false;
-  if (everyone.every(p => p.dod) && meta.tmdb) {
+  if (everyone.every(p => p.dod) && meta.tmdbId) {
     state('Checking the cast against TMDB…');
     const found = await survivors({
-      film: id, tmdbId: meta.tmdb, sparql: sparqlRows, tmdb: tmdbGet,
+      film: id, tmdbId: meta.tmdbId, media: meta.media,
+      sparql: sparqlRows, tmdb: tmdbGet,
     });
 
     /* They go INTO the list. They were in the picture and we know they are
@@ -431,16 +442,22 @@ async function viewFilm(id) {
 
    Entirely best-effort: no key, no film id, a network failure or a
    rate-limit all just leave the page as it was. */
-async function addCharacters(tmdbFilm, people) {
-  if (!TMDB_KEY || !tmdbFilm) return { resolved: [], unknown: [] };
+async function addCharacters(tmdbId, media, people) {
+  if (!TMDB_KEY || !tmdbId) return { resolved: [], unknown: [] };
 
   try {
-    const res = await fetch(
-      `https://api.themoviedb.org/3/movie/${encodeURIComponent(tmdbFilm)}` +
-      `/credits?api_key=${encodeURIComponent(TMDB_KEY)}`);
-    if (!res.ok) return;
+    /* aggregate_credits for a series: its /credits is the billed regulars
+       only, five people where the aggregate has 248. And its entries carry
+       `roles` rather than `character`, because one actor may have played
+       several parts across the run. */
+    const data = await tmdbGet(media === 'tv'
+      ? `/tv/${encodeURIComponent(tmdbId)}/aggregate_credits`
+      : `/movie/${encodeURIComponent(tmdbId)}/credits`);
+    if (!data) return { resolved: [], unknown: [] };
 
-    const { cast = [] } = await res.json();
+    const cast = (Array.isArray(data.cast) ? data.cast : []).map(c => ({
+      ...c, character: c.character ?? c.roles?.[0]?.character ?? '',
+    }));
     const roles = new Map(cast.map(c => [String(c.id), c.character]));
 
     const known = new Set();
@@ -1321,7 +1338,8 @@ function viewAbout() {
 async function viewLanding() {
   /* The front door carries no qualifier — the site's own name is what's up. */
   setTitle('');
-  const recent = (await loadSummary()).recent;
+  const summary = await loadSummary();
+  const recent = summary.recent;
 
   const picks = recent.length
     ? recent.map(f => `<button data-go="${esc(path(f.title, f.id))}">${esc(f.title)}` +
@@ -1336,7 +1354,7 @@ async function viewLanding() {
       <div class="landing-picks">${picks}</div>
       <p class="landing-more">
         <a href="#/archive">The Vault${
-          archive.length ? ` &middot; ${archive.length}` : ''}</a>
+          summary.total ? ` &middot; ${summary.total.toLocaleString('en')}` : ''}</a>
       </p>
     </section>`);
 }
@@ -1485,7 +1503,15 @@ async function route() {
     if (kind === 'film') await viewFilm(id);
     else await viewPerson(id);
   } catch (err) {
-    state('Wikidata didn’t answer. Give it a moment and try again.');
+    /* This said "Wikidata didn't answer" for every kind of failure,
+       including a ReferenceError of ours — which is how a typo on the
+       landing page spent an evening looking like an outage at the query
+       service. Blame the network only when it is the network. */
+    const network = err instanceof TypeError
+      || /Query service returned|NetworkError|Failed to fetch/i.test(err?.message || '');
+    state(network
+      ? 'Wikidata didn’t answer. Give it a moment and try again.'
+      : 'Something went wrong drawing this page.');
     console.error(err);
   }
 }
