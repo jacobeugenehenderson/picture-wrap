@@ -1244,10 +1244,10 @@ function archiveRow(group) {
    The limits described here are real and a visitor deserves them stated
    plainly rather than discovered. */
 function viewAbout() {
-  setTitle('About');
+  setTitle('Methods and sources');
   show(`
     <section class="card">
-      <h2>About</h2>
+      <h2>Methods and sources</h2>
     </section>
 
     <div class="prose">
