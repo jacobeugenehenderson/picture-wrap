@@ -19,7 +19,7 @@
    own answer eventually disagrees with the real one, and then you have
    two bugs instead of one.                                              */
 
-import { sparql, survivorsViaTmdb, detailsFor, qid, LANGS } from './lib.js';
+import { sparql, qid, LANGS } from './lib.js';
 import { survivors } from '../verify.js';
 
 const AGENT = 'PictureWrap/1.0 (https://picture-wrap.com; jacob@jacobhenderson.studio)';

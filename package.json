@@ -1,0 +1,11 @@
+{
+  "name": "picture-wrap",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint app.js shared.js verify.js poster/*.js"
+  },
+  "devDependencies": {
+    "eslint": "^9.14.0"
+  }
+}

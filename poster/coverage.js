@@ -20,7 +20,7 @@
    reading the queue, and a number on the page. It never gates anything.
    ========================================================================== */
 
-import { load, save, paths, sleep, tmdbCastCount, coverage, saveArchive,
+import { load, paths, sleep, tmdbCastCount, coverage, saveArchive,
 } from './lib.js';
 
 const args = process.argv.slice(2);

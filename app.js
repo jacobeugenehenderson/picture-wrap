@@ -16,9 +16,9 @@
 
 import { survivors } from './verify.js';
 import {
-  CREW, CREDITS, CREDIT_PROPS, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
+  CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
-  CREDIT_NOUNS, qid, year, longDate, pickDemonym, slug, path, sentence,
+  CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
 } from './shared.js';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
@@ -45,9 +45,6 @@ const WD_API = 'https://www.wikidata.org/w/api.php';
    Using it brings TMDB's terms: non-commercial, attribution in the
    colophon, and no caching beyond six months. */
 const TMDB_KEY = '6f0df4c801a86a2f009beac377bdf1e0';
-
-/* Where corrections go. */
-const BLUESKY = 'picture-wrap.bsky.social';
 
 /* Occupations worth searching. This list has to be generous, because
    Wikidata carries a dozen overlapping occupation items and tagging is

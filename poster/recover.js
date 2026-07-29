@@ -22,7 +22,7 @@
 
 import { readFile } from 'node:fs/promises';
 import {
-  sparql, qid, load, save, paths, sleep, VALUES, IN_LIST, detailsFor, longDate,
+  sparql, qid, load, paths, sleep, VALUES, detailsFor, longDate,
   survivorsViaTmdb, saveArchive,
 } from './lib.js';
 

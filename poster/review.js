@@ -18,7 +18,7 @@
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 
-import { load, save, paths, longDate, year, detailsFor, compose, groupQueue,
+import { load, save, paths, longDate, detailsFor, compose, groupQueue,
          tmdbCastCount, coverage, sleep, imagesFor, posterFor,
          personContext, saveArchive,
 } from './lib.js';

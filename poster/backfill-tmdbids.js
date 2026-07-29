@@ -18,7 +18,7 @@
    A wrong id is worse than none, so an unmatched entry stays null.
    ========================================================================== */
 
-import { sparql, load, save, paths, sleep, qid, saveArchive,
+import { sparql, load, paths, sleep, qid, saveArchive,
 } from './lib.js';
 
 const dryRun = process.argv.includes('--dry-run');

@@ -37,3 +37,6 @@ preview.html
 # Credentials live in ~/.picture-wrap.env, outside this folder entirely.
 .env
 .env.*
+
+# Dev-only. The site still ships no dependencies.
+node_modules/
