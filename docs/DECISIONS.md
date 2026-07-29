@@ -473,5 +473,165 @@ This is the same lesson as `shared.js`, learned again in a place where it
 mattered more: a drifting constant produces a cosmetic difference, but
 drifting *logic* produces two different answers to "is this person alive".
 
-**The site is still wrong in this exact way** — `app.js:332` and
-`app.js:664` are two more copies. See the backlog.
+`app.js` carried two more copies and kept the **original** bug through
+three separate fixes to the others, because nobody fixing `lib.js` was
+looking at the browser. A film page could show the bar at the top while
+TMDB knew someone in it was alive — *The Wizard of Oz* did, on Caren Marsh
+Doll, for as long as the site existed.
+
+Resolved the same day by `verify.js`, below.
+
+---
+
+## verify.js, and the boundary drawn around decisions
+
+*28 July 2026.*
+
+**Decision.** The survivor test lives in one file at the repository root,
+imported by the browser and by the poster. It fetches nothing; the caller
+passes in `sparql()` and `tmdb()`.
+
+**Why.** `shared.js` drew the shared boundary around **constants**. That
+was the wrong line. Four copies of the survivor test existed — `lib.js`,
+`recheck.js`, `recover.js`, `app.js` — and each fix touched one of them.
+A drifting constant is a cosmetic difference; drifting *logic* is two
+different answers to whether a person is alive.
+
+Fetching is the one thing the halves genuinely cannot share: the poster
+sends a User-Agent and retries on 429, and a browser is allowed to do
+neither. Everything else — what the answers mean — is identical and now
+provably so.
+
+**The test for shared code** is not "is it a constant". It is *can the two
+halves give different answers, and would that be a bug?*
+
+---
+
+## An absent death date is not a pulse
+
+*The day's one bug, in six disguises. 28 July 2026.*
+
+Every one of these was the same mistake: **silence read as an answer.**
+
+| | |
+|---|---|
+| Stopped at Wikidata | Anyone TMDB named that Wikidata could not place was counted dead. 74% of the Vault. |
+| Stopped at pass one | A Wikidata item with no `P570` was read as living, so TMDB was never asked. Robert Amon had a Wikidata item with no dates and a TMDB record saying he died in 1992. |
+| Missed the unlinked | Péter Eötvös died in 2024, recorded on Wikidata, no `P4985` — so the id lookup missed him and TMDB had no `deathday`. |
+| Took a placeholder literally | Bill Alcorn, "Soldier (uncredited)", born `1920-01-01` and nowhere else at all, closing out *Mildred Pierce* at 106. |
+| Let SPARQL decide | Two Wikidata items claiming one TMDB id, and whichever row came back first won. *The Priest's Secret* held through two re-checks and reopened on the third, on row order alone. |
+| Read a failure as a pass | An empty survivor list from a test that never ran. Measured: with TMDB unreachable, the re-check reported "21 still closed" where it should have reported none. |
+
+**The rule.** Only a recorded death makes anyone dead. Age does not,
+absence does not, and a lookup that failed does not. The three states are
+dead, alive and unknown, and unknown is never read as either.
+
+**What it cost to be wrong.** The 1946–65 backfill rejected 1,711
+candidates on the strength of this test — 1,711 pictures Wikidata declared
+closed with a living person on them.
+
+---
+
+## Evidence, not thresholds
+
+*28 July 2026.*
+
+**Decision.** Three tuned numbers were removed. What replaced them is a
+test for the evidence they were standing in for.
+
+| was | now |
+|---|---|
+| "past 100, a 1 January birthday is a placeholder" | A birth date counts if it is **precise**, or if **both databases give one and agree on the year**. Wikidata publishes precision (`timePrecision`; 9 is year-only, 11 is to the day) so we ask rather than infer. TMDB publishes none, so there the 1 January ending stays a proxy — a limit of the source, not a choice. |
+| "birth years within two of each other are the same person" | Exact year. A disagreement means no match, which leaves the person standing and vetoing — the direction to fail in. |
+| "older than 112 is dead" | Older than 112 is **unknown**. It moves people from *alive* to *unknown*, never into *dead*. |
+
+**Why it is better rather than merely purer.** Antoine Petitjean is
+recorded on Wikidata as born `1977-01-01`, precision 9, and linked to a
+1959 picture. At 49 no age threshold would ever have caught him. An
+imprecise date that nothing corroborates catches him immediately.
+
+**Heuristics are not banned.** A judgement call that cannot be avoided is
+fine; one dressed as a measurement is not. A heuristic may move somebody
+between *alive* and *unknown*. It may never put anyone in *dead*.
+
+---
+
+## The Vault is served in pieces
+
+*28 July 2026.*
+
+**Decision.** The poster writes `archive.json` for itself and `vault/` for
+the browser: a 1 KB summary, an ids file, and one file per decade a
+picture closed in. The site never fetches `archive.json`.
+
+**Why.** It was 1.5 MB, pulled on the landing page, the Vault, and — once
+person pages started reading it — every person page. It is 4.5 MB now.
+The landing page still costs 1 KB and the largest decade a reader can open
+is 920 KB, fetched only if they open it.
+
+**Both files are written by one call.** `saveArchive()` saves the archive
+and republishes the shards; `saveState()` does the same for state and its
+committed twin. A derived file that can be forgotten goes stale.
+
+---
+
+## A film is recorded as seen when it is queued, and not before
+
+*28 July 2026. This entry replaces one that described the opposite as a
+feature.*
+
+**Decision.** `state.seen` records a picture at the moment it is queued.
+Everything declined is left unrecorded.
+
+**Why.** It used to be stamped on the way in — before the name check,
+before the cast floor, before the survivor test. So a picture declined
+because somebody was still alive could never be offered again, *including
+after that person died*. The single event that resolves such a picture was
+the event it had made itself deaf to. **1,367 pictures were sealed off
+that way** before it was found; they have been cleared.
+
+**The cost, accepted.** Films already declined get re-tested when they
+surface again. That is exactly the work finding them requires.
+
+---
+
+## The desk will post, and the terminal will stay
+
+*Designed 28 July 2026, not yet built.*
+
+**Decision.** The authoring tool publishes. It does not draft and hand off
+to `review.js`.
+
+**Why.** Handing off means approving twice, and the second approval is the
+blind one — a terminal cannot show the images you spent five minutes
+judging. That is not two gates; it is one gate and a ritual, and rituals
+carrying no information are how gates stop being read.
+
+**The safety property was never "review.js is the only file".** It is *one
+human approves one post at a time having seen the evidence*, and a browser
+does that better than a terminal ever has. What makes it safe is a single
+`publish.js` both front ends call, an endpoint that publishes exactly one
+group, and rehearsal mode by default.
+
+---
+
+## The watcher is a button, not a service
+
+*28 July 2026.*
+
+**Decision.** `watch.js` runs when started by hand.
+
+**Why.** A launchd agent was built and reverted. The repository lives under
+`~/Desktop`, which macOS gates behind TCC, so a background agent cannot
+read even its own launcher — it fails at exit 127 and no permission prompt
+ever appears. Enabling it means Full Disk Access for `/bin/zsh`: every
+script anything runs through zsh, forever, so one listener can start at
+login.
+
+Wrong trade, and the wrong thing to automate first. The watcher has never
+fired on a real death and its name extraction is crude by its own
+admission. The proven automation — the sweep — is not scheduled either.
+
+**What improved instead.** The launcher restarts node if it dies, and
+drops `BSKY_APP_PASSWORD` before starting: the watcher reads a public
+firehose and cannot post, so it never needed the posting credential.
