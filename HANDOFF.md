@@ -1,108 +1,114 @@
-# Handoff — 28 July 2026
+# Handoff — 29 July 2026
 
 Read this before touching the Vault. Nothing is half-written; everything
-below is a clean state.
+below is a clean state, except the one job noted as running.
 
 ## Where things stand
 
 | | |
 |---|---|
-| `archive.json` | **3,640** — every row judged by one implementation |
-| `poster/queue.json` | **1** — a live closing found this evening, unreviewed |
-| Unverifiable | **113** rows have no TMDB id and never got a second opinion |
-| Bluesky | 26 posts; **37** of the 46 entries survive |
-| Live site | current with `main`, `?v=21` |
-| Working tree | clean, pushed |
+| `archive.json` | **8,100** |
+| `poster/queue.json` | filling — the silent-era backfill is running |
+| Years the backfill has asked about | **1900–2026**, no gaps once this run finishes |
+| Unverifiable | **481** entries have no TMDB id and never got a second opinion |
+| Bluesky | 26 posts; 37 entries survive |
+| Live site | current with `main`, `?v=37` |
 
-Nothing is running unless a backfill was left going. No process holds a
-lock.
+**Running right now:** `run.js --backfill 1900-1929`, somewhere in the
+1920s. It saves after every year and `--resume` skips what is done, so it
+is safe to kill. Nothing else should write `state.json` while it runs —
+that means no `recheck.js` and no `review.js` until it stops.
 
-## What this day was
+## What happened on 28–29 July
 
-One bug, found six times in six disguises: **silence read as an answer.**
+The verification was wrong in six ways, all of them the same mistake:
+**silence read as an answer.**
 
-Verification asked only Wikidata whether people were alive and counted
-everyone it couldn't place as dead. It stopped at Wikidata even when TMDB
-held the death date. It missed people with no `P4985` link entirely. It
-read a cataloguer's `1920-01-01` placeholder as a pulse. It let whichever
-row SPARQL happened to return first decide a contested identifier. And
-then, having been fixed, its *callers* went on treating a lookup that
-never ran as a lookup that found nobody.
+1. It asked TMDB who was in a film and only Wikidata whether they lived,
+   counting everyone unmatched as dead. 74% of the Vault.
+2. It stopped at Wikidata even when TMDB held the death date.
+3. It missed anyone without a `P4985` link — Péter Eötvös, dead in 2024.
+4. It read a cataloguer's `1920-01-01` placeholder as a pulse.
+5. It let SPARQL row order decide contested identifiers.
+6. Its callers treated a lookup that never ran as a lookup that found
+   nobody — measured: with TMDB unreachable the re-check reported "21
+   still closed" where it should have reported none.
 
-The last of those was the dangerous one: a TMDB outage during a re-check
-would have stamped untested rows as verified and overwritten their
-unknown counts with zero. Measured on 25 entries with TMDB unreachable —
-before, "21 still closed"; after, "0 still closed, 25 could not be
-checked".
+**What came out of it.** `verify.js` now holds the survivor test and both
+halves import it; there is no second implementation anywhere. Three tuned
+numbers were replaced by tests for the evidence they stood in for. Every
+caller reads whether the test actually ran.
 
-Two structural fixes came out of it:
+**What it was worth, measured.** The 1946–65 backfill rejected 1,711
+candidates for having a living person; the 1966–2026 run rejected 518.
+Every one of those is a picture Wikidata declared closed with someone
+alive in it.
 
-- **`verify.js`** now holds the survivor test, and both halves import it.
-  `poster/lib.js` lost 337 lines; `app.js` lost its copy entirely. Three
-  copies of this logic existed at breakfast. There is one.
-- **`state.seen`** was being stamped before a picture was tested, so
-  anything declined because somebody was alive could never be offered
-  again — not even after that person died. 1,367 pictures were sealed off
-  that way. Recording now happens on queueing, and the sealed ids have
-  been cleared. Backup at `poster/state.json.before-unseal`, which is
-  gitignored and therefore the only copy.
+**Structural fixes.** `state.seen` records a film when it is *queued* and
+not before — it used to be stamped on the way in, so a picture declined
+because somebody was alive could never be offered again, and 1,367 were
+sealed off that way. `saveArchive()` and `saveState()` are now the only
+writers, so derived files cannot drift. `state.backup.json` is committed,
+sorted one id per line.
 
-The three tuned numbers are gone. Corroboration replaced the placeholder
-age test, exact-year matching replaced a ±2 window, and the age ceiling
-now yields *unknown* rather than inventing a death.
-
-## What the site does now
-
-The bar has two homes and its position is the whole answer: inside the
-roster with the living above it, or under the title once nobody is left.
-No badge, no legend, no explanatory prose — all three were tried today and
-all three were wrong.
-
-A film page has three zones. Above the bar, living. Below it, gone. Below
-the credits, people credited on the picture that nobody has recorded a
-date for — listed, uncounted, an em-dash and no heading.
-
-Film pages run the real survivor test live, and decline to call a picture
-wrapped when it doesn't complete. Person pages read the Vault rather than
-re-deriving it thirty times a page.
+**The site.** The Vault is served in shards — a 1 KB summary, an ids file,
+one file per closing decade — because `archive.json` is 4.5 MB and was
+being fetched whole on every page. The bar has two homes and its position
+is the whole answer: inside the roster, or under the title once nobody is
+left. Television works: series carry `P4983`, not `P4947`, and
+`aggregate_credits` rather than `credits`.
 
 ## The order to work in
 
-1. **Backfill 1946–1965.** The richest remaining ground — 1955 yields more
-   testable candidates than 1945 — and the thing that makes person pages
-   stop under-claiming. Roughly three hours.
-2. **Re-check afterwards**, then file, then commit `archive.json`.
-3. **1966–1985**, then **1986–present** as a cheap sweep-up: forty years
-   for perhaps a hundred candidates, run once so that "not in the Vault"
-   starts meaning "we asked".
+1. **Let the silent backfill finish**, or kill it and `--resume` later.
+2. **`node review.js --archive-only --yes`** to file what it found.
+3. **`node recheck.js`** over the whole Vault — the one job still
+   outstanding, and the reason is worth knowing: everything filed since
+   yesterday was verified minutes before filing by the current code, so
+   this is about drift in *older* entries, not about the new ones. Expect
+   the unchecked count to be roughly the no-TMDB-id count.
+4. **Commit `archive.json` and `vault/`**, and regenerate
+   `state.backup.json`.
 
-Never file before re-checking. Filing does not verify anything.
+Never file into a Vault you have not re-checked *when the queue predates
+a logic change*. That is not the case today, which is why filing came
+first this time.
 
 ## Known and unfixed
 
-- **`review.js` drops fields when filing** — `backfilled`, `provisional`,
-  and the new `unverified` flag never reach the archive. That flag
-  currently does nothing.
 - **The watcher applies neither filter** — no name check, no cast floor.
-- **The cast floor counts one property** and not voice credits, so
-  animated films with forty voice actors score zero cast.
-- **Backfill is film-only and needs a release date**, so television can
-  never reach the Vault whatever range you give it.
-- **`state.rejected` is written and never read**; rejection works only as
-  a side effect of the seen list.
-- **113 entries cannot be verified** and nothing on the page says so.
+- **The cast floor counts `P161` only**, so an animated film with forty
+  `P725` voice credits scores zero cast and is dropped.
+- **`state.rejected` is written and never read.**
+- **481 entries cannot be verified** and nothing on the page says so.
+- **Nothing is scheduled.** Cron is blocked by TCC while the repository
+  lives under `~/Desktop`; a launchd agent cannot read its own launcher
+  there. Every run this project has done was typed by hand.
+- **Nothing lints CSS.** A grouped selector was deleted once and every
+  page went full-bleed. The check that catches it is comparing the sorted
+  set of selectors before and after a structural edit.
+
+## The largest thing not built
+
+**The Desk** — a local authoring environment, designed and written up at
+the top of `docs/BACKLOG.md`. Prep and send in one place, because the
+current split makes you judge images in one tool and write words blind in
+another. Three extractions in it are worth doing regardless of the rest:
+`publish.js`, `bluesky-text.js`, `alt.js`.
 
 ## Backups
 
 | | |
 |---|---|
-| `archive.json.before-recheck` | before the last re-check |
-| `poster/state.json.before-unseal` | before the sealed ids were cleared |
-| `poster/state.json.before-recheck-real` | before the first real re-check |
+| `archive.json.before-recheck` | written by every real re-check |
+| `archive.json.before-fullrecheck` | before the abandoned 7,787 pass |
+| `poster/state.json.before-overnight` | before the 1966–2026 run |
+| `poster/state.backup.json` | committed, and the only copy that survives this machine |
 
 ## Everything else
 
 `docs/VERIFICATION.md` is the plain-prose account of how a wrap is
-decided, audited against the code on 28 July 2026. `docs/DECISIONS.md` has
-the reasoning, `docs/BACKLOG.md` the queue, `docs/OPERATIONS.md` the
-runbook. `README.md` opens with the three rules.
+decided, audited against the code. `docs/ARCHITECTURE.md`,
+`DECISIONS.md`, `DATA.md` and `DESIGN.md` were all brought current on
+29 July. `docs/OPERATIONS.md` is the runbook. `README.md` opens with the
+three rules.
