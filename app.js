@@ -1382,6 +1382,14 @@ document.addEventListener('click', e => {
   const shot = e.target.closest('img[data-full]');
   if (shot) { e.stopPropagation(); openViewer(shot); return; }
 
+  /* Already there: no navigation to do, so do the useful thing. */
+  const colophon = e.target.closest('#colophon-link');
+  if (colophon && location.hash.includes('/about')) {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
   const el = e.target.closest('[data-go]');
   if (el) location.hash = el.dataset.go;
 });
@@ -1470,6 +1478,20 @@ async function kindOfId(id) {
 /* The Vault needs a way back from a film or a person. The landing page
    already has one under the chips, so the masthead link only appears
    elsewhere — otherwise the same link sits twice on one screen. */
+/* The footer link is the way further in — except on the page it leads to,
+   where it led nowhere at all: the hash was already #/about, so clicking
+   it fired no hashchange, drew nothing and did not even scroll. A dead
+   control at the bottom of the longest page on the site.
+
+   It becomes what it can usefully be there instead. The label always
+   describes what the click does, which is the only rule that keeps a
+   control honest. */
+function wireColophon(onAbout) {
+  const link = document.getElementById('colophon-link');
+  if (!link) return;
+  link.textContent = onAbout ? 'Back to the top' : 'Methods and sources';
+}
+
 function showNav(on) {
   const nav = document.getElementById('nav');
   if (nav) nav.hidden = !on;
@@ -1486,6 +1508,7 @@ async function route() {
 
   try {
     showNav(!!id || kind === 'about');
+    wireColophon(kind === 'about');
 
     if (kind === 'archive') { await viewArchive(); return; }
     if (kind === 'about') { viewAbout(); return; }
