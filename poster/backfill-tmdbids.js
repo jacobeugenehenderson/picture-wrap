@@ -18,7 +18,8 @@
    A wrong id is worse than none, so an unmatched entry stays null.
    ========================================================================== */
 
-import { sparql, load, save, paths, sleep, qid } from './lib.js';
+import { sparql, load, save, paths, sleep, qid, saveArchive,
+} from './lib.js';
 
 const dryRun = process.argv.includes('--dry-run');
 if (!process.env.TMDB_KEY) { console.error('Set TMDB_KEY first.'); process.exit(1); }
@@ -70,5 +71,5 @@ console.log(`  TMDB search supplied ${fromSearch}.`);
 console.log(`  ${stillNone} still have none — they stay unverifiable.\n`);
 
 if (dryRun) { console.log('Dry run — nothing written.'); process.exit(0); }
-await save(paths.archive, archive);
+await saveArchive( archive);
 console.log(`Repaired ${known.size + fromSearch} entries. Now run recheck.js.`);

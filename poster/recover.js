@@ -23,7 +23,7 @@
 import { readFile } from 'node:fs/promises';
 import {
   sparql, qid, load, save, paths, sleep, VALUES, IN_LIST, detailsFor, longDate,
-  survivorsViaTmdb,
+  survivorsViaTmdb, saveArchive,
 } from './lib.js';
 
 const args = process.argv.slice(2);
@@ -137,5 +137,5 @@ if (dryRun) { console.log('Dry run — nothing written.'); process.exit(0); }
 
 archive.push(...recovered);
 archive.sort((a, b) => (b.wrapped || '').localeCompare(a.wrapped || ''));
-await save(paths.archive, archive);
+await saveArchive( archive);
 console.log(`Vault: ${archive.length - recovered.length} → ${archive.length}.`);

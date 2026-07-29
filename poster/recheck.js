@@ -22,7 +22,7 @@
 
 import { writeFile } from 'node:fs/promises';
 import {
-  sparql, load, save, paths, sleep, VALUES, survivorsViaTmdb,
+  sparql, load, save, paths, sleep, VALUES, survivorsViaTmdb, saveArchive,
 } from './lib.js';
 
 const args = process.argv.slice(2);
@@ -159,7 +159,7 @@ if (dryRun) {
   process.exit(0);
 }
 
-await save(paths.archive, kept);
+await saveArchive( kept);
 
 /* A reopened picture must be forgettable, or it can never close again:
    state.seen exists to stop re-offering, and would block the real closing

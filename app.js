@@ -403,6 +403,7 @@ async function viewFilm(id) {
       everyone.push({
         p: person.wikidata || '',
         pLabel: person.name,
+        img: person.img || '',
         dob: person.born || '',
         dod: '',
         credits: person.role ? [person.role] : [],
@@ -744,7 +745,9 @@ function personRow(p) {
     <li class="${qid ? 'is-link ' : ''}${gone ? 'gone' : 'living'}"${
       qid ? ` data-go="${esc(path(p.pLabel, qid))}"` : ''}>
       ${p.img
-        ? `<img class="portrait" src="${esc(thumb(p.img))}" alt="" loading="lazy">`
+        ? `<img class="portrait" src="${esc(thumb(p.img))}" alt=""
+               loading="lazy" data-full="${esc(p.img)}"
+               data-name="${esc(p.pLabel || '')}">`
         : `<span class="portrait" aria-hidden="true"></span>`}
       <span class="who">
         <span class="who-name">${esc(p.pLabel || qid)}</span>
@@ -847,7 +850,8 @@ async function viewPerson(id) {
   const card = `
     <section class="card card-person">
       ${meta.img
-        ? `<img class="card-portrait" src="${esc(thumb(meta.img, 240))}" alt="" >`
+        ? `<img class="card-portrait" src="${esc(thumb(meta.img, 240))}" alt=""
+               data-full="${esc(meta.img)}" data-name="${esc(meta.label || '')}">`
         : ''}
       <span class="card-person-text">
         <h2>${esc(meta.label || id)}</h2>
@@ -882,7 +886,7 @@ async function viewPerson(id) {
      above the bar until somebody asks about its years. That reads as
      "we don't know", which is true, rather than "someone is alive", which
      we would be inventing. */
-  const vault = new Set((await loadArchive()).map(e => e.id));
+  const vault = await loadIds();
   const closed = f => wikidataClosed(f) && vault.has(qid(f.film));
 
   /* Newest first, both sides — which makes this bar mean what the bar
@@ -1009,18 +1013,53 @@ document.addEventListener('click', async e => {
 /* Written by the poster, read here. It can't be a live query — asking
    Wikidata which films have nobody left times out even for a six-year
    slice, so this file is the only way the page exists. */
-let archiveCache = null;
 
-async function loadArchive() {
-  if (archiveCache) return archiveCache;
+/* The Vault is served in pieces, and the page fetches only the piece its
+   question needs.
+
+   It used to pull archive.json whole — 1.5 MB on the landing page, on the
+   Vault, and after this evening on every person page too — and the
+   1946-65 backfill was on course to take that past 3.7 MB. Three shapes
+   now, written by the poster whenever it writes the archive:
+
+     summary.json   1 KB. Totals, decade counts, country counts and the
+                    five most recent closings. Enough for the landing page
+                    and for a Vault whose drawers are all shut.
+     ids.json       40 KB of Q-ids and nothing else, which is the whole of
+                    what a person page asks: is this film in the Vault.
+     <decade>.json  the entries, fetched when that drawer is opened.
+
+   Nothing here loads a decade the reader hasn't asked for. */
+let summaryCache = null;
+let idsCache = null;
+const decadeCache = new Map();
+
+async function loadJSON(path, fallback) {
   try {
-    const res = await fetch('archive.json', { cache: 'no-cache' });
+    const res = await fetch(path, { cache: 'no-cache' });
     if (!res.ok) throw new Error(String(res.status));
-    archiveCache = await res.json();
+    return await res.json();
   } catch {
-    archiveCache = [];
+    return fallback;
   }
-  return archiveCache;
+}
+
+async function loadSummary() {
+  summaryCache ??= await loadJSON('vault/summary.json',
+    { total: 0, decades: [], countries: [], recent: [] });
+  return summaryCache;
+}
+
+async function loadIds() {
+  idsCache ??= new Set(await loadJSON('vault/ids.json', []));
+  return idsCache;
+}
+
+async function loadDecade(key) {
+  if (!decadeCache.has(key)) {
+    decadeCache.set(key, await loadJSON(`vault/${encodeURIComponent(key)}.json`, []));
+  }
+  return decadeCache.get(key);
 }
 
 /* Which country's pictures to show. The Vault runs to 2,135 titles and
@@ -1030,10 +1069,9 @@ async function loadArchive() {
 let vaultFilter = 'all';
 
 async function viewArchive() {
-  state('Opening the vault…');
-  const all = await loadArchive();
+  const summary = await loadSummary();
 
-  if (!all.length) {
+  if (!summary.total) {
     setTitle('The Vault');
     show(`
       <section class="card"><h2>The Vault</h2></section>
@@ -1042,32 +1080,28 @@ async function viewArchive() {
     return;
   }
 
-  renderArchive(all);
+  renderArchive(summary);
 }
 
 /* Grouped by the decade a picture closed in, newest first. The sections are
    the navigation — no filter tells you anything scrolling doesn't.
 
-   Decades rather than years because closings are sparse and lumpy: an early
-   sample ran 71 closings across 28 years, averaging 2.5 each, with whole
-   years missing. A heading above a single row reads as a mistake.
+   A shut drawer costs nothing now. The counts come from the summary, so
+   the page can show the whole shape of the Vault — every decade, how many
+   in each — while having fetched about a kilobyte. Opening one asks for
+   that decade and nothing else.
 
-   This will want revisiting once the archive is large. A full 1930–1965
-   backfill puts on the order of a thousand closings into six decades, and
-   two hundred rows under one heading is its own problem. */
-function renderArchive(all) {
-  /* The whole Vault, not the filtered view — the tab shouldn't change size
-     because you clicked "French". */
-  setTitle(`The Vault — ${all.length.toLocaleString('en')} pictures`);
+   Which also means the first decade is no longer open on arrival. It used
+   to be, because the data was already in memory and there was nothing to
+   save by hiding it. Now opening it is a request, and making that request
+   on behalf of somebody who came to look at the 1970s is the thing this
+   change exists to stop. */
+function renderArchive(summary) {
+  setTitle(`The Vault — ${summary.total.toLocaleString('en')} pictures`);
 
   /* Counts come from the whole Vault, not the filtered view, so the row
      doesn't rearrange itself as you click through it. */
-  const tally = new Map();
-  for (const f of all) {
-    const k = f.country || 'Other';
-    tally.set(k, (tally.get(k) || 0) + 1);
-  }
-  const kinds = [...tally.entries()].sort((a, b) => b[1] - a[1]).slice(0, 7);
+  const kinds = summary.countries.slice(0, 7);
 
   const chip = (value, label, n) => `
     <button data-vault="${esc(value)}" ${vaultFilter === value ? 'aria-current="true"' : ''}>
@@ -1076,55 +1110,18 @@ function renderArchive(all) {
 
   const filters = `
     <div class="vault-filters">
-      ${chip('all', 'All', all.length)}
+      ${chip('all', 'All', summary.total)}
       ${kinds.map(([k, n]) => chip(k, k, n)).join('')}
     </div>`;
 
-  const sorted = [...all]
-    .filter(f => vaultFilter === 'all' || (f.country || 'Other') === vaultFilter)
-    .sort((a, b) => (b.wrapped || '').localeCompare(a.wrapped || ''));
-
-  const decades = new Map();
-  for (const f of sorted) {
-    const y = Number(year(f.wrapped));
-    const key = y ? `${Math.floor(y / 10) * 10}s` : 'Undated';
-    if (!decades.has(key)) decades.set(key, []);
-    decades.get(key).push(f);
-  }
-
-  /* Two levels of folding. A decade holds hundreds of closings — the 1990s
-     alone has 763, which is not a list, it's a filing cabinet — so years
-     nest inside. Newest decade open, and its newest year open inside that,
-     so the page lands on the most recent closings rather than on a wall of
-     shut drawers. */
-  const sections = [...decades.entries()].map(([label, films], di) => {
-    const years = new Map();
-    for (const f of films) {
-      const y = year(f.wrapped) || 'Undated';
-      if (!years.has(y)) years.set(y, []);
-      years.get(y).push(f);
-    }
-
-    const inner = [...years.entries()].map(([y, yearFilms], yi) => `
-      <details class="yr" ${di === 0 && yi === 0 ? 'open' : ''}>
-        <summary>
-          <span class="yr-label">${esc(y)}</span>
-          <span class="yr-count">${yearFilms.length}</span>
-        </summary>
-        <ul class="roster archive">
-          ${groupByClosing(yearFilms).map(archiveRow).join('')}
-        </ul>
-      </details>`).join('');
-
-    return `
-      <details class="decade" ${di === 0 ? 'open' : ''}>
-        <summary>
-          <span class="decade-label">${esc(label)}</span>
-          <span class="decade-count">${films.length}</span>
-        </summary>
-        ${inner}
-      </details>`;
-  }).join('');
+  const sections = summary.decades.map(([label, n]) => `
+    <details class="decade" data-decade="${esc(label)}">
+      <summary>
+        <span class="decade-label">${esc(label)}</span>
+        <span class="decade-count">${n}</span>
+      </summary>
+      <div class="decade-body"><p class="state">Opening&hellip;</p></div>
+    </details>`).join('');
 
   show(`
     <section class="card">
@@ -1135,6 +1132,51 @@ function renderArchive(all) {
     ${sections}
   `);
 }
+
+/* Fill a drawer the first time it is opened, and re-fill it when the
+   country filter changes under it. The fetch happens once per decade per
+   page load; the render happens whenever the filter moves. */
+async function fillDecade(details) {
+  const key = details.dataset.decade;
+  const body = details.querySelector('.decade-body');
+  if (!body) return;
+
+  const films = await loadDecade(key);
+  const shown = films.filter(f =>
+    vaultFilter === 'all' || (f.country || 'Other') === vaultFilter);
+
+  if (!shown.length) {
+    body.innerHTML = `<p class="state">Nothing from the ${esc(key)} here.</p>`;
+    return;
+  }
+
+  /* Two levels of folding. A decade holds hundreds of closings — the 1990s
+     alone has over a thousand, which is not a list, it's a filing cabinet
+     — so years nest inside. */
+  const years = new Map();
+  for (const f of shown) {
+    const y = year(f.wrapped) || 'Undated';
+    if (!years.has(y)) years.set(y, []);
+    years.get(y).push(f);
+  }
+
+  body.innerHTML = [...years.entries()].map(([y, yearFilms], yi) => `
+    <details class="yr" ${yi === 0 ? 'open' : ''}>
+      <summary>
+        <span class="yr-label">${esc(y)}</span>
+        <span class="yr-count">${yearFilms.length}</span>
+      </summary>
+      <ul class="roster archive">
+        ${groupByClosing(yearFilms).map(archiveRow).join('')}
+      </ul>
+    </details>`).join('');
+}
+
+/* `toggle` doesn't bubble, so it has to be caught on the way down. */
+document.addEventListener('toggle', e => {
+  const details = e.target;
+  if (details.matches?.('details.decade') && details.open) fillDecade(details);
+}, true);
 
 /* One death can take several pictures over the line at once — Mary
    Carlisle's closed four. Those belong together: the event is the person,
@@ -1197,112 +1239,72 @@ function viewAbout() {
     <div class="prose">
       <p>
         Every picture wraps twice: first when the shooting stops, and
-        finally when the last person who made it is gone. This is a record of the
-        second one.
+        finally when the last person who made it is gone. This is a record
+        of the second one.
       </p>
 
-      <h3>The bar</h3>
+      <h3>The gold bar</h3>
       <p>
-        A film&rsquo;s page is one list of everyone credited on it, divided by
-        a gold bar. The living sit above it, the dead below. As people die
-        they cross, the living section shrinks, and the bar rises. When it
-        reaches the top, the picture has wrapped.
-      </p>
-      <p>
-        Nothing counts anything for you. The bar&rsquo;s position is the
-        reading. The two rows either side of it are the most recent death
-        and the oldest survivor &mdash; who just went, and who is probably next.
+        A film&rsquo;s page is one list of everyone credited on it, divided
+        by a gold bar. The living sit above it, the dead below. As people
+        die they cross, the living section shrinks, and the bar rises. When
+        there is nobody left it comes to rest beneath the title, and the
+        picture has, finally, wrapped.
       </p>
 
-      <h3>Where this comes from</h3>
+      <h3>Where the data comes from</h3>
       <p>
         Cast, credits and death dates come from
-        <a href="https://www.wikidata.org" rel="noopener">Wikidata</a>, live,
-        every time you load a page. Portraits come from
+        <a href="https://www.wikidata.org" rel="noopener">Wikidata</a><span
+          id="about-tmdb" hidden>, and we cross check each entry against
+          <a href="https://www.themoviedb.org" rel="noopener">TMDB</a> for a
+          fuller picture</span>. Portraits come from
         <a href="https://commons.wikimedia.org" rel="noopener">Wikimedia
-        Commons</a> and are desaturated, because they span a century of
-        photographic processes and otherwise look like an accident.
-      </p>
-      <p>
-        Both are written by volunteers. Neither is complete.
-      </p>
-      <p id="about-tmdb" hidden>
-        <a href="https://www.themoviedb.org" rel="noopener">TMDB</a> is
-        asked as well, and about more than one thing. Character names, which
-        Wikidata barely records &mdash; it has none at all for <em>The
-        Umbrellas of Cherbourg</em>, TMDB has the lot. A fuller cast list,
-        so people who worked on a picture but were never linked to it here
-        still appear. And its own birth and death dates.
+        Commons</a>. All are written by volunteers. None is complete.
       </p>
       <p id="about-tmdb-2" hidden>
-        That last one decides things. Before any picture is called wrapped,
-        both databases are asked whether the people on it are living, and
-        one recorded death anywhere is enough to say someone has died &mdash;
-        while a missing death date is never enough to say they haven&rsquo;t.
-        Asking only Wikidata, and quietly counting everyone it couldn&rsquo;t
-        place as dead, was this site&rsquo;s worst mistake. This product uses
-        the TMDB API but is not endorsed or certified by TMDB.
+        This product uses the TMDB API but is not endorsed or certified by
+        TMDB.
       </p>
 
-      <h3>What &ldquo;everyone&rdquo; means</h3>
+      <h3>Makers</h3>
       <p>
         Cast, direction, writing, camera, music, cutting, production and
-        costume design. A picture is not finished while its director is
-        alive, and counting cast alone gets this wrong often &mdash; of six
-        films that looked closed on their cast lists, four reopened once
-        crew were counted.
-      </p>
-      <p>
-        Below-the-line crew &mdash; grips, gaffers, second unit, sound &mdash; is not
-        recorded in any free database. It is not recorded here either.
-        &ldquo;Everyone&rdquo; can only ever mean everyone written down.
+        costume design. Below-the-line crew like grips, gaffers, second unit
+        and sound is not recorded in any free database and so is not
+        recorded here, either.
       </p>
 
-      <h3>Whose cinema is here</h3>
+      <h3>Whose cinema is here?</h3>
       <p>
         Overwhelmingly American and European, and that is a limit of the
         source rather than a judgement. Of films from 1930 to 1945, Wikidata
         holds 8,285 American titles and 1,681 French ones. It holds 399
-        Japanese titles, from an industry making around five hundred pictures
-        a year, and <strong>37 Indian titles across sixteen years</strong>.
-      </p>
-      <p>
-        A picture cannot appear here without a cast list, so those absences
-        compound. The archive is a map of what volunteers have chosen to
-        record as much as a map of cinema.
+        Japanese titles, from an industry making around five hundred
+        pictures a year, and <strong>37 Indian titles across sixteen
+        years</strong>.
       </p>
 
       <h3>The Vault</h3>
       <p>
-        Pictures with no one left, newest closing first. It is the only part
-        of this site that isn&rsquo;t live &mdash; asking Wikidata which films have
-        no survivors takes longer than any page can wait, so the answer is
+        Pictures with no one left, newest closing first.
+      </p>
+      <p>
+        It is the only part of this site that isn&rsquo;t live: the answer is
         worked out in advance and stored.
       </p>
       <p>
-        Which means it can drift. If someone adds a living cast member to a
-        film in the Vault, that film&rsquo;s own page will show it correctly as
-        open while the Vault still lists it as closed, until the next check.
-      </p>
-      <p>
-        It is also not the whole of cinema. Working out which pictures have
-        closed has been done for <strong>1930 to 1945</strong> and, so far,
-        no further &mdash; everything else here is a closing that happened
-        while this site was watching. So a picture&rsquo;s absence from the
-        Vault means one of two things, and the Vault cannot tell you which:
-        somebody who made it is alive, or nobody has looked yet.
+        That means it can also drift. If someone adds a living cast member
+        to a film in the Vault, that film&rsquo;s own page will show it
+        correctly as open while the Vault still lists it as closed, until
+        the next check.
       </p>
 
       <h3>Mistakes</h3>
       <p>
         A film may show a bar at the top because everyone recorded has died,
         while people who were never recorded are alive. A death date may be
-        wrong, or added by someone in error. Nothing is announced without a
-        person reading it first, but the pages themselves are only as good as
-        the record beneath them.
-      </p>
-      <p class="prose-close">
-        Absence of a death date is not evidence of life.
+        wrong, or added by someone in error.
       </p>
     </div>`);
   revealTmdb();
@@ -1319,8 +1321,7 @@ function viewAbout() {
 async function viewLanding() {
   /* The front door carries no qualifier — the site's own name is what's up. */
   setTitle('');
-  const archive = await loadArchive();
-  const recent = archive.slice(0, 5);
+  const recent = (await loadSummary()).recent;
 
   const picks = recent.length
     ? recent.map(f => `<button data-go="${esc(path(f.title, f.id))}">${esc(f.title)}` +
@@ -1348,13 +1349,87 @@ document.addEventListener('click', e => {
   const vault = e.target.closest('[data-vault]');
   if (vault) {
     vaultFilter = vault.dataset.vault;
-    renderArchive(archiveCache || []);
+    /* Re-render the chips, then re-fill any drawer that was already open.
+       The decade files are cached, so changing the filter costs nothing
+       over the network — it only changes which rows are drawn. */
+    loadSummary().then(summary => {
+      renderArchive(summary);
+      for (const d of document.querySelectorAll('details.decade[open]')) fillDecade(d);
+    });
     window.scrollTo(0, 0);
     return;
   }
 
+  /* A portrait sits inside a row that navigates, so it has to claim the
+     click before the row sees it. Enlarging and going to the person's
+     page are different intentions and the small picture is the only place
+     you can express the first one. */
+  const shot = e.target.closest('img[data-full]');
+  if (shot) { e.stopPropagation(); openViewer(shot); return; }
+
   const el = e.target.closest('[data-go]');
   if (el) location.hash = el.dataset.go;
+});
+
+/* --- the viewer -------------------------------------------------------- */
+
+/* Ask Commons for a size. The originals are not a safe thing to link: they
+   run from 280 KB to, in Billie Holiday's case, 5.4 MB, and nothing about
+   a portrait on this site needs that. 960px is 145-165 KB and larger than
+   any screen will show it.
+
+   No desaturation here. The grayscale on the roster exists because a
+   column of portraits from across a century looks like an accident
+   otherwise; one picture on its own has no such problem, and at this size
+   you are looking AT the photograph rather than along a row of them. */
+let viewer = null;
+
+function openViewer(img) {
+  const name = img.dataset.name || '';
+  const file = img.dataset.full;
+
+  closeViewer();
+  viewer = document.createElement('div');
+  viewer.className = 'viewer';
+  viewer.tabIndex = -1;                /* focusable, but not in the tab order */
+  viewer.setAttribute('role', 'dialog');
+  viewer.setAttribute('aria-modal', 'true');
+  viewer.setAttribute('aria-label', name ? `Portrait of ${name}` : 'Portrait');
+  viewer.innerHTML = `
+    <button class="viewer-close" aria-label="Close">&times;</button>
+    <figure>
+      <img src="${esc(thumb(file, 960))}" alt="${esc(name)}">
+      <figcaption>
+        ${esc(name)}
+        <a href="${esc(file.replace(/^http:/, 'https:'))}" rel="noopener">Wikimedia Commons</a>
+      </figcaption>
+    </figure>`;
+
+  /* Anywhere outside the picture closes it, which is what people try
+     first, and the button is there for anyone who doesn't. */
+  viewer.addEventListener('click', ev => {
+    if (!ev.target.closest('figure') || ev.target.closest('.viewer-close')) closeViewer();
+  });
+
+  document.body.appendChild(viewer);
+  document.body.classList.add('viewing');
+
+  /* Focus the dialog, not the close button. Escape and the keyboard both
+     need focus inside here, but putting it on the button made every
+     mouse-driven open paint a system focus ring around the X — an
+     accessibility affordance shown to the one person who didn't need it.
+     Tab still reaches the button, and then the ring is wanted. */
+  viewer.focus({ preventScroll: true });
+}
+
+function closeViewer() {
+  viewer?.remove();
+  viewer = null;
+  document.body.classList.remove('viewing');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeViewer();
 });
 
 /* Is this Q-id a person or a picture? One query, ~0.16s, and it lands

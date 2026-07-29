@@ -5,7 +5,7 @@
    finds candidates, review.js is the only path to Bluesky.
    ========================================================================== */
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 
 import { measure, LIMIT } from './bluesky.js';
 import {
@@ -337,6 +337,78 @@ SELECT ?film (COUNT(DISTINCT ?c) AS ?cast) (COUNT(DISTINCT ?cd) AS ?dead) WHERE 
   OPTIONAL { ?c wdt:P570 ?dod . BIND(?c AS ?cd) }
 } GROUP BY ?film`;
 
+
+/* Publish the Vault in pieces the browser can fetch one at a time.
+
+   archive.json is the poster's file and stays whole — it is what every
+   script here reads and writes. The site stopped fetching it: at 3,640
+   entries it was 1.5 MB pulled on the landing page, the Vault and every
+   person page, and the 1946-65 backfill was on course to take it past
+   3.7 MB.
+
+   Three shapes, because three different questions get asked:
+
+     summary.json   totals, decade counts, country counts, and the few
+                    most recent closings. Everything the landing page and
+                    a shut Vault need. Small enough to be free.
+     ids.json       nothing but Q-ids. A person page asks only "is this
+                    film in the Vault", and that is the whole answer.
+     <decade>.json  the entries themselves, grouped by the decade a
+                    picture CLOSED in — which is how the Vault already
+                    reads — fetched when that drawer is opened and not
+                    before.
+
+   Written by whoever writes the archive, in the same breath, because a
+   derived file that can be forgotten is a derived file that goes stale. */
+const RECENT = 5;
+
+const decadeOf = entry => {
+  const y = Number(String(entry.wrapped || '').slice(0, 4));
+  return y ? `${Math.floor(y / 10) * 10}s` : 'undated';
+};
+
+export async function publishVault(archive) {
+  const dir = join(dirname(paths.archive), 'vault');
+  await mkdir(dir, { recursive: true });
+
+  const sorted = [...archive].sort((a, b) =>
+    (b.wrapped || '').localeCompare(a.wrapped || ''));
+
+  const byDecade = new Map();
+  const countries = new Map();
+  for (const entry of sorted) {
+    const key = decadeOf(entry);
+    if (!byDecade.has(key)) byDecade.set(key, []);
+    byDecade.get(key).push(entry);
+    const c = entry.country || 'Other';
+    countries.set(c, (countries.get(c) || 0) + 1);
+  }
+
+  for (const [key, entries] of byDecade) {
+    await writeFile(join(dir, `${key}.json`), JSON.stringify(entries) + '\n');
+  }
+
+  await writeFile(join(dir, 'ids.json'),
+    JSON.stringify(sorted.map(e => e.id)) + '\n');
+
+  await writeFile(join(dir, 'summary.json'), JSON.stringify({
+    total: sorted.length,
+    decades: [...byDecade.entries()].map(([key, e]) => [key, e.length]),
+    countries: [...countries.entries()].sort((a, b) => b[1] - a[1]),
+    recent: sorted.slice(0, RECENT).map(e => ({
+      id: e.id, title: e.title, year: e.year, wrapped: e.wrapped,
+    })),
+  }) + '\n');
+
+  return { decades: byDecade.size, total: sorted.length };
+}
+
+/* Everything that writes the archive goes through here, so the shards the
+   site reads cannot drift from the file the poster keeps. */
+export async function saveArchive(archive) {
+  await save(paths.archive, archive);
+  return publishVault(archive);
+}
 
 /* --- files ------------------------------------------------------------- */
 

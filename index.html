@@ -28,7 +28,7 @@
        cache these hard; without a new URL, returning visitors keep the old
        version until they hard-refresh. The number is arbitrary — any change
        works — but keeping them in step makes it one edit to remember. -->
-  <link rel="stylesheet" href="style.css?v=21">
+  <link rel="stylesheet" href="style.css?v=25">
 </head>
 <body>
 
@@ -60,23 +60,25 @@
   </main>
 
   <footer class="colophon">
+    <!-- TMDB's half is hidden until a key is actually set, because
+         crediting a source we never call would be its own small lie. What
+         it says has to stay true as well: since both databases are asked
+         about life and death, "character names from TMDB" understated it
+         to the point of being wrong. -->
     <p>
-      Cast, credits and death dates from
-      <a href="https://www.wikidata.org" rel="noopener">Wikidata</a>;
+      Cast, credits and dates from
+      <a href="https://www.wikidata.org" rel="noopener">Wikidata</a><span
+        id="tmdb-credit" hidden> and
+        <a href="https://www.themoviedb.org" rel="noopener">TMDB</a></span>;
       portraits from
-      <a href="https://commons.wikimedia.org" rel="noopener">Wikimedia Commons</a><span
-        id="tmdb-credit" hidden>; character names from
-        <a href="https://www.themoviedb.org" rel="noopener">TMDB</a></span>.
+      <a href="https://commons.wikimedia.org" rel="noopener">Wikimedia Commons</a>.
       All are edited by volunteers and none is complete.
       <a href="#/about">More</a>
-    </p>
-    <p class="colophon-caveat">
-      Absence of a death date is not evidence of life.
     </p>
   </footer>
 
   <!-- type="module" so app.js can import shared.js, which the poster imports
        too. Native ES modules in both runtimes; still no build step. -->
-  <script type="module" src="app.js?v=21"></script>
+  <script type="module" src="app.js?v=25"></script>
 </body>
 </html>

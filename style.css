@@ -614,6 +614,105 @@ main,
 }
 
 
+/* --- the viewer ------------------------------------------------------ */
+
+/* A portrait, enlarged. Deliberately plain: a dimmed page, the picture,
+   the name, and where it came from. */
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6vh 5vw;
+  background: rgba(8, 7, 5, 0.92);
+  cursor: zoom-out;
+}
+
+.viewer figure {
+  margin: 0;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  cursor: default;
+}
+
+/* No grayscale. The roster desaturates because a column of portraits
+   spanning a century reads as an accident otherwise; a single picture at
+   size has no such problem, and here you are looking at the photograph
+   rather than along a row of them. */
+.viewer img {
+  max-width: 100%;
+  max-height: 78vh;
+  object-fit: contain;
+  filter: none;
+  background: var(--paper-raised);
+}
+
+.viewer figcaption {
+  font-size: var(--size-small);
+  letter-spacing: 0.05em;
+  text-align: center;
+  color: #b8b2a8;
+}
+
+.viewer figcaption a {
+  margin-left: 0.6rem;
+  color: #99938b;
+  border-bottom: 1px solid rgba(236, 231, 219, 0.22);
+}
+
+.viewer figcaption a:hover { border-bottom-color: var(--gold); }
+
+.viewer-close {
+  -webkit-appearance: none;
+  appearance: none;
+  position: absolute;
+  top: 1.1rem;
+  right: 1.3rem;
+  padding: 0.1rem 0.5rem;
+  border: none;
+  border-radius: 2px;
+  background: none;
+  font-size: 1.9rem;
+  line-height: 1;
+  color: #b8b2a8;
+  cursor: pointer;
+}
+
+.viewer-close:hover { color: var(--gold-light); }
+
+/* The dialog takes focus so the keyboard works; it should not advertise
+   that to somebody who arrived by clicking. */
+.viewer:focus { outline: none; }
+
+/* Tab to the button and the ring is earned — in the site's own colour
+   rather than the system's blue. */
+.viewer-close:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* A portrait you can open should say so on hover. */
+img.portrait[data-full], .card-portrait[data-full] { cursor: zoom-in; }
+
+/* Nothing behind the viewer should scroll while it is open. */
+body.viewing { overflow: hidden; }
+
+
+/* A drawer that hasn't fetched yet. The holding line sits where the years
+   will, so opening one doesn't jump the page. */
+.decade-body .state {
+  padding: 0.6rem 0.4rem;
+  margin: 0;
+}
+
+
 /* 8. THE BAR ============================================================= */
 
 /* Not a section heading. No label, no count. Its position is the message:
@@ -1013,12 +1112,6 @@ main,
 /* The one caveat worth keeping: every guard in the project exists because
    the underlying records are incomplete, and a visitor should know that
    before trusting a bar sitting at the top of a list. */
-.colophon-caveat {
-  font-family: var(--font-display);
-  font-style: italic;
-}
-
-
 /* SMALL SCREENS ========================================================== */
 
 @media (max-width: 480px) {

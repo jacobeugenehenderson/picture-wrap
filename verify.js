@@ -277,7 +277,7 @@ export async function survivors({ film, tmdbId, sparql, tmdb, detail = false }) 
        The birth date comes through the full statement path rather than
        `wdt:`, because that is the only way to reach its precision. */
     const rows = await sparql(`
-      SELECT ?tmdb ?p ?pLabel ?dob ?prec ?dod WHERE {
+      SELECT ?tmdb ?p ?pLabel ?dob ?prec ?dod ?img WHERE {
         VALUES ?tmdb { ${missing.map(i => `"${i}"`).join(' ')} }
         ?p wdt:P4985 ?tmdb .
         OPTIONAL {
@@ -285,6 +285,7 @@ export async function survivors({ film, tmdbId, sparql, tmdb, detail = false }) 
           ?birth wikibase:timeValue ?dob ; wikibase:timePrecision ?prec .
         }
         OPTIONAL { ?p wdt:P570 ?dod }
+        OPTIONAL { ?p wdt:P18 ?img }
         SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
       }`).catch(() => []);
 
@@ -327,6 +328,10 @@ export async function survivors({ film, tmdbId, sparql, tmdb, detail = false }) 
       wikidata.set(id, {
         entity: r.p || null,
         name: r.pLabel || null,
+        /* Only the site wants this, and only for someone it is about to
+           put in a roster beside people who have one. Free here: the
+           query is already asking this item about itself. */
+        img: r.img || null,
         born: day(r.dob),
         precision: Number(r.prec ?? 0),
         died: day(r.dod),
@@ -380,6 +385,7 @@ export async function survivors({ film, tmdbId, sparql, tmdb, detail = false }) 
           name: person.name,
           born: person.wd?.born || person.tmdb?.born || null,
           wikidata: person.wdEntity || null,
+          img: person.wd?.img || null,
           role: billing.get(person.id)?.role || null,
           onScreen: billing.get(person.id)?.onScreen ?? true,
         });

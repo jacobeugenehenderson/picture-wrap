@@ -20,7 +20,8 @@ import { stdin, stdout } from 'node:process';
 
 import { load, save, paths, longDate, year, detailsFor, compose, groupQueue,
          tmdbCastCount, coverage, sleep, imagesFor, posterFor,
-         personContext } from './lib.js';
+         personContext, saveArchive,
+} from './lib.js';
 import { login, post, measure, LIMIT, uploadImage, renderLinks } from './bluesky.js';
 
 const args = process.argv.slice(2);
@@ -198,7 +199,7 @@ if (archiveOnly) {
 
   const checkpoint = async from => {
     archive.sort((a, b) => (b.wrapped || '').localeCompare(a.wrapped || ''));
-    await save(paths.archive, archive);
+    await saveArchive( archive);
     /* Whatever hasn't been filed yet stays queued, so a killed run can be
        restarted and pick up exactly where it stopped. */
     await save(paths.queue, work.slice(from).map(w => w.item));
@@ -439,7 +440,7 @@ archive.sort((a, b) => (b.wrapped || '').localeCompare(a.wrapped || ''));
 
 if (!dryRun) {
   await save(paths.queue, keep);
-  await save(paths.archive, archive);
+  await saveArchive( archive);
 
   const state = await load(paths.state, { seen: [] });
   state.rejected = rejected;

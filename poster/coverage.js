@@ -20,7 +20,8 @@
    reading the queue, and a number on the page. It never gates anything.
    ========================================================================== */
 
-import { load, save, paths, sleep, tmdbCastCount, coverage } from './lib.js';
+import { load, save, paths, sleep, tmdbCastCount, coverage, saveArchive,
+} from './lib.js';
 
 const args = process.argv.slice(2);
 const recheck = args.includes('--recheck');
@@ -64,7 +65,7 @@ for (let i = 0; i < todo.length; i += CONCURRENCY) {
   sinceSave += chunk.length;
 
   if (sinceSave >= CHECKPOINT) {
-    await save(paths.archive, archive);
+    await saveArchive( archive);
     sinceSave = 0;
     console.log(`   ${done}/${todo.length} measured (saved)`);
   }
@@ -72,7 +73,7 @@ for (let i = 0; i < todo.length; i += CONCURRENCY) {
   await sleep(200);
 }
 
-await save(paths.archive, archive);
+await saveArchive( archive);
 
 /* --- what it found ----------------------------------------------------- */
 
