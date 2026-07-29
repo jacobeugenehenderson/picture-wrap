@@ -190,8 +190,8 @@ async function sweep(days) {
   }
 
   state.lastRun = new Date().toISOString();
-  await saveState( state);
-  await save(paths.queue, queue);
+  await save(paths.queue, queue);      /* queue first — see the backfill */
+  await saveState(state);
 
   log(`\n${added} film(s) added. ${queue.length} awaiting review.`);
   if (queue.length) log(`Run:  node review.js`);
@@ -308,8 +308,16 @@ async function backfill(range) {
     if (!done.includes(y)) done.push(y);   /* was pushed unconditionally, so
                                               a re-run duplicated every year */
     state.yearsDone = done;
-    await saveState( state);
+
+    /* Queue first, state second, and the order is not cosmetic.
+       A film is marked seen the moment it is queued, so if the process
+       dies between these two writes the wrong order loses the findings
+       while keeping them marked — and a film marked seen is never
+       offered again. Writing the queue first means a crash costs a
+       duplicate finding on the next run, which filing skips, instead of
+       a picture nobody will ever look at twice. */
     await save(paths.queue, queue);
+    await saveState(state);
   }
 
   log(`\nBackfill finished. ${queue.length} awaiting review.`);

@@ -46,3 +46,6 @@ preview.html
 
 # Dev-only. The site still ships no dependencies.
 node_modules/
+
+# Rotating queue snapshots, taken while a long backfill runs.
+poster/snapshots/
