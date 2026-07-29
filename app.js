@@ -1314,39 +1314,6 @@ function viewAbout() {
         the next check.
       </p>
 
-      <h3>The account</h3>
-      <p>
-        Closings are announced at
-        <a href="https://bsky.app/profile/picture-wrap.bsky.social"
-           rel="noopener">@picture-wrap.bsky.social</a>, one picture at a
-        time. Pictures that closed before this site existed are filed
-        without announcement &mdash; thousands of them, mostly from the
-        1930s and 1940s &mdash; so the account is much quieter than the
-        Vault.
-      </p>
-      <p>
-        A death is reported hours or days before it is recorded, so the
-        account listens to Bluesky and works ahead of the databases. That
-        is also its limit: it can only hear what is posted where it is
-        listening.
-      </p>
-      <p>
-        The film institutions are largely not there. No British Film
-        Institute, no Academy, no Cinémathèque française, no George
-        Eastman Museum, no Turner Classic Movies; of the guilds, only two;
-        of the talent agencies, none. What is there is people. Across
-        sixty-eight film starter packs there are some 2,800 accounts and
-        nearly all of them are individuals &mdash; critics, historians,
-        programmers, filmmakers.
-      </p>
-      <p>
-        So the listening is done to wire services, the trades, a few
-        papers outside English, and the unions that turned up. A report
-        from any of them is enough to start looking and never enough to
-        publish: the picture still has to pass the same test as every
-        other one.
-      </p>
-
       <h3>Mistakes</h3>
       <p>
         A film may show a bar at the top because everyone recorded has died,
