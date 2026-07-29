@@ -11,8 +11,26 @@ handle and app password, the TMDB key, the site URL, the archive path, the
 ntfy topic and the watched newsrooms. It is `chmod 600` and must never move
 into the project.
 
-There are three launchers on the Desktop that do the sourcing for you:
-`picture-wrap-preview`, `picture-wrap-review`, `picture-wrap-watch`.
+There are three launchers in `~/Desktop/picture-wrap-assets/` that do the
+sourcing for you: `picture-wrap-preview`, `picture-wrap-review`,
+`picture-wrap-watch`. Each is a two-line pointer at a script in `poster/`,
+so the logic stays under version control instead of drifting in a copy on
+the Desktop.
+
+**The watcher is started by hand, on purpose.** Running it as a launchd
+agent was tried and reverted: the repository lives under `~/Desktop`,
+which macOS gates behind TCC, so a background agent cannot even read its
+own launcher — it fails silently at exit 127 and no permission prompt
+ever appears. Enabling it would mean granting Full Disk Access to
+`/bin/zsh`, which is every script anything runs through zsh, forever.
+
+That is a wide door for one listener, and the listener has never fired on
+a real death. `poster/watch.command` restarts node if it dies and drops
+the Bluesky password from its environment — it talks to a public firehose
+and cannot post — but you decide when it is listening.
+
+The same TCC gate blocks the cron lines below. Nothing is scheduled
+today; every run this project has ever done was typed by hand.
 
 ---
 

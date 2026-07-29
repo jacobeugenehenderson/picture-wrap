@@ -52,8 +52,9 @@ node preview.js                 # see the queue as a web page, images and all
 node review.js                  # approve → Bluesky → archive.json
 ```
 
-There are launchers on the Desktop for the three things done by hand:
-`picture-wrap-preview`, `picture-wrap-review`, `picture-wrap-watch`.
+There are launchers in `~/Desktop/picture-wrap-assets/` for the three
+things done by hand: `picture-wrap-preview`, `picture-wrap-review`,
+`picture-wrap-watch`.
 
 ---
 
