@@ -219,8 +219,12 @@ declared closed with a living person in it.
 1940s 2,329 · **1950s 2,549** · 1960s 534 · later 3. The fifties are the
 largest decade, and the old 1930–45 range missed them entirely.
 
-**276 entries carry no TMDB id** and cannot be verified by anything but
-Wikidata's own view of itself.
+**389 entries carry no TMDB id** and cannot be verified by anything but
+Wikidata's own view of itself. Only 276 of them are *flagged* `unverified`
+— the flag was added on 28 July and survives filing only from that point,
+so it undercounts by every entry filed before it existed. The flag is a
+record of what we noticed, not of what is unverifiable; count the missing
+id, not the flag.
 
 ---
 
