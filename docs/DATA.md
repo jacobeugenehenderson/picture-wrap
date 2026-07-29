@@ -55,14 +55,40 @@ guard in the codebase exists because of it.
 
 | Property | Meaning | Used for |
 |---|---|---|
-| `P31` = `Q11424` | instance of: film | search filter |
+| `P31` = `Q11424` | instance of: film | search filter, backfill finder |
 | `P161` | cast member | the roster |
 | `P453` | character role (qualifier on P161) | character names |
 | `P569` | date of birth | life spans, sort order |
 | `P570` | date of death | **everything** |
 | `P577` | publication date | release year |
-| `P18` | image | portraits |
+| `P580` | start time | a series' first year |
+| `P18` | image | portraits, and the viewer |
 | `P106` | occupation | search filter |
+| `P4947` | TMDB **film** id | the join for films |
+| `P4983` | TMDB **series** id | the join for television |
+| `P4985` | TMDB **person** id | the join for people |
+| `P725` | voice actor | animation, where `P161` is empty |
+
+### Reaching a date's precision
+
+`wdt:P569` gives a value and nothing else, and a date known only to the
+year serialises as **1 January** because it has to serialise as something.
+The precision is only reachable through the full statement path:
+
+```sparql
+?p p:P569/psv:P569 ?birth .
+?birth wikibase:timeValue ?dob ; wikibase:timePrecision ?prec .
+```
+
+`9` is year-only, `11` is to the day. Without this the two are
+indistinguishable, and a cataloguer's placeholder reads as a birthday —
+which is how a man with one undated record kept a 1945 picture open at the
+age of 106.
+
+`P570` can also carry **no value at all**: an editor asserting a death
+without a date. The query service returns that as a skolem IRI, not a
+date, so it must be read as *a death was asserted* rather than sliced into
+a string. Sliced, it produced a death date of `http://www`.
 
 ### Crew properties
 
@@ -160,6 +186,66 @@ desaturates all of them.
 
 ---
 
+## What the 1946–65 backfill measured
+
+*29 July 2026. Twenty years, nine hours, against the fixed verification.*
+
+**Candidates worth testing, by year** — films whose Wikidata cast is
+entirely dead and which clear the cast floor:
+
+| 1945 | 1955 | 1965 | 1975 | 1985 | 1995 | 2005 |
+|---|---|---|---|---|---|---|
+| 323 | **392** | 174 | 70 | 10 | 2 | 1 |
+
+The richest year is not where the archive started. 1955 offers more than
+1945, and the curve collapses after about 1975 — by 1995 a whole year
+yields two candidates. That is the shape that says where to stop.
+
+**Rejections, by year** — candidates where TMDB found a living person
+Wikidata had not linked to the picture:
+
+| 1946 | 1949 | 1953 | 1957 | 1961 | 1965 |
+|---|---|---|---|---|---|
+| 14% | 17% | 25% | 41% | 44% | **56%** |
+
+It rises smoothly, which is itself evidence the test is measuring
+something real rather than failing at random. By 1965 more than half of
+all candidates have somebody alive on them.
+
+**1,711 rejections across the twenty years.** Every one a picture Wikidata
+declared closed with a living person in it.
+
+**The Vault after filing**, by release decade: 1920s 9 · 1930s 2,360 ·
+1940s 2,329 · **1950s 2,549** · 1960s 534 · later 3. The fifties are the
+largest decade, and the old 1930–45 range missed them entirely.
+
+**276 entries carry no TMDB id** and cannot be verified by anything but
+Wikidata's own view of itself.
+
+---
+
+## Television, measured
+
+*29 July 2026.*
+
+| | |
+|---|---|
+| Series on Wikidata carrying `P4983` | **52,458** |
+| BoJack Horseman, credited on Wikidata | **6** |
+| …via `/tv/{id}/credits` | 5 cast (billed regulars only) |
+| …via `/tv/{id}/aggregate_credits` | **248 cast, 179 crew** |
+| Of that cast, Wikidata can place | 229 |
+
+A series' plain credits endpoint is the billed regulars and nothing else,
+which is why television pages looked empty. `aggregate_credits` is
+everyone who ever appeared.
+
+A series *wrapping* remains vanishingly rare — hundreds of credits across
+years — which is why the backfill finder stays film-only. Widening it was
+measured at 2–11 extra candidates a year, almost none of them series.
+
+---
+
 ## Query costs
 
 Measured against the public endpoint. Anything at 60s+ was **killed by the
@@ -194,7 +280,8 @@ per candidate; 1930 produced 727 films with cast data and 206 candidates.
 
 ## What TMDB is worth, measured
 
-Coverage across 2,415 measured Vault entries:
+Coverage across 2,415 measured Vault entries, *July 2026, when the Vault
+held 2,819 and covered 1930–1945 only.* Not re-measured since it tripled.
 
 | | |
 |---|---|
@@ -306,15 +393,26 @@ admit existed.
 
 | | source | meaning |
 |---|---|---|
-| **dead** | Wikidata `P570`, or TMDB `deathday`, or a birth year older than 112 | safe |
-| **alive** | TMDB `birthday` within a lifespan and no `deathday`; or Wikidata knows them with no `P570` | **veto** |
-| **unknown** | neither database has a birth or death date | recorded, never assumed |
+| **dead** | a death date from either database, or a death asserted without one | safe |
+| **alive** | a birth date we can credit, and no death anywhere | **veto** |
+| **unknown** | no usable evidence, *or* an age past 112, *or* a lone imprecise birth date nothing corroborates | recorded, never assumed |
+
+Nothing infers a death. Not age, not silence, not a lookup that failed.
+The age ceiling moves people from *alive* to *unknown* and is not
+permitted to bury anyone — it used to, and that was a bug of the same kind
+as every other one here.
+
+A birth date counts if it is precise, **or** if both databases give one
+and agree on the year. Two sources agreeing is evidence even when neither
+is precise; one imprecise date that nothing corroborates is a year
+somebody typed into a field.
 
 `unknown` runs at roughly **3.4 people per picture**. These are real
 credits — TMDB names them — that nobody has dated. For the 1930s the
-practical risk is small: anyone credited then is past 100. It rises
-steeply with every decade the archive extends, which is the main reason
-1946–1965 has not been attempted yet.
+practical risk is small: anyone credited then is past 100. It rises with
+every decade the archive extends, and the 1946–65 backfill is the
+measurement of that: candidates rejected for having a living person ran at
+14% in 1946, 27% by 1953 and **56% by 1965**.
 
 `unknownCount` is stored per Vault entry. It is the honest measure of how
 much of a closing rests on nothing, and it is why coverage on Vault rows
