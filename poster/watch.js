@@ -21,8 +21,22 @@
 
    Configure the newsrooms — anything else is noise:
 
-     export PW_WATCH="apnews.com,variety.com,hollywoodreporter.com"
+     export PW_WATCH="apnews.com,variety.com,lemonde.fr,iatse.bsky.social"
      export PW_NOTIFY="https://ntfy.sh/picture-wrap-a7f3k2"
+
+   On choosing them. Wires and trades catch the famous. Non-English press
+   catches the cinema the Vault is actually heavy with — French, Spanish,
+   Italian — which is why DEATH is no longer English-only. And the unions
+   memorialise the crew nobody else writes about, which is the whole
+   population this project exists for.
+
+   Searched and NOT found on Bluesky, as of July 2026: the BFI, the
+   Academy, MoMA, the Cinémathèque française, Eastman, Film Forum, the
+   Harvard Film Archive, TCM, Screen Daily, the Hollywood Reporter, the
+   WGA, the DGA, the camera and editors guilds, and every talent agency.
+   Film Bluesky is people, not institutions — 2,780 accounts across 68
+   film starter packs and almost none of them an archive. Do not spend an
+   evening looking again without checking that first.
    ========================================================================== */
 
 import {
@@ -59,7 +73,33 @@ async function notify(title, message) {
 
 /* Cheap gate first. Most posts from a newsroom aren't obituaries, and we
    don't want to hit Wikidata for every headline about a box office. */
-const DEATH = /\b(dies|died|dead|has died|passed away|obituary|obit)\b/i;
+/* English first, then the languages the Vault is actually heavy in. This
+   was English-only, which made watching Le Monde or El País pointless —
+   "Mort de la comédienne Micheline Presle" and "Fallece la actriz Concha
+   Velasco" both sailed straight past it.
+
+   Every term here is a word a wire uses in a headline about a death. None
+   is a word that turns up in ordinary film news, which is the whole test:
+   a false positive costs one wasted Wikidata query, a false negative
+   costs the thing the watcher exists for. */
+const TERMS = [
+  'dies?|died|dead|has died|passed away|obituar(?:y|ies)|obit',   // en
+  'morte?|décès|deces|décédée?|decedee?|disparition',             // fr
+  'muere|murió|murio|fallece|falleció|fallecio|fallecimiento',    // es
+  'è mort[oa]|e mort[oa]|scomparsa',                             // it
+  'gestorben|verstorben|todesfall',                              // de
+  'morreu|faleceu|falecimento',                                  // pt
+].join('|');
+
+/* Unicode-aware boundaries, not \b. \b is defined on [A-Za-z0-9_], so
+   \bdécès would never fire — the character before an accented letter is
+   not a word character by that definition, so there is no boundary there
+   to assert. \p{L} lookarounds do what \b was meant to do here.
+
+   The boundaries are not decoration: without them "Deadline" contains
+   "dead", and the watcher would treat every trade headline as an
+   obituary. */
+const DEATH = new RegExp(`(?<!\\p{L})(?:${TERMS})(?!\\p{L})`, 'iu');
 
 /* Names, roughly: runs of two to four capitalised words. Deliberately
    over-generous — resolvePerson and the wrap query do the real filtering,
