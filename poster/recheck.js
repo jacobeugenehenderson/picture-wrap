@@ -119,6 +119,26 @@ console.log(`${archive.length} in the vault, re-testing ${todo.length}.\n`);
 const reopened = [];
 let closed = 0, unchecked = 0, done = 0, sinceSave = 0;
 
+/* A full pass takes hours, and until now it wrote once, at the very end.
+   Killed at two hours it lost two hours — every verdict, including the
+   removals. The backfill loses at most one year to the same accident,
+   because it checkpoints; this had no such floor.
+
+   So: save the archive as it stands every CHECKPOINT entries, with the
+   removals found so far. Each save is a consistent state — those entries
+   really did reopen — and there is no resume logic to get wrong, because
+   re-testing an entry is idempotent. A kill costs the entries since the
+   last save, not the run.
+
+   Reuses the existing CHECKPOINT, which already paces the progress line —
+   one interval, one meaning: this is how often the run reports and
+   commits what it has. */
+async function checkpoint() {
+  if (dryRun || !reopened.length) return;
+  const gone = new Set(reopened.map(r => r.entry.id));
+  await saveArchive(archive.filter(f => !gone.has(f.id)));
+}
+
 for (let i = 0; i < todo.length; i += CONCURRENCY) {
   const chunk = todo.slice(i, i + CONCURRENCY);
 
@@ -143,6 +163,7 @@ for (let i = 0; i < todo.length; i += CONCURRENCY) {
   if (sinceSave >= CHECKPOINT) {
     console.log(`   … ${done}/${todo.length} (${reopened.length} reopened so far)`);
     sinceSave = 0;
+    await checkpoint();
   }
   await sleep(150);
 }
