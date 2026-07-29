@@ -7,7 +7,8 @@ The goal is a dataset somebody could cite in a paper and defend. Not
 paywalled, not gated — just reliable enough that a claim resting on it
 holds up when someone checks.
 
-The Vault is already strong on **method** and weak on **memory**.
+The Vault is already strong on **method** and weak on **memory** — and it
+drops the evidence it was handed on the way in.
 Everything needed to judge a claim *today* is documented: the three
 states, what the coverage is, the cast floor, the below-the-line gap. What
 it cannot answer is **"what did this say on the day I cited it, and why
@@ -59,6 +60,62 @@ Git holds dated snapshots but nothing names one.
 unverifiable count, and the year ranges the scan has covered. That makes
 *"Picture Wrap Vault, 29 July 2026, 8,100 entries, coverage 1900–2026"* a
 thing that exists rather than something a reader has to assemble.
+
+---
+
+### 4. The citations already exist and we throw them away
+
+*The largest single opportunity here, and it costs almost nothing.*
+
+Wikidata death dates carry their own references. We ask for the date and
+discard the provenance, so the chain stops at us — which is exactly the
+wrong place for it to stop if somebody wants to cite this.
+
+**Measured, 29 July 2026, 40 films sampled across the whole Vault:**
+
+| | |
+|---|---|
+| Deaths carrying a real source | **443 of 545 — 81%** |
+| Films where every death is sourced | 5 |
+| …some sourced | 34 |
+| …none | 1 |
+
+"A real source" means `stated in` a named work (`pr:P248`) or a direct
+reference URL (`pr:P854`), not merely *imported from another Wikipedia*.
+
+**What those sources are.** Across three well-documented pictures the
+distribution ran: Find a Grave 59, Internet Broadway Database 47, SNAC 45,
+BnF authorities 41, the German Integrated Authority File 36,
+filmportal.de 23, Discogs 15, Britannica 8, IMDb 7 — plus biographical
+dictionaries cited down to the article, *"Arden, Eve (30 April 1912?–12
+November 1990), stage, film, radio, and television actress"*. Wikipedia as
+a source was 15 references out of roughly 370.
+
+National libraries and archival authority files, in other words. That is
+citation-grade provenance and it is sitting one query away.
+
+**The gap follows the familiar shape.** The least-sourced entries in the
+sample were *Росица* (Bulgarian, 1944) at 0 of 6, *Mask* (1938) at 2 of 8,
+*Cuori nella tormenta* (Italian, 1940), a Swedish picture from 1961. The
+same thin non-English end that every other measurement here lands on.
+
+**What to build.**
+
+- **A per-entry sourcing figure**, stored beside `unknownCount` — *"33 of
+  34 deaths sourced"*. It is the first quality signal we would have that
+  measures the *upstream* evidence rather than our own coverage, and it
+  separates a claim resting on the Bibliothèque nationale from one resting
+  on nothing.
+- **The sources themselves in the shards**, so anyone working from the
+  dataset can trace any claim without asking us. Probably not on the page
+  — a film listing forty citations is unreadable — but in the data.
+
+**The caution that must survive into whatever we publish.** A reference is
+not a verification. Find a Grave is user-contributed; some chains bottom
+out in another wiki. The figure measures *whether somebody cited
+something*, not whether it is true. Publishing it as a quality score
+without that distinction would be dressing a proxy as a fact, which is the
+error this project spent 28 July undoing.
 
 ---
 
