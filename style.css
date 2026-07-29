@@ -114,9 +114,19 @@ body {
   padding: 0 var(--gutter) 5rem;
 }
 
+/* One measure for the whole page. The footer belongs to this group — it
+   was removed from it by accident while tidying the colophon, which took
+   the declaration block with it and sent the masthead, the search field
+   and every page full-bleed. */
 .masthead,
 .search,
 main,
+.colophon {
+  max-width: var(--measure);
+  margin-inline: auto;
+}
+
+
 /* 4. MASTHEAD ============================================================ */
 
 .masthead {
@@ -1087,8 +1097,6 @@ body.viewing { overflow: hidden; }
    and a caveat, which is a lot of hedging to put under every page — those
    live on the About page now, where somebody has gone looking for them. */
 .colophon {
-  max-width: var(--measure);
-  margin-inline: auto;
   margin-top: 4rem;
   padding-top: 1.4rem;
   border-top: 1px solid var(--rule);
