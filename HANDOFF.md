@@ -52,7 +52,7 @@ writers, so derived files cannot drift. `state.backup.json` is committed,
 sorted one id per line.
 
 **The site.** The Vault is served in shards — a 1 KB summary, an ids file,
-one file per closing decade — because `archive.json` is 4.5 MB and was
+one file per closing decade — because `archive.json` is 6.5 MB and was
 being fetched whole on every page. The bar has two homes and its position
 is the whole answer: inside the roster, or under the title once nobody is
 left. Television works: series carry `P4983`, not `P4947`, and
@@ -60,14 +60,12 @@ left. Television works: series carry `P4983`, not `P4947`, and
 
 ## The order to work in
 
-1. **Let the silent backfill finish**, or kill it and `--resume` later.
-2. **`node review.js --archive-only --yes`** to file what it found.
-3. **`node recheck.js`** over the whole Vault — the one job still
-   outstanding, and the reason is worth knowing: everything filed since
-   yesterday was verified minutes before filing by the current code, so
-   this is about drift in *older* entries, not about the new ones. Expect
-   the unchecked count to be roughly the no-TMDB-id count.
-4. **Commit `archive.json` and `vault/`**, and regenerate
+1. **`node recheck.js`** over the whole Vault — the one job outstanding,
+   and the reason is worth knowing: everything filed on 28–29 July was
+   verified minutes before filing by the current code, so this is about
+   drift in *older* entries rather than about the new ones. Judge the
+   result against the criteria below before writing it.
+2. **Commit `archive.json` and `vault/`**, and regenerate
    `state.backup.json`.
 
 Never file into a Vault you have not re-checked *when the queue predates
@@ -103,7 +101,7 @@ costs a few hundred entries rather than the pass.
 - **The cast floor counts `P161` only**, so an animated film with forty
   `P725` voice credits scores zero cast and is dropped.
 - **`state.rejected` is written and never read.**
-- **481 entries cannot be verified** and nothing on the page says so.
+- **1,077 entries cannot be verified** and nothing on the page says so.
 - **Nothing is scheduled.** Cron is blocked by TCC while the repository
   lives under `~/Desktop`; a launchd agent cannot read its own launcher
   there. Every run this project has done was typed by hand.
