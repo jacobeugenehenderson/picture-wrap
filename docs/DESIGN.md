@@ -5,8 +5,13 @@
 One list per picture. The living above, the dead below, a gold bar between.
 
 As people die they cross from the top section to the bottom. The living
-section shrinks and **the bar rises**. When it reaches the top there is
-nothing above it and the picture has wrapped.
+section shrinks and **the bar rises**. When there is nobody left it leaves
+the roster entirely and comes to rest **under the title** — which is both
+the top of the page and the end of the journey the whole design is about.
+
+So the bar has two homes and its position is the entire answer. Under the
+title: wrapped. Anywhere else: not. Nothing else has to say so, and after
+28 July nothing else does.
 
 The bar's height *is* the reading. There is no count, no fraction, no
 progress percentage, no "12 of 40 remaining" anywhere in the interface. You
@@ -29,11 +34,10 @@ deliberately rendered as a *hairline* — a thin gold gradient fading out at
 both ends. The Vault has none at all: everything on it has already crossed,
 and a divider there would spend the bar's meaning for nothing.
 
-**When a picture has wrapped, the bar rises above everything** — above the
-crew card too, since everyone in it is gone as well. Nothing sits above the
-bar once there is nobody left. The Wizard of Oz is the case that showed
-this: a collapsed card floating above the line undercut the one moment the
-design exists to state.
+**When a picture has wrapped, the bar leaves the roster** and sits under
+the title. It used to cap the list instead, which meant a collapsed crew
+card floated above it and softened the one moment the design exists to
+state. Under the title there is nothing above it by construction.
 
 ---
 
@@ -110,18 +114,69 @@ meaning anything.
 
 ---
 
+## The three zones of a film page
+
+*Settled 28 July 2026, after several worse attempts.*
+
+| | |
+|---|---|
+| Above the bar | living — anyone either database gives a birth date and no death |
+| Below the bar | gone — anyone either database gives a death date |
+| Below the credits | credited on the picture, no date on record anywhere |
+
+The third zone is the one that took work. Those people were once hidden in
+a fold headed **"Credited, no record"** with a count, and a sentence
+underneath the roster explaining why the bar had not risen. Both are gone.
+
+**They are listed, because it is a listing.** They were in the picture. An
+em-dash where the dates go says exactly what we hold, and that is the whole
+disclosure — a heading saying *no record* turns an absence into a finding.
+
+**They are uncounted, in both directions.** Reading a blank as a death is
+the mistake this project exists to avoid; reading it as a pulse would hold
+every old picture open forever.
+
+Set apart rather than folded away: the portrait column goes, which shifts
+the names left and is most of the signal, and the type quietens. It should
+read as an appendix to the list, not as rows that failed.
+
+### What was tried and rejected here
+
+- **A sentence under the roster** — *"Everyone on screen is gone. Someone
+  who worked behind the camera is still here."* It existed because a living
+  crew member sat inside a collapsed fold, so the page needed prose to
+  explain a bar that had not risen. Fixing the cause removed the need.
+- **A `+` marker** on names sourced from TMDB. Provenance is not the
+  reader's question, and a symbol that needs a key is the same failure as a
+  fold that needs a heading.
+- **A badge beside the title** meaning *wrapped*. Redundant the moment the
+  bar moved under the title, and two gold marks competing.
+
+The rule that came out of it: **if a listing needs a sentence underneath
+saying why it looks wrong, fix the listing.**
+
+---
+
 ## Structure of a film page
 
 ```
-  Title card           title · year · country + type · director
+  Title card           title
+                       ── GOLD BAR ──                 (if closed)
+                       year · country + type · director
                        FINAL PICTURE WRAP · date      (if closed)
+                       X was the last of its makers.  (if closed)
   Share                share · copy link · bluesky
-  ── GOLD BAR ──                                      (if closed)
   Behind the camera    crew, collapsed to one row
-  ─ message ─          only when the cast is complete but crew survive
   The roster           living · GOLD BAR · dead       (bar here if open)
-  Credited, no record  people TMDB names and Wikidata doesn't
+  ── appendix ──       credited, no date on record
+  Correction           edit this picture on Wikidata
 ```
+
+The title card is one object: name, bar, provenance, date, closing line.
+It was four separated things, and the wrap stamp was boxed — which made
+two announcements out of one fact, since the bar directly above it had
+already said *wrapped*. What the line carries now is the date, which the
+bar cannot say.
 
 **Type and country come before the director** in the meta line. On an
 obscure or foreign title, *"1964 · French film"* identifies it better than
@@ -129,10 +184,13 @@ a name you've never heard. The demonym is used, not the country — "French
 film", not "France film" — taken from one country rather than every
 co-producer, or The Umbrellas of Cherbourg reads as West German.
 
-**Credited, no record** is the third state. TMDB names people Wikidata has
-never heard of; they are listed, shown with an em-dash where a lifespan
-would be, and deliberately not counted either way. Counting them as living
-or as dead would both be a guess.
+The appendix is the third zone, described above.
+
+**The correction line is the last thing on the page**, and it points at
+that picture's Wikidata item rather than at us — a fix there is read by
+everything downstream, and this archive is only one of the things reading
+it. It used to live inside the fold that was removed, which meant the one
+affordance on the page sat behind a disclosure triangle.
 
 Crew sits **above** the cast, the way a title card runs. Collapsed it costs a
 single row, and on an old picture it is a who's who in its own right — which
@@ -217,6 +275,31 @@ list is genuinely hard to read past.
 wrap stamp restated the fold beneath it. The fold's paragraph restated its
 own title. Both cut to nothing.
 
+
+## The viewer
+
+Click any portrait and it opens at `?width=960` — 100–160 KB. Never the
+original: they run from 280 KB to, in one case, 5.4 MB, and nothing about
+a portrait on this site needs that.
+
+**In colour, and this is the one place the desaturation lifts.** The
+roster greys portraits because a column of them spanning a century reads
+as an accident; a single picture at size has no such problem, and there
+you are looking *at* the photograph rather than along a row of them.
+
+The portrait claims the click before the row does — rows navigate to a
+person's page, and enlarging is a different intention. Escape closes it,
+so does clicking anywhere outside the picture. Focus lands on the dialog
+rather than the close button, so a mouse user is not shown a focus ring
+they did not ask for; tab still reaches the button and then the ring is
+earned, in gold rather than system blue.
+
+The caption carries the name and a link to the file on Commons. At
+thumbnail size the colophon credit is defensible; showing someone's
+photograph at 960px is closer to display, and the file page is where the
+licence and the author live.
+
+---
 
 ## Contrast
 

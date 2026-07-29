@@ -23,12 +23,18 @@ The project is deliberately two things that barely know about each other.
 
 | | | |
 |---|---|---|
-| **The site** | `index.html` `style.css` `app.js` `shared.js` | Static files. No backend, no build step, no dependencies. The browser queries Wikidata and TMDB directly. |
+| **The site** | `index.html` `style.css` `app.js` `shared.js` `verify.js` | Static files. No backend, no build step, nothing shipped that it didn't write. The browser queries Wikidata and TMDB directly. |
 | **The poster** | `poster/` | Node scripts. Finds pictures that have closed, holds them for approval, posts approved ones to Bluesky. |
 
-They share two files: **`shared.js`**, the single source of truth for
-anything both must agree about, and **`archive.json`**, which the poster
-writes and the site reads.
+They share two files, and the difference between them is the design.
+**`shared.js`** is what both halves must agree *about* — properties,
+languages, pure helpers. **`verify.js`** is what they must agree *on*:
+whether anyone who made a picture is still alive.
+
+The poster writes **`archive.json`** for itself and **`vault/`** for the
+browser — a summary, an index of ids, and one file per decade. The site
+never fetches the archive; at 4.5 MB it would be a poor thing to hand
+somebody who wanted the front page.
 
 Delete the poster and the site still works — it just has no Vault.
 
@@ -71,6 +77,7 @@ things done by hand: `picture-wrap-preview`, `picture-wrap-review`,
 | `coverage.js` | Measures how complete Wikidata's cast list is, against TMDB. |
 | `backfill-tmdbids.js` | Fills in missing `tmdbId`, without which an entry can't be verified. |
 | `check.js` | Verifies Bluesky credentials. Posts nothing. |
+| `explain.js` | Why one picture got the verdict it got — every person, both databases, and the reasoning. Reads only the APIs; safe to run against a live backfill. |
 
 ---
 
@@ -84,6 +91,7 @@ things done by hand: `picture-wrap-preview`, `picture-wrap-review`,
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Every significant choice and why |
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Daily running, backfill, deployment, failure modes |
 | [docs/BACKLOG.md](docs/BACKLOG.md) | Deferred work, with enough context to pick it up cold |
+| [docs/VERIFICATION.md](docs/VERIFICATION.md) | How a wrap is decided, in plain prose, no code |
 | [poster/README.md](poster/README.md) | The poster in detail |
 | [HANDOFF.md](HANDOFF.md) | Current state and what's unfinished — **read first** |
 
@@ -104,9 +112,12 @@ concludes "no one is left" verifies against TMDB first.
 **And both databases are asked about life and death.** Wikidata via `P570`,
 TMDB via `deathday` on its own person records. Asking only Wikidata — and
 counting everyone it couldn't place as dead — was this project's worst bug,
-affecting 74% of the archive. There is **one** implementation,
-`survivorsViaTmdb` in `poster/lib.js`. Call it; do not copy it. Every copy
-that has ever existed kept the bug after the original was fixed.
+affecting 74% of the archive.
+
+There is **one** implementation, `verify.js`, imported by both halves.
+Call it; do not copy it. Four copies once existed and every one of them
+kept the bug after the original was fixed — the browser's kept it through
+three separate fixes to the others.
 
 **A person has three possible states, not two:** dead, alive, or unknown.
 Unknown is counted and stored, never read as dead.
