@@ -7,17 +7,17 @@ below is a clean state, except the one job noted as running.
 
 | | |
 |---|---|
-| `archive.json` | **8,100** |
-| `poster/queue.json` | filling — the silent-era backfill is running |
-| Years the backfill has asked about | **1900–2026**, no gaps once this run finishes |
-| Unverifiable | **481** entries have no TMDB id and never got a second opinion |
+| `archive.json` | **11,457** |
+| `poster/queue.json` | empty |
+| Years the backfill has asked about | **1900–2026, 127 years, no gaps** |
+| Unverifiable | **1,077** entries have no TMDB id — almost all pre-1930, where TMDB does not reach |
 | Bluesky | 26 posts; 37 entries survive |
 | Live site | current with `main`, `?v=37` |
 
-**Running right now:** `run.js --backfill 1900-1929`, somewhere in the
-1920s. It saves after every year and `--resume` skips what is done, so it
-is safe to kill. Nothing else should write `state.json` while it runs —
-that means no `recheck.js` and no `review.js` until it stops.
+**The frontier scan is complete.** Every year from 1900 to 2026 has been
+asked about. The earliest closing in the Vault is *Lattermaskinen* (1910),
+which wrapped on 10 April 1942 — while the war it outlived was still being
+fought.
 
 ## What happened on 28–29 July
 
@@ -73,6 +73,29 @@ left. Television works: series carry `P4983`, not `P4947`, and
 Never file into a Vault you have not re-checked *when the queue predates
 a logic change*. That is not the case today, which is why filing came
 first this time.
+
+## Acceptance criteria for a full re-check
+
+*Written before the 29 July run, so the judgement does not depend on
+anyone's recall — including mine.*
+
+A full pass over 11,457 entries takes ~3.5 hours. When it finishes, these
+are the numbers that decide whether to commit it or throw it away:
+
+| | expected | if not |
+|---|---|---|
+| **Unchecked** | ~1,077 — the entries with no TMDB id | Materially higher means TMDB was failing. Discard the run; it verified nothing. |
+| **Reopens among entries older than 29 July** | ~0 | They passed this exact code twice on 28 July. A reopen here is non-determinism, not new information — see the Jorge Busto contested-id case. |
+| **Reopens among entries filed 28–29 July** | ~0 | They were verified minutes before filing by this same code. |
+| **Total reopens** | a handful | Hundreds means something changed underneath us. Stop and find out what. |
+| **Errors / deferrals** | 0 | The `ok` flag exists so nothing passes silently. Any deferral is a lookup that failed. |
+
+Inside those, commit. Outside them, **do not write 11,457 entries on a
+judgement call** — the backup is `archive.json.before-recheck`, written
+before the run touches anything, and the run now checkpoints so a kill
+costs a few hundred entries rather than the pass.
+
+---
 
 ## Known and unfixed
 
