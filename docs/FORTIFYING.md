@@ -7,9 +7,9 @@ The goal is a dataset somebody could cite in a paper and defend. Not
 paywalled, not gated — just reliable enough that a claim resting on it
 holds up when someone checks.
 
-The Vault is already strong on **method** and weak on **memory** — and it
-drops the evidence it was handed on the way in.
-Everything needed to judge a claim *today* is documented: the three
+The Vault is already strong on **method** and weak on **memory**, and it
+drops the evidence it was handed on the way in. Everything needed to judge
+a claim *today* is documented: the three
 states, what the coverage is, the cast floor, the below-the-line gap. What
 it cannot answer is **"what did this say on the day I cited it, and why
 did it change?"**
@@ -18,7 +18,7 @@ That is the whole of what follows.
 
 ---
 
-## The three gaps
+## The four gaps
 
 ### 1. Nothing records a removal
 
@@ -60,8 +60,6 @@ Git holds dated snapshots but nothing names one.
 unverifiable count, and the year ranges the scan has covered. That makes
 *"Picture Wrap Vault, 29 July 2026, 8,100 entries, coverage 1900–2026"* a
 thing that exists rather than something a reader has to assemble.
-
----
 
 ### 4. The citations already exist and we throw them away
 
