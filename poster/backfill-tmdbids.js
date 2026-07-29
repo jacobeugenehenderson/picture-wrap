@@ -165,6 +165,68 @@ for (const f of todo) {
   if (f.last?.name) castOf.get(f.id).add(norm(f.last.name));
 }
 
+/* --- the titles worth asking with ---------------------------------------
+
+   `entry.title` is whatever label Wikidata served, which for a
+   non-English film is usually an English translation — "Burning Daylight",
+   "The Two Rivals", "The Skint". TMDB indexes those films under their
+   originals, so searching the translation asks for a film that does not
+   exist there and the entry is recorded as absent. Of the 230 the
+   title-only version reported absent, around 150 had Latin-script titles
+   of exactly that kind, so "absent" was substantially measuring which
+   title we asked with rather than what TMDB holds.
+
+   So collect the other names for the picture and try each. Two cheap
+   queries rather than one clever one, because a UNION over labels in every
+   language is a different query plan and this needs to not time out:
+
+     P1476  the work's own title, as catalogued, language-tagged
+     label in the language of P364, the original language of the work
+
+   Corroboration is unchanged and applies to every attempt. That is what
+   makes widening the search safe — more ways to find the film, the same
+   requirement that the film's cast agree before an id is written. Without
+   that this change would be a way to find more wrong films. */
+const titlesOf = new Map();
+const addTitle = (id, t) => {
+  const s = String(t || '').trim();
+  if (!s) return;
+  if (!titlesOf.has(id)) titlesOf.set(id, new Set());
+  titlesOf.get(id).add(s);
+};
+
+for (let i = 0; i < needCast.length; i += 25) {
+  const chunk = needCast.slice(i, i + 25);
+  const vals = chunk.map(x => `wd:${x}`).join(' ');
+
+  const [official, native] = await Promise.all([
+    sparql(`SELECT ?f ?t WHERE { VALUES ?f { ${vals} } ?f wdt:P1476 ?t . }`).catch(() => []),
+    sparql(`
+      SELECT ?f ?t WHERE {
+        VALUES ?f { ${vals} }
+        ?f wdt:P364 ?lang . ?lang wdt:P424 ?code .
+        ?f rdfs:label ?t . FILTER(LANG(?t) = ?code)
+      }`).catch(() => []),
+  ]);
+
+  for (const r of [...official, ...native]) addTitle(qid(r.f), r.t);
+  await sleep(150);
+}
+
+/* Primary title first — it is the one the Vault displays, and when it does
+   match it is the least surprising answer. Natives after, deduped against
+   it so an already-native label is not searched twice. */
+const titleList = f => {
+  const seen = new Set([norm(f.title)]);
+  const out = [{ title: f.title, via: 'title' }];
+  for (const t of titlesOf.get(f.id) || []) {
+    if (seen.has(norm(t))) continue;
+    seen.add(norm(t));
+    out.push({ title: t, via: 'native' });
+  }
+  return out.filter(x => x.title);
+};
+
 /* --- pass two: TMDB search, corroborated ------------------------------- */
 
 const tmdb = async path => {
@@ -196,62 +258,98 @@ function overlap(wdNames, tmdbCast) {
 
 const accepted = [], unconfirmed = [], nothingFound = [], deferred = [];
 
-for (const f of todo) {
-  if (known.has(f.id)) {
-    accepted.push({ f, id: known.get(f.id), how: 'P4947', shared: null, why: 'Wikidata' });
-    continue;
-  }
-
+/* One attempt with one title: search, then corroborate every candidate in
+   the year band against Wikidata's cast. Returns the match, or the reason
+   there wasn't one. 'deferred' is a lookup that failed and must never be
+   collapsed into 'absent' — that distinction is the whole reason this file
+   reports four buckets instead of two. */
+async function attempt(f, title) {
   const year = yearOf(f);
   const found = await tmdb('/search/movie' +
-    `?query=${encodeURIComponent(f.title || '')}` +
-    (year ? `&year=${year}` : ''));
-
-  /* null is not "no such film" — it is a request that failed. Reported
-     separately so a rate-limited run cannot read as a catalogue gap. */
-  if (found === null) { deferred.push({ f, why: 'search request failed' }); await sleep(60); continue; }
+    `?query=${encodeURIComponent(title)}` + (year ? `&year=${year}` : ''));
+  await sleep(60);
+  if (found === null) return { outcome: 'deferred', why: 'search request failed' };
 
   const candidates = (found.results || []).filter(r => {
     const ry = Number(String(r.release_date || '').slice(0, 4)) || 0;
     return ry && year && Math.abs(ry - year) <= YEAR_SLACK;
   }).slice(0, 5);
 
-  if (!candidates.length) { nothingFound.push({ f, why: 'no hit within a year of ' + (year || '????') }); await sleep(60); continue; }
+  if (!candidates.length) return { outcome: 'absent' };
 
   const wdNames = castOf.get(f.id) || new Set();
-  let best = null;
+  let best = null, failedLookup = false;
 
   for (const c of candidates) {
     const credits = await tmdb(`/movie/${c.id}/credits`);
     await sleep(60);
-    if (credits === null) { best = best || { deferred: true }; continue; }
+    if (credits === null) { failedLookup = true; continue; }
     const shared = overlap(wdNames, credits.cast || []);
     const exact = Number(String(c.release_date || '').slice(0, 4)) === year;
     const need = exact ? EXACT_MIN_OVERLAP : NEAR_MIN_OVERLAP;
     if (shared >= need && (!best || shared > best.shared)) {
-      best = { id: String(c.id), shared, exact, title: c.title, ry: String(c.release_date || '').slice(0, 4) };
+      best = { id: String(c.id), shared, exact, tmdbTitle: c.title,
+        ry: String(c.release_date || '').slice(0, 4) };
     }
   }
 
-  if (best?.deferred && !best.id) { deferred.push({ f, why: 'credits request failed' }); continue; }
+  if (best) return { outcome: 'match', ...best };
+  if (failedLookup) return { outcome: 'deferred', why: 'credits request failed' };
+  return { outcome: 'uncorroborated', candidates: candidates.length };
+}
 
-  if (best?.id) {
-    accepted.push({ f, id: best.id, how: best.exact ? 'exact year' : 'year ±1',
-      shared: best.shared, why: `${best.shared} shared cast, TMDB "${best.title}" (${best.ry})` });
+for (const f of todo) {
+  if (known.has(f.id)) {
+    accepted.push({ f, id: known.get(f.id), how: 'P4947', via: 'title', shared: null, why: 'Wikidata' });
+    continue;
+  }
+
+  const tried = titleList(f);
+  let match = null, sawCandidates = 0, sawDeferral = null;
+
+  /* First title that corroborates wins, and the rest are not searched.
+     Stopping early is not laziness — every extra attempt is another chance
+     to find a plausible wrong film, so the cheapest correct answer is also
+     the safest one. */
+  for (const t of tried) {
+    const r = await attempt(f, t.title);
+    if (r.outcome === 'match') { match = { ...r, via: t.via, usedTitle: t.title }; break; }
+    if (r.outcome === 'deferred') sawDeferral = r.why;
+    if (r.outcome === 'uncorroborated') sawCandidates += r.candidates;
+  }
+
+  if (match) {
+    accepted.push({ f, id: match.id, via: match.via,
+      how: match.exact ? 'exact year' : 'year ±1', shared: match.shared,
+      why: `${match.shared} shared cast, TMDB "${match.tmdbTitle}" (${match.ry})` +
+        (match.via === 'native' ? `, searched as "${match.usedTitle}"` : '') });
+  } else if (sawDeferral) {
+    /* A deferral outranks the other two: if any title's lookup failed, this
+       entry was not fully examined and saying "absent" would be a claim the
+       run did not earn. */
+    deferred.push({ f, why: `${sawDeferral} (${tried.length} title(s) tried)` });
+  } else if (sawCandidates) {
+    unconfirmed.push({ f, why: `${sawCandidates} candidate(s) across ${tried.length} title(s), none sharing enough cast` });
   } else {
-    unconfirmed.push({ f, why: `${candidates.length} candidate(s) in range, none sharing enough cast` });
+    nothingFound.push({ f, why: `no hit within a year of ${yearOf(f) || '????'} across ${tried.length} title(s)` });
   }
 }
 
 /* --- report ------------------------------------------------------------- */
 
-console.log(`  TMDB search supplied ${accepted.filter(a => a.how !== 'P4947').length}.\n`);
+const viaSearch = accepted.filter(a => a.how !== 'P4947');
+const viaNative = viaSearch.filter(a => a.via === 'native');
+const extraTitles = [...titlesOf.values()].reduce((n, s) => n + s.size, 0);
+
+console.log(`  TMDB search supplied ${viaSearch.length}` +
+  ` — ${viaSearch.length - viaNative.length} on the Vault's title, ${viaNative.length} on a native title.`);
+console.log(`  (${extraTitles} alternative title(s) were available across ${titlesOf.size} entries.)\n`);
 
 if (accepted.length) {
   console.log(`ACCEPTED (${accepted.length}) — audit these before writing:`);
   for (const a of accepted) {
     console.log(`  ${String(yearOf(a.f)).padStart(4)}  ${(a.f.title || '').slice(0, 34).padEnd(34)}` +
-      `  ${String(a.id).padStart(8)}  ${a.how.padEnd(10)}  ${a.why}`);
+      `  ${String(a.id).padStart(8)}  ${a.how.padEnd(10)}  ${(a.via || '').padEnd(6)}  ${a.why}`);
   }
   console.log('');
 }
