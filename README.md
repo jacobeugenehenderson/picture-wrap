@@ -91,6 +91,7 @@ things done by hand: `picture-wrap-preview`, `picture-wrap-review`,
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Every significant choice and why |
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Daily running, backfill, deployment, failure modes |
 | [docs/BACKLOG.md](docs/BACKLOG.md) | Deferred work, with enough context to pick it up cold |
+| [docs/FORTIFYING.md](docs/FORTIFYING.md) | Making the Vault citable: errata, provenance, and the re-check loop |
 | [docs/VERIFICATION.md](docs/VERIFICATION.md) | How a wrap is decided, in plain prose, no code |
 | [poster/README.md](poster/README.md) | The poster in detail |
 | [HANDOFF.md](HANDOFF.md) | Current state and what's unfinished — **read first** |

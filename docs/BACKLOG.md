@@ -5,6 +5,15 @@ Roughly in the order they're worth doing.
 
 ---
 
+## Making the Vault citable
+
+**See [FORTIFYING.md](FORTIFYING.md).** Three gaps, in order: nothing
+records a removal, an entry does not say when it was checked, and there is
+no version to cite. Plus the re-check loop, which is thirty seconds a
+night rather than three hours a month — measured, not assumed.
+
+---
+
 ## The Desk — a place to prepare and send a post
 
 **The largest item here, and designed but not built.** Today the flow is
