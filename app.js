@@ -1314,6 +1314,38 @@ function viewAbout() {
         the next check.
       </p>
 
+      <h3>The account</h3>
+      <p>
+        Closings are announced at
+        <a href="https://bsky.app/profile/picture-wrap.bsky.social"
+           rel="noopener">@picture-wrap.bsky.social</a>, one picture at a
+        time, and nothing is posted without a person reading the evidence
+        first.
+      </p>
+      <p>
+        It is quieter than the Vault, deliberately. Pictures that closed
+        before this site existed are filed without announcement &mdash;
+        thousands of them, most from the 1930s and 1940s. Announcing
+        history would be a bulk import with a megaphone. What gets posted
+        is what closes while we are watching.
+      </p>
+      <p>
+        A death is reported long before it is recorded. Newsrooms carry it
+        within the hour; the databases catch up over a day or two. So the
+        account listens &mdash; to wire services and the trades, to
+        <em>Le Monde</em> and <em>El País</em> because a great deal of this
+        archive is French, Spanish and Italian cinema, and to the unions,
+        which post memorials for crew nobody else writes about. That last
+        group matters most here. This is mostly a record of people who
+        never got an obituary.
+      </p>
+      <p>
+        A report is enough to start looking and never enough to publish. A
+        picture reported closed still has to pass the same test as every
+        other: both databases asked, every name checked, and a person
+        reading it before anything is said out loud.
+      </p>
+
       <h3>Mistakes</h3>
       <p>
         A film may show a bar at the top because everyone recorded has died,
