@@ -20,7 +20,7 @@ import { stdin, stdout } from 'node:process';
 
 import { load, save, paths, longDate, detailsFor, compose, groupQueue,
          tmdbCastCount, coverage, sleep, imagesFor, posterFor,
-         personContext, saveArchive,
+         personContext, saveArchive, saveState,
 } from './lib.js';
 import { login, post, measure, LIMIT, uploadImage, renderLinks } from './bluesky.js';
 
@@ -444,7 +444,7 @@ if (!dryRun) {
 
   const state = await load(paths.state, { seen: [] });
   state.rejected = rejected;
-  await save(paths.state, state);
+  await saveState( state);
 }
 
 console.log(`\n${posted} posted, ${keep.length} still queued, ${archive.length} in the archive.`);

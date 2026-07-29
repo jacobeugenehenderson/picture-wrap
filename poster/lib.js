@@ -338,6 +338,35 @@ SELECT ?film (COUNT(DISTINCT ?c) AS ?cast) (COUNT(DISTINCT ?cd) AS ?dead) WHERE 
 } GROUP BY ?film`;
 
 
+/* state.json is the poster's memory: every film it has ever considered,
+   and which backfill years are done. It is gitignored, it lives on one
+   machine, and losing it means every backfill re-offers everything from
+   scratch — including the rejections that make a re-run cheap.
+
+   It was excluded from version control because it changes on every run
+   and "would make the history unreadable". That is true of the format,
+   not of the data. One JSON array on one line diffs as one enormous
+   changed line; the same ids sorted one-per-line diff as a few added
+   ones, which is exactly what a run does to it.
+
+   So the working copy stays untracked and fast, and a sorted, readable
+   twin is written beside it and committed. Restoring is a copy:
+
+     cp poster/state.backup.json poster/state.json
+
+   Sorted rather than in discovery order, so the same set of films always
+   produces the same file and a diff means something happened. */
+export async function saveState(state) {
+  await save(paths.state, state);
+  await writeFile(paths.state.replace(/\.json$/, '.backup.json'),
+    JSON.stringify({
+      ...state,
+      yearsDone: [...(state.yearsDone || [])].sort((a, b) => a - b),
+      seen: [...(state.seen || [])].sort(),
+    }, null, 1) + '\n');
+}
+
+
 /* Publish the Vault in pieces the browser can fetch one at a time.
 
    archive.json is the poster's file and stays whole — it is what every

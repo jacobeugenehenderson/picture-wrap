@@ -10,6 +10,12 @@
 poster/state.json
 poster/queue.json
 
+# …but poster/state.backup.json IS tracked. Same data, sorted and one id
+# per line, so a run adds a few readable lines instead of rewriting one
+# enormous one. It is the only copy of the poster's memory that survives
+# this machine. Restore with:
+#   cp poster/state.backup.json poster/state.json
+
 # Working art files — PSDs, exports, anything being made rather than
 # served. Keep them outside the repo; a 169 MB Photoshop file was swept
 # in by `git add -A` and rejected by GitHub's 100 MB limit.

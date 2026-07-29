@@ -16,7 +16,7 @@
 
 import {
   sparql, sleep, qid, load, save, paths, MIN_CAST, longDate, unnamed, detailsFor, survivorsViaTmdb,
-  recentDeathsQuery, wrappedFilmsQuery, lastPersonQuery, candidatesByYearQuery,
+  recentDeathsQuery, wrappedFilmsQuery, lastPersonQuery, candidatesByYearQuery, saveState,
 } from './lib.js';
 
 const args = process.argv.slice(2);
@@ -190,7 +190,7 @@ async function sweep(days) {
   }
 
   state.lastRun = new Date().toISOString();
-  await save(paths.state, state);
+  await saveState( state);
   await save(paths.queue, queue);
 
   log(`\n${added} film(s) added. ${queue.length} awaiting review.`);
@@ -308,7 +308,7 @@ async function backfill(range) {
     if (!done.includes(y)) done.push(y);   /* was pushed unconditionally, so
                                               a re-run duplicated every year */
     state.yearsDone = done;
-    await save(paths.state, state);
+    await saveState( state);
     await save(paths.queue, queue);
   }
 

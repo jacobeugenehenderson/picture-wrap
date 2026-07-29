@@ -22,7 +22,7 @@
 
 import { writeFile } from 'node:fs/promises';
 import {
-  sparql, load, save, paths, sleep, VALUES, survivorsViaTmdb, saveArchive,
+  sparql, load, paths, sleep, VALUES, survivorsViaTmdb, saveArchive, saveState,
 } from './lib.js';
 
 const args = process.argv.slice(2);
@@ -167,7 +167,7 @@ await saveArchive( kept);
 const state = await load(paths.state, { seen: [] });
 const before = state.seen.length;
 state.seen = state.seen.filter(id => !drop.has(id));
-await save(paths.state, state);
+await saveState( state);
 
 console.log(`Vault: ${archive.length} → ${kept.length}.`);
 console.log(`Cleared ${before - state.seen.length} id(s) from state.seen so they can close again later.`);

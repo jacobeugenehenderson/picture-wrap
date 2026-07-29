@@ -27,7 +27,7 @@
 
 import {
   sparql, qid, load, save, paths,
-  wouldWrapQuery, resolvePerson, detailsFor, survivorsViaTmdb,
+  wouldWrapQuery, resolvePerson, detailsFor, survivorsViaTmdb, saveState,
 } from './lib.js';
 
 const JETSTREAM = 'wss://jetstream2.us-east.bsky.network/subscribe';
@@ -147,7 +147,7 @@ async function consider(name, source) {
     });
   }
 
-  await save(paths.state, state);
+  await saveState( state);
   await save(paths.queue, queue);
 
   if (!queued) return;
