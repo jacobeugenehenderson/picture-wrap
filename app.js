@@ -1283,10 +1283,10 @@ function viewAbout() {
 
       <h3>Makers</h3>
       <p>
-        Cast, direction, writing, camera, music, cutting, production and
-        costume design. Below-the-line crew like grips, gaffers, second unit
-        and sound is not recorded in any free database and so is not
-        recorded here, either.
+        Here, a maker is anyone credited: cast, direction, writing, camera,
+        music, cutting, production, costume design. Below-the-line crew like
+        grips, gaffers, second unit and sound is not recorded in any free
+        database and so is not recorded here, either.
       </p>
 
       <h3>Whose cinema is here?</h3>
