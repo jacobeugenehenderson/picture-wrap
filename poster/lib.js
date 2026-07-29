@@ -5,7 +5,7 @@
    finds candidates, review.js is the only path to Bluesky.
    ========================================================================== */
 
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, mkdir, open, rename } from 'node:fs/promises';
 
 import { measure, LIMIT } from './bluesky.js';
 import {
@@ -358,7 +358,7 @@ SELECT ?film (COUNT(DISTINCT ?c) AS ?cast) (COUNT(DISTINCT ?cd) AS ?dead) WHERE 
    produces the same file and a diff means something happened. */
 export async function saveState(state) {
   await save(paths.state, state);
-  await writeFile(paths.state.replace(/\.json$/, '.backup.json'),
+  await atomicWrite(paths.state.replace(/\.json$/, '.backup.json'),
     JSON.stringify({
       ...state,
       yearsDone: [...(state.yearsDone || [])].sort((a, b) => a - b),
@@ -414,13 +414,13 @@ export async function publishVault(archive) {
   }
 
   for (const [key, entries] of byDecade) {
-    await writeFile(join(dir, `${key}.json`), JSON.stringify(entries) + '\n');
+    await atomicWrite(join(dir, `${key}.json`), JSON.stringify(entries) + '\n');
   }
 
-  await writeFile(join(dir, 'ids.json'),
+  await atomicWrite(join(dir, 'ids.json'),
     JSON.stringify(sorted.map(e => e.id)) + '\n');
 
-  await writeFile(join(dir, 'summary.json'), JSON.stringify({
+  await atomicWrite(join(dir, 'summary.json'), JSON.stringify({
     total: sorted.length,
     decades: [...byDecade.entries()].map(([key, e]) => [key, e.length]),
     countries: [...countries.entries()].sort((a, b) => b[1] - a[1]),
@@ -464,8 +464,35 @@ export async function load(path, fallback) {
   }
 }
 
+/* Write to a temporary file beside the target, flush it to the platter, and
+   rename it into place. rename(2) is atomic within a filesystem, so a
+   reader either sees the whole old file or the whole new one — never a
+   half-written one.
+
+   It used to be a bare writeFile, which truncates first and then fills.
+   A kill or a power cut inside that window leaves a truncated archive, and
+   the runs here are long enough to make that a real window rather than a
+   theoretical one: a full re-check spends an hour holding 11,457 entries
+   whose only durable copy is this file. The backup taken before a run is
+   the floor; this removes the need to use it.
+
+   fsync before the rename, because the rename can otherwise reach the disk
+   before the contents do, and a crash in between would atomically publish
+   an empty file — the one outcome worse than a truncated one. */
+async function atomicWrite(path, body) {
+  const tmp = `${path}.tmp-${process.pid}`;
+  const fh = await open(tmp, 'w');
+  try {
+    await fh.writeFile(body);
+    await fh.sync();
+  } finally {
+    await fh.close();
+  }
+  await rename(tmp, path);
+}
+
 export async function save(path, data) {
-  await writeFile(path, JSON.stringify(data, null, 2) + '\n');
+  await atomicWrite(path, JSON.stringify(data, null, 2) + '\n');
 }
 
 
