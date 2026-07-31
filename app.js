@@ -388,10 +388,25 @@ async function viewFilm(id) {
      anyone TMDB named and Wikidata couldn't place as dead. Same file now.
      The Wizard of Oz is the page to test on: Caren Marsh is alive. */
   tmdbFailed = false;
-  if (everyone.every(p => p.dod) && meta.tmdbId) {
+
+  /* The other reason to ask. Resolving a TMDB credit against Wikidata by
+     id (above) finds an item and its dates; it does not decide anything.
+     An item with a birth date and no death date is not a survivor — it is
+     an item with a birth date and no death date, and verify.js is the only
+     thing on this site allowed to turn that into 'alive'.
+
+     W.T. McCulley, Red McLaren in The Sawdust Trail, is the case. Born
+     1887, no death recorded, so the roster drew him as living and held the
+     bar down, while the Vault — which asked verify.js, which will not call
+     a man of 139 alive — had the picture closed. Same page, two answers.
+     The disagreement was never about the data; it was about which code
+     read it. */
+  const unjudged = everyone.filter(p => p.fromTmdb && !p.dod);
+
+  if ((everyone.every(p => p.dod) || unjudged.length) && meta.tmdbId) {
     state('Checking the cast against TMDB…');
     const found = await survivors({
-      film: id, tmdbId: meta.tmdbId, media: meta.media,
+      film: id, tmdbId: meta.tmdbId, media: meta.media, year: meta.year,
       sparql: sparqlRows, tmdb: tmdbGet,
     });
 
@@ -423,6 +438,32 @@ async function viewFilm(id) {
        raise the bar rather than make the strongest claim on the site out
        of a failed request. */
     tmdbFailed = !found.ok;
+
+    /* And the same test read the other way. A TMDB-resolved row the test
+       did not name as living has been judged: dead by TMDB's dates or by
+       Wikidata under another name, or too old for either word to mean
+       anything. Whichever it was, the roster may not keep it above the
+       bar. It moves to the third zone, which is exactly what that zone
+       says — credited, and outside the reckoning.
+
+       Only when the test actually ran. A failed lookup judges nobody, and
+       these rows stay where they were. */
+    if (found.ok) {
+      const living = new Set(found.alive.map(a => String(a.tmdbId)));
+      const demoted = unjudged.filter(p => !living.has(String(p.tmdbPerson)));
+
+      if (demoted.length) {
+        const out = new Set(demoted);
+        everyone = everyone.filter(p => !out.has(p));
+        undated = undated.concat(demoted.map(p => ({
+          id: p.tmdbPerson,
+          name: p.pLabel,
+          character: p.credits[0] || '',
+          p: p.p,
+          img: p.img,
+        })));
+      }
+    }
 
     /* Anyone now in the list is no longer unaccounted for. */
     const shown = new Set(found.alive.map(a => String(a.tmdbId)));
@@ -493,6 +534,14 @@ async function addCharacters(tmdbId, media, people) {
         ...r,
         onScreen: true,
         credits: roles2.get(r.tmdb) ? [roles2.get(r.tmdb)] : [],
+
+        /* Where this row came from, and the key the survivor test answers
+           by. Both matter later: an item found this way carries whatever
+           dates Wikidata happens to hold and nothing has judged them yet,
+           so the roster may not treat a missing death date as a pulse
+           until verify.js has said so. */
+        tmdbPerson: r.tmdb,
+        fromTmdb: true,
       });
     }
 
@@ -569,8 +618,18 @@ function renderRoster() {
 
   /* The sentence the page was missing. The stamp gives a date and the
      roster gives an order, but nothing said the human thing: that one
-     person outlived everyone else who made this. */
-  const lastOne = wrapped ? front.dead[0] || back.dead[0] : null;
+     person outlived everyone else who made this.
+
+     The cast is not automatically the answer. Preferring it put "Josie
+     Sedgwick was the last of its makers" directly under a stamp reading 5
+     October 1974 on The Sawdust Trail — she died in April 1973, and the
+     man who outlived her was its cinematographer, Virgil Miller. Whoever
+     died last, wherever they were credited: it is the same date the stamp
+     is already showing. */
+  const lastOne = wrapped
+    ? [front.dead[0], back.dead[0]].filter(Boolean)
+        .sort((a, b) => (b.dod || '').localeCompare(a.dod || ''))[0] || null
+    : null;
 
   const bar =
     `<li class="bar" role="separator" aria-label="Above: living. Below: died."></li>`;
@@ -736,12 +795,21 @@ function titleCard(meta, wrappedOn, lastOne) {
     </section>`;
 }
 
-/* Same row, minus everything we don't have: no portrait, no link, no
-   dates. Only a name, whatever they were credited as, and the dash. */
+/* Same row, minus the one thing this zone cannot give: a date. Only a
+   name, whatever they were credited as, and the dash. */
 function undatedRow(p) {
+  /* Most of this zone is people Wikidata has never heard of, and there is
+     nowhere to send you. Some of it is people it has an item for whose
+     dates still don't settle the question — they keep their portrait and
+     their link, because the item is where a correction would go. */
+  const qid = p.p ? p.p.split('/').pop() : '';
   return `
-    <li>
-      <span class="portrait" aria-hidden="true"></span>
+    <li${qid ? ` class="is-link" data-go="${esc(path(p.name, qid))}"` : ''}>
+      ${p.img
+        ? `<img class="portrait" src="${esc(thumb(p.img))}" alt=""
+               loading="lazy" data-full="${esc(p.img)}"
+               data-name="${esc(p.name || '')}">`
+        : `<span class="portrait" aria-hidden="true"></span>`}
       <span class="who">
         <span class="who-name">${esc(p.name)}</span>
         ${p.character ? `<span class="who-role">${esc(p.character)}</span>` : ''}
