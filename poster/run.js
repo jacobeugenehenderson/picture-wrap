@@ -112,7 +112,7 @@ async function harvest(person, state, queue) {
     /* Wikidata says everyone credited has died. Ask TMDB whether Wikidata
        knew the whole cast — 14 of 60 candidates failed this on the first
        real sweep. */
-    const { alive, unknown, ok } = await survivorsViaTmdb(item.id, item.tmdbId);
+    const { alive, unknown, ok } = await survivorsViaTmdb(item.id, item.tmdbId, item.year);
     if (alive.length) {
       log(`      skip  ${item.title} — still living: ${alive.slice(0, 3).map(a => a.name).join(', ')}`);
       continue;
@@ -263,7 +263,7 @@ async function backfill(range) {
         /* Same verification the sweep does. Without it a backfill refills
            the Vault with exactly the false closings the re-check removed —
            278 of them, last time. */
-        const { alive, unknown, ok } = await survivorsViaTmdb(id, details.tmdbId);
+        const { alive, unknown, ok } = await survivorsViaTmdb(id, details.tmdbId, match.year || y);
         if (alive.length) {
           log(`   -  ${match.filmLabel} — still living: ${alive.slice(0, 2).map(a => a.name).join(', ')}`);
           continue;

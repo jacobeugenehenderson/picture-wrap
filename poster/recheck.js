@@ -93,7 +93,7 @@ async function recheck(entry) {
      credits for, and any thrown error including a failed SPARQL call. All
      of them returned an empty survivor list, and an empty survivor list
      read as a clean bill of health. */
-  const { alive, unknown, ok } = await survivorsViaTmdb(entry.id, entry.tmdbId);
+  const { alive, unknown, ok } = await survivorsViaTmdb(entry.id, entry.tmdbId, entry.year);
   if (!ok) return { verdict: 'unchecked' };
 
   return {

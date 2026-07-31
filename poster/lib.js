@@ -290,7 +290,7 @@ export async function resolvePerson(name) {
    Do not reimplement any of it here. Every copy of this logic that has
    ever existed kept the bug the original had after the original was
    fixed, and there have been three. */
-export async function survivorsViaTmdb(film, tmdbId) {
+export async function survivorsViaTmdb(film, tmdbId, year) {
   /* ok:false, not a bare empty list. Without a key the survivor test does
      not run at all — every picture on every path passes it unopposed — and
      a caller reading only `alive` cannot tell that from a clean result.
@@ -300,6 +300,7 @@ export async function survivorsViaTmdb(film, tmdbId) {
   return survivors({
     film,
     tmdbId,
+    year,
     sparql,
     tmdb: async path => {
       try {

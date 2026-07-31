@@ -232,7 +232,31 @@ async function deathsByName(people, sparql) {
    unchecked picture drawn as wrapped is a false claim on screen. Callers
    must decide what silence means for them rather than being handed a
    confident empty list. */
-export async function survivors({ film, tmdbId, media = 'movie', sparql, tmdb, detail = false }) {
+/* Nobody can have worked on a picture released before they were born.
+
+   That is arithmetic, not a heuristic, and it catches a class of error we
+   inherit rather than create: Wikidata name collisions. The Doctor Who
+   William Russell, born 1924, is credited on Anna Christie (1923). A
+   British character actor born 1942 is credited on Evangeline (1919). Rae
+   Allen, born 1926, on The Misleading Lady (1920).
+
+   About 0.4% of the Vault, but concentrated at the extremes — every one
+   of the six longest gaps between release and closing turned out to be
+   one of these, so they dominate exactly the lists a reader would find
+   interesting.
+
+   Two things it fixes. The closing date and the "last of its makers"
+   line, which are the headline claims on every page and every post. And,
+   more seriously, a *living* person misattributed to an old picture would
+   veto it forever — the wrap could never happen, and nothing would ever
+   explain why. */
+function impossible(person, releaseYear) {
+  if (!releaseYear) return false;
+  const born = Number(String(person?.wd?.born || person?.tmdb?.born || '').slice(0, 4));
+  return born > 0 && born > releaseYear;
+}
+
+export async function survivors({ film, tmdbId, media = 'movie', year, sparql, tmdb, detail = false }) {
   if (!tmdbId) return { alive: [], unknown: 0, ok: false };
 
   try {
@@ -388,16 +412,21 @@ export async function survivors({ film, tmdbId, media = 'movie', sparql, tmdb, d
       tmdb: tmdbDates.get(id) || null,
     }));
 
+    /* Anyone Wikidata or TMDB says was born after the picture came out was
+       not on it. Dropped before any of them can vote. */
+    const releaseYear = Number(String(year || '').slice(0, 4)) || 0;
+    const credible = people.filter(p => !impossible(p, releaseYear));
+
     /* Pass three — Wikidata again, by name, for anyone still standing. */
     const buried = await deathsByName(
-      people.filter(p => bornYear(p) && statusOf(p) !== 'dead'), sparql);
+      credible.filter(p => bornYear(p) && statusOf(p) !== 'dead'), sparql);
 
     /* `alive` carries people, not names. The poster only ever wanted the
        name, but the site has to put a survivor in the list beside everyone
        else — and a name alone cannot be a row. */
     const alive = [];
     let unknown = 0;
-    for (const person of people) {
+    for (const person of credible) {
       if (buried.has(person.id)) continue;   /* Wikidata knows better. */
       const status = statusOf(person);
       if (status === 'alive') {
@@ -420,7 +449,7 @@ export async function survivors({ film, tmdbId, media = 'movie', sparql, tmdb, d
        made from — a separate diagnostic path would eventually disagree
        with the real one, which is the mistake this file exists to end. */
     const working = detail
-      ? people.map(p => ({
+      ? credible.map(p => ({
           name: p.name,
           tmdbId: p.id,
           status: buried.has(p.id) ? 'dead' : statusOf(p),
