@@ -397,14 +397,20 @@ admit existed.
 
 | | source | meaning |
 |---|---|---|
-| **dead** | a death date from either database, or a death asserted without one | safe |
+| **dead** | a death date from either database, a death asserted without one, or an age past 122 | safe |
 | **alive** | a birth date we can credit, and no death anywhere | **veto** |
 | **unknown** | no usable evidence, *or* an age past 112, *or* a lone imprecise birth date nothing corroborates | recorded, never assumed |
 
-Nothing infers a death. Not age, not silence, not a lookup that failed.
-The age ceiling moves people from *alive* to *unknown* and is not
-permitted to bury anyone — it used to, and that was a bug of the same kind
-as every other one here.
+Silence infers nothing, and neither does a lookup that failed. Age infers
+one thing only, at one line: 122, Jeanne Calment's, the longest life on
+record. Past it a person cannot be living; between 112 and 122 we do not
+know; and a person with no birth date at all is still reached by it,
+because nobody worked on a picture before they were born and the release
+year bounds the birth year.
+
+The inference yields a death, never a date. That distinction is the
+difference between a picture that can close and a picture that can be
+dated, and only the second is ever claimed on a page.
 
 A birth date counts if it is precise, **or** if both databases give one
 and agree on the year. Two sources agreeing is evidence even when neither

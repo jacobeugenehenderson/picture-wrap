@@ -241,8 +241,13 @@ async function backfill(range) {
       continue;
     }
 
+    /* Dead, or old enough that no missing death record can mean living.
+       The second half is why a picture whose last credited name has no
+       P570 at all can now reach the exact test instead of sitting outside
+       every year's candidate list for ever. */
     const candidates = rows.filter(r =>
-      r.cast === r.dead && Number(r.cast) >= MIN_CAST && !state.seen.includes(qid(r.film)));
+      Number(r.dead) + Number(r.aged || 0) === Number(r.cast) &&
+      Number(r.cast) >= MIN_CAST && !state.seen.includes(qid(r.film)));
 
     log(`  ${rows.length} films with cast data, ${candidates.length} worth the exact test`);
 

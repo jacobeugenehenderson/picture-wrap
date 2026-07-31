@@ -39,6 +39,75 @@ const personCache = new Map();
    picture its closing, not a false claim about a real person. */
 const OLDEST = 112;
 
+/* And the age past which we stop saying 'unknown', because there is
+   nothing left to be unsure of. Jeanne Calment, 122 years and 164 days,
+   is the longest life anyone has ever documented — so this is not a
+   chosen number in the way OLDEST is. It is the record.
+
+   The two lines do different jobs and the gap between them is the point.
+   Past 112 a birth date no longer shows someone is living; past 122 it
+   shows they are not. Between them we genuinely don't know.
+
+   What it costs when it is wrong runs the other way from OLDEST, which is
+   why it sits on the record rather than near it: being wrong here calls a
+   living person dead. Nobody has ever been alive at 123.
+
+   What it buys is not tidiness. Under 'unknown' alone, The Fortieth Door
+   (1924) was held open by Bruce Gordon, born 1850, and would have been
+   held open by him for ever — 14 of the 65 pictures from 1924 that
+   Wikidata still shows as running are the same story. Those pictures
+   never reached the Vault, never became candidates, and nothing anywhere
+   reported them as a problem. */
+const MAXIMUM_AGE = 122;
+
+const thisYear = () => new Date().getUTCFullYear();
+
+/* Could this person conceivably still be alive?
+
+   Two facts, one sum. Nobody can have been born after the picture they
+   worked on, so a missing birth date is not the absence of evidence it
+   looks like — the release year is an upper bound on it, and the person
+   is at least as old as the picture. Take whichever bound we have, ask
+   how young the person could possibly be today, and compare that to the
+   longest life on record.
+
+   It answers 'no' or 'we can't say'. It never answers 'yes': being young
+   enough to be alive is not being alive, and that is what the rest of
+   this file is for. */
+export function beyondLiving(born, releaseYear) {
+  const year = Number(String(born || '').slice(0, 4))
+    || Number(String(releaseYear || '').slice(0, 4)) || 0;
+  return year > 0 && thisYear() - year > MAXIMUM_AGE;
+}
+
+/* The same line drawn as a year, for the places that have to ask it of
+   Wikidata rather than of a person we already hold: born before this and
+   there is no living to be beyond. Exported so no query hard-codes a
+   year that quietly stops being true next January. */
+export const earliestLivingBirthYear = () => thisYear() - MAXIMUM_AGE;
+
+/* And the same line again as SPARQL, because half the places that need it
+   are asking Wikidata for a survivor rather than judging someone we
+   already hold. Drop it into a block that is matching people with no
+   death date, and the block stops matching the ones no absence of a
+   record can bring back.
+
+   It is here, not in the four queries that use it, for the reason this
+   whole file is here: the copy always outlives the fix.
+
+     ?film ?prop ?alive .
+     FILTER NOT EXISTS { ?alive wdt:P570 ?dd }
+     ${couldBeLivingSparql('?alive', '?film')}
+
+   `film` is optional and does the other half of the arithmetic: pass it
+   and a picture older than any human life stops producing survivors at
+   all, whether or not anyone recorded a birth date. */
+export const couldBeLivingSparql = (person, film) => {
+  const cut = earliestLivingBirthYear();
+  return `FILTER NOT EXISTS { ${person} wdt:P569 ?ageBorn . FILTER(YEAR(?ageBorn) < ${cut}) }` +
+    (film ? `\n    FILTER NOT EXISTS { ${film} wdt:P577 ?ageOut . FILTER(YEAR(?ageOut) < ${cut}) }` : '');
+};
+
 /* Is this a date, or a year with a placeholder stapled to it?
 
    Wikidata answers properly: every time value carries a precision, where
@@ -85,8 +154,11 @@ async function mapLimit(items, limit, fn) {
 
 /* Dead, alive, or unknown — and the three are not interchangeable.
 
-   'dead'    — a death date, from either database. Only a recorded death
-               makes anyone dead. Nothing is inferred into this bucket.
+   'dead'    — a death date from either database, or an age no human has
+               ever reached. Those are the only two ways in. The second
+               infers a death but never a date, and the difference decides
+               everything downstream: a picture can close on it, and no
+               picture can be dated by it.
    'alive'   — a birth date we can credit, and no death anywhere.
    'unknown' — no usable evidence. Not an answer, never read as 'dead'.
 
@@ -100,8 +172,11 @@ async function mapLimit(items, limit, fn) {
    over-crediting a birth date costs a picture its wrap, while
    under-crediting one risks closing a picture on somebody's silence. The
    second is the expensive mistake, which is why corroboration is what
-   moves someone out of 'alive' — evidence, not arithmetic. */
-export function statusOf(person) {
+   moves someone out of 'alive' — evidence, not arithmetic.
+
+   `releaseYear` is what lets the arithmetic reach someone with no birth
+   date at all: they cannot have been born after the picture. */
+export function statusOf(person, releaseYear) {
   if (!person) return 'unknown';
 
   /* A death Wikidata asserts without dating is still a death. Reading it
@@ -122,13 +197,23 @@ export function statusOf(person) {
       : null,
   ].filter(b => b && b.year);
 
+  /* The youngest they could possibly be. With no birth date on either
+     side that is the picture's own age, since nobody worked on a film
+     before they were born. */
+  const youngest = births.length ? Math.max(...births.map(b => b.year)) : null;
+
+  if (beyondLiving(youngest, releaseYear)) return 'dead';
+
   if (!births.length) return 'unknown';
 
+  /* Precision matters for 'alive' and not for the line above it. Whether
+     a birth date is exact to the day changes nothing about a man born in
+     1850: no reading of that year leaves him living. */
   const corroborated = births.length === 2 && births[0].year === births[1].year;
   if (!births.some(b => b.exact) && !corroborated) return 'unknown';
 
   /* Old enough that neither 'alive' nor 'dead' is a claim we can make. */
-  const age = new Date().getUTCFullYear() - Math.max(...births.map(b => b.year));
+  const age = thisYear() - youngest;
   return age > OLDEST ? 'unknown' : 'alive';
 }
 
@@ -419,7 +504,7 @@ export async function survivors({ film, tmdbId, media = 'movie', year, sparql, t
 
     /* Pass three — Wikidata again, by name, for anyone still standing. */
     const buried = await deathsByName(
-      credible.filter(p => bornYear(p) && statusOf(p) !== 'dead'), sparql);
+      credible.filter(p => bornYear(p) && statusOf(p, releaseYear) !== 'dead'), sparql);
 
     /* `alive` carries people, not names. The poster only ever wanted the
        name, but the site has to put a survivor in the list beside everyone
@@ -428,7 +513,7 @@ export async function survivors({ film, tmdbId, media = 'movie', year, sparql, t
     let unknown = 0;
     for (const person of credible) {
       if (buried.has(person.id)) continue;   /* Wikidata knows better. */
-      const status = statusOf(person);
+      const status = statusOf(person, releaseYear);
       if (status === 'alive') {
         alive.push({
           tmdbId: person.id,
@@ -452,7 +537,7 @@ export async function survivors({ film, tmdbId, media = 'movie', year, sparql, t
       ? credible.map(p => ({
           name: p.name,
           tmdbId: p.id,
-          status: buried.has(p.id) ? 'dead' : statusOf(p),
+          status: buried.has(p.id) ? 'dead' : statusOf(p, releaseYear),
           buriedByName: buried.has(p.id),
           wikidata: p.wd ? { born: p.wd.born, precision: p.wd.precision, died: p.wd.died } : null,
           tmdb: p.tmdb ? { born: p.tmdb.born, died: p.tmdb.died } : null,

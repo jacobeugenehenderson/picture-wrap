@@ -24,6 +24,7 @@ import { writeFile } from 'node:fs/promises';
 import {
   sparql, load, paths, sleep, VALUES, survivorsViaTmdb, saveArchive, saveState,
 } from './lib.js';
+import { couldBeLivingSparql } from '../verify.js';
 
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
@@ -54,6 +55,7 @@ SELECT ?p WHERE {
   VALUES ?prop { ${VALUES} }
   wd:${film} ?prop ?p .
   FILTER NOT EXISTS { ?p wdt:P570 ?d }
+  ${couldBeLivingSparql('?p', `wd:${film}`)}
 } LIMIT 1`;
 
 /* 2. Does TMDB know anyone Wikidata doesn't, and are they alive?

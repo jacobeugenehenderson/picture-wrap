@@ -20,7 +20,7 @@
    two bugs instead of one.                                              */
 
 import { sparql, qid, LANGS } from './lib.js';
-import { survivors } from '../verify.js';
+import { survivors, couldBeLivingSparql } from '../verify.js';
 
 const AGENT = 'PictureWrap/1.0 (https://picture-wrap.com; jacob@jacobhenderson.studio)';
 const arg = process.argv.slice(2).join(' ').trim();
@@ -73,6 +73,7 @@ const living = await sparql(`
     VALUES ?prop { wdt:P161 wdt:P725 wdt:P57 wdt:P58 wdt:P162 wdt:P344 wdt:P86 wdt:P1040 wdt:P2554 wdt:P3092 wdt:P175 }
     wd:${film} ?prop ?p .
     FILTER NOT EXISTS { ?p wdt:P570 ?d }
+    ${couldBeLivingSparql('?p', `wd:${film}`)}
     SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
   }`).catch(() => []);
 

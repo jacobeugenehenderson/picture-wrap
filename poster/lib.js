@@ -12,7 +12,7 @@ import {
   CREDITS, CREDIT_NOUNS, OCCUPATIONS, IN_LIST, VALUES, LANGS,
   qid, year, longDate, pickDemonym, slug, path, unnamed,
 } from '../shared.js';
-import { survivors } from '../verify.js';
+import { survivors, couldBeLivingSparql, earliestLivingBirthYear } from '../verify.js';
 
 /* Re-export everything taken from shared.js, not a subset. IN_LIST, VALUES
    and LANGS were missing here, so recheck.js and recover.js re-derived
@@ -109,6 +109,7 @@ SELECT ?film ?filmLabel (SAMPLE(?y) AS ?year)
     ?film ?a2 ?alive .
     FILTER(?a2 IN (${IN_LIST}))
     FILTER NOT EXISTS { ?alive wdt:P570 ?dd }
+    ${couldBeLivingSparql('?alive', '?film')}
   }
   ?film ?any ?c .
   FILTER(?any IN (${IN_LIST}))
@@ -246,6 +247,7 @@ SELECT ?film ?filmLabel (SAMPLE(?y) AS ?year)
     FILTER(?a2 IN (${IN_LIST}))
     FILTER(?alive != wd:${id})
     FILTER NOT EXISTS { ?alive wdt:P570 ?dd }
+    ${couldBeLivingSparql('?alive', '?film')}
   }
   OPTIONAL { ?film wdt:P161 ?cm }
   OPTIONAL { ?film wdt:P577 ?rd . BIND(YEAR(?rd) AS ?y) }
@@ -332,10 +334,16 @@ export async function survivorsViaTmdb(film, tmdbId, year) {
    cast, 21 dead" and was skipped, which is why the most famous closed
    picture in the archive was never in it. */
 export const candidatesByYearQuery = year => `
-SELECT ?film (COUNT(DISTINCT ?c) AS ?cast) (COUNT(DISTINCT ?cd) AS ?dead) WHERE {
+SELECT ?film (COUNT(DISTINCT ?c) AS ?cast) (COUNT(DISTINCT ?cd) AS ?dead)
+       (COUNT(DISTINCT ?old) AS ?aged) WHERE {
   ?film wdt:P31 wd:Q11424 ; wdt:P577 ?rd ; wdt:P161 ?c .
   FILTER(YEAR(?rd) = ${year})
   OPTIONAL { ?c wdt:P570 ?dod . BIND(?c AS ?cd) }
+  OPTIONAL {
+    ?c wdt:P569 ?bv . FILTER(YEAR(?bv) < ${earliestLivingBirthYear()})
+    FILTER NOT EXISTS { ?c wdt:P570 ?dz }
+    BIND(?c AS ?old)
+  }
 } GROUP BY ?film`;
 
 

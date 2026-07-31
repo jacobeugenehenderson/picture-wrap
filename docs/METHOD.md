@@ -248,6 +248,23 @@ cheap error. Where the two databases disagree on birth year, the age test
 uses the **later** year — the youngest reading, the one most likely to
 keep a person alive.
 
+**The oldest age admitted is 122.** Jeanne Calment lived 122 years and 164
+days, which is the longest life anyone has documented, so past it the
+answer stops being *unknown* and becomes *dead*. The two thresholds are
+different in kind: 112 is chosen and 122 is the record, and the error each
+one risks runs in the opposite direction, which is why they sit apart.
+
+A missing birth date does not put a person out of reach of this. Nobody
+worked on a picture before they were born, so the release year is an upper
+bound on the birth year, and a person credited on a picture older than the
+longest life on record cannot be living whatever else is unrecorded.
+
+The inference produces a death and never a date. A picture can close on it
+— which is the whole point, since before it a maker born in 1850 with no
+recorded death held one open in perpetuity — but a closing date is always
+somebody's recorded death, and the people this rule speaks for are shown
+without dates and counted in `unknownCount`.
+
 ## 9. When the test cannot run
 
 An empty list of survivors from a test that never ran is not a finding of

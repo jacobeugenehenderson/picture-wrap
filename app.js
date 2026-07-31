@@ -14,12 +14,20 @@
      The bar rises as the living block shrinks. Reaching the top is the end.
    ========================================================================== */
 
-import { survivors } from './verify.js';
+/* The ?v= must match index.html's on app.js, and must be bumped whenever
+   ANY of the three files changes.
+
+   index.html versions app.js and nothing else, so a browser holding a
+   cached verify.js would fetch a new app.js and then refuse to run it:
+   "does not provide an export named beyondLiving", and a blank page for
+   everyone who had ever visited before. The imports carry the token so
+   the whole module graph turns over together. */
+import { survivors, beyondLiving, earliestLivingBirthYear } from './verify.js?v=41';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js';
+} from './shared.js?v=41';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -370,6 +378,26 @@ async function viewFilm(id) {
   everyone = await repairNames([...people.values()], 'p', 'pLabel');
   meta.qid = id;                     /* the roster needs it for the edit link */
   filmMeta = meta;
+
+  /* Nobody credited here can be alive, whatever the absence of a death
+     date suggests. This is the roster's own version of the rule the
+     survivor test applies to everyone else, and it had no version of it
+     at all: a missing P570 read as a pulse for ever. The Fortieth Door
+     was held open by Bruce Gordon, born 1850.
+
+     They leave the reckoning rather than move below the bar, because
+     inferring a death does not produce a date and the rows below the bar
+     are dates. The dash in the third zone is the whole disclosure: gone,
+     and nobody wrote down when. */
+  const beyond = everyone.filter(p => !p.dod && beyondLiving(p.dob, meta.year));
+  if (beyond.length) {
+    const out = new Set(beyond);
+    everyone = everyone.filter(p => !out.has(p));
+    undated = undated.concat(beyond.map(p => ({
+      id: p.tmdbPerson, name: p.pLabel, character: p.credits[0] || '',
+      p: p.p, img: p.img,
+    })));
+  }
 
   if (!everyone.length) {
     setTitle(filmName(meta));
@@ -857,6 +885,14 @@ function lifespan(p) {
     return `<span class="when-span">${born || '&#63;'}&ndash;${year(p.dod)}</span>` +
            `<span class="when-exact">${esc(longDate(p.dod))}</span>`;
   }
+
+  /* The film pages move these people out of the roster before this runs,
+     so this is the belt to that braces: wherever else a row is drawn, the
+     open dash is not written for someone who cannot be alive to be still
+     going. The year alone, and nothing claimed on top of it. */
+  if (born && beyondLiving(p.dob)) {
+    return `<span class="when-span">${born}</span>`;
+  }
   return born ? `<span class="when-span when-open">${born}&ndash;</span>` : '';
 }
 
@@ -891,16 +927,32 @@ SELECT (SAMPLE(?b) AS ?dob) (SAMPLE(?d) AS ?dod)
 /* Every credit type counts, on both sides: films this person worked on in
    any capacity, and everyone else credited on those films. Counts here are
    never shown — they only decide which side of the bar a film falls on,
-   and MAX(death date) gives the film its wrap date. */
+   and MAX(death date) gives the film its wrap date.
+
+   ?aged is the third count: credits with no recorded death whose own
+   birth date puts them past any human life. Without it this page holds a
+   film open on a man born in 1850 while the film's own page — which asks
+   verify.js — has it closed.
+
+   The other half of that arithmetic, a picture older than anyone has ever
+   been, is done in JavaScript below on the ?year this query already
+   returns. As a UNION branch here it cost 65 seconds against 0.2, which
+   is a query that never answers rather than a page that reads right. */
 const filmographyQuery = id => `
 SELECT ?film ?filmLabel (SAMPLE(?y) AS ?year) (COUNT(DISTINCT ?c) AS ?credited)
-       (COUNT(DISTINCT ?cd) AS ?dead) (MAX(?dv) AS ?wrapped)
+       (COUNT(DISTINCT ?cd) AS ?dead) (COUNT(DISTINCT ?old) AS ?aged)
+       (MAX(?dv) AS ?wrapped)
        (GROUP_CONCAT(DISTINCT ?mine; separator="|") AS ?roles) WHERE {
   VALUES ?mine { ${VALUES} }
   ?film ?mine wd:${id} .
   ?film ?any ?c .
   FILTER(?any IN (${IN_LIST}))
   OPTIONAL { ?c wdt:P570 ?dv . BIND(?c AS ?cd) }
+  OPTIONAL {
+    ?c wdt:P569 ?bv . FILTER(YEAR(?bv) < ${earliestLivingBirthYear()})
+    FILTER NOT EXISTS { ?c wdt:P570 ?dz }
+    BIND(?c AS ?old)
+  }
   OPTIONAL { ?film wdt:P577 ?rd . BIND(YEAR(?rd) AS ?y) }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en,fr,de,it,es,pt,nl,sv,da,no,fi,is,pl,cs,sk,hu,ro,bg,sr,hr,sl,uk,ru,el,tr,he,ar,fa,hi,bn,ta,te,ml,kn,mr,ur,th,vi,id,ms,ja,ko,zh,ca,eu,gl,et,lv,lt,ga,cy,sq,mk,ka,hy,az,kk,uz,af,sw,yi,la". }
 } GROUP BY ?film ?filmLabel`;
@@ -917,15 +969,26 @@ async function viewPerson(id) {
   meta.label = await labelFor(id);
   const films = await repairNames(filmRows.map(flat), 'film', 'filmLabel');
 
+  /* An open span is a claim, and it is the strongest one this page makes:
+     1928– says the person is here. So it is only written when they could
+     be. Bruce Gordon, born 1850, had it — the page said he was living
+     because nobody had recorded that he wasn't.
+
+     What replaces it is the birth year alone. Not a dash, which would be
+     read as the open span it just stopped being, and not a guess at a
+     death nobody wrote down. The year he was born is the whole of what is
+     known, so it is the whole of what the page says. */
+  const stillCould = !meta.dod && !beyondLiving(meta.dob);
+  const span = meta.dod ? year(meta.dod) : stillCould ? '' : null;
+
   const life = meta.dob
-    ? year(meta.dob) + '&ndash;' + (meta.dod ? year(meta.dod) : '')
+    ? year(meta.dob) + (span === null ? '' : '&ndash;' + span)
     : '';
   const sub = [life, meta.occupations].filter(Boolean).join(' &middot; ');
 
-  /* Same dates as the card, in characters a title can hold. An open span
-     — "(1928–)" — is the person still being here, which is the point. */
+  /* Same dates as the card, in characters a title can hold. */
   const lifeText = meta.dob
-    ? ` (${year(meta.dob)}–${meta.dod ? year(meta.dod) : ''})`
+    ? ` (${year(meta.dob)}${span === null ? '' : '–' + span})`
     : '';
   setTitle((meta.label || id) + lifeText);
 
@@ -950,7 +1013,13 @@ async function viewPerson(id) {
     return;
   }
 
-  const wikidataClosed = f => Number(f.credited) > 0 && f.credited === f.dead;
+  /* Recorded deaths plus the people no record can make living again —
+     and, for a picture older than any human life, everybody, since
+     nobody on it can have been born after it. */
+  const wikidataClosed = f =>
+    Number(f.credited) > 0 &&
+    (beyondLiving(null, f.year) ||
+      Number(f.dead) + Number(f.aged || 0) === Number(f.credited));
 
   /* Below the bar means verified, and the Vault is what verification
      produces. A filmography can hold sixty closed-looking pictures, and
@@ -1332,6 +1401,16 @@ function viewAbout() {
         die they cross the bar, the living section shrinks, and it rises. When
         there is nobody left it comes to rest beneath the title, and the
         picture has, finally, wrapped.
+      </p>
+      <p>
+        Almost always, being gone means a recorded death date. The
+        exception is age: the longest documented life is Jeanne
+        Calment&rsquo;s 122 years, so anyone born before ${earliestLivingBirthYear()}
+        is counted as gone whether or not a death was written down, as is
+        anyone credited on a picture older than that. It can close a
+        picture. It can never date one &mdash; a wrap always carries
+        somebody&rsquo;s recorded death, and the people it speaks for
+        appear at the foot of the page with a dash.
       </p>
 
       <h3>Where the data comes from</h3>

@@ -433,7 +433,7 @@ knows, with real death dates. TMDB answers for everyone else.
 
 | | |
 |---|---|
-| `dead` | a death date, or a birth date beyond `OLDEST` (112) |
+| `dead` | a death date, or an age beyond `MAXIMUM_AGE` (122) |
 | `alive` | a birth date within a human lifespan, no death date — **veto** |
 | `unknown` | neither date, or the lookup failed |
 
@@ -522,9 +522,14 @@ Every one of these was the same mistake: **silence read as an answer.**
 | Let SPARQL decide | Two Wikidata items claiming one TMDB id, and whichever row came back first won. *The Priest's Secret* held through two re-checks and reopened on the third, on row order alone. |
 | Read a failure as a pass | An empty survivor list from a test that never ran. Measured: with TMDB unreachable, the re-check reported "21 still closed" where it should have reported none. |
 
-**The rule.** Only a recorded death makes anyone dead. Age does not,
-absence does not, and a lookup that failed does not. The three states are
-dead, alive and unknown, and unknown is never read as either.
+**The rule.** Only a recorded death makes anyone dead. Absence does not,
+and a lookup that failed does not. The three states are dead, alive and
+unknown, and unknown is never read as either.
+
+*Amended 30 July 2026.* Age does not either, with one exception that is
+arithmetic rather than inference — see *An age nobody has reached is an
+answer*. Nothing else about this entry changes: every disguise above was
+silence being read as an answer, and silence still is not one.
 
 **What it cost to be wrong.** The 1946–65 backfill rejected 1,711
 candidates on the strength of this test — 1,711 pictures Wikidata declared
@@ -543,7 +548,7 @@ test for the evidence they were standing in for.
 |---|---|
 | "past 100, a 1 January birthday is a placeholder" | A birth date counts if it is **precise**, or if **both databases give one and agree on the year**. Wikidata publishes precision (`timePrecision`; 9 is year-only, 11 is to the day) so we ask rather than infer. TMDB publishes none, so there the 1 January ending stays a proxy — a limit of the source, not a choice. |
 | "birth years within two of each other are the same person" | Exact year. A disagreement means no match, which leaves the person standing and vetoing — the direction to fail in. |
-| "older than 112 is dead" | Older than 112 is **unknown**. It moves people from *alive* to *unknown*, never into *dead*. |
+| "older than 112 is dead" | Older than 112 is **unknown**; older than 122 — Jeanne Calment's, the longest life on record — is **dead**. Two lines, because the error each risks runs the opposite way. See *An age nobody has reached is an answer*. |
 
 **Why it is better rather than merely purer.** Antoine Petitjean is
 recorded on Wikidata as born `1977-01-01`, precision 9, and linked to a
@@ -635,3 +640,47 @@ admission. The proven automation — the sweep — is not scheduled either.
 **What improved instead.** The launcher restarts node if it dies, and
 drops `BSKY_APP_PASSWORD` before starting: the watcher reads a public
 firehose and cannot post, so it never needed the posting credential.
+
+---
+
+## An age nobody has reached is an answer
+
+*30 July 2026. Found by one search.*
+
+**Decision.** Past 122 — Jeanne Calment's 122 years and 164 days, the
+longest documented life — a person is `dead` rather than `unknown`. A
+person with no birth date is reached by the same arithmetic through the
+picture's release year, since nobody worked on a film before they were
+born. `OLDEST` (112) is unchanged and still moves people only from *alive*
+to *unknown*.
+
+**Why.** The ceiling existed and decided nothing. Three separate places
+asked whether someone was living and none of them applied it:
+
+- `verify.js` held it, and used it only to withhold *alive*.
+- The film page never called `verify.js` for Wikidata's own credits at
+  all. Its test was `!p.dod` — a missing death date, and nothing else.
+- The person page's filmography test counted credits against deaths in
+  SPARQL, so it had no way to express it.
+
+**What it cost.** *The Fortieth Door* (1924) was held open by Bruce
+Gordon, born 1850. He would be 176. Naval Gandhi, born 1897, held five
+pictures open at once. Measured against Wikidata: of the pictures it still
+shows as running, **14 of 65 from 1924, 27 of 170 from 1931 and 18 of 135
+from 1945** were held open by nobody but someone past 112 with no recorded
+death. They never entered the Vault, never became candidates, and nothing
+anywhere reported them as a problem — the only way to find one was to look
+at a page and know.
+
+**What it does not buy.** A date. The inference says a person is gone and
+cannot say when, so these pictures close on the last death actually
+recorded and their unrecorded maker appears at the foot of the page with a
+dash. That is the same shape as the 72% of Vault entries that already
+carry a non-zero `unknownCount`; what changed is that Wikidata-credited
+people are now read by the same rule as TMDB-resolved ones.
+
+**Where it lives.** `beyondLiving()` and `couldBeLivingSparql()` in
+`verify.js`, imported by the film page, the person page, both candidate
+queries, the re-check, the recovery script and `explain.js`. Written once,
+in the file that exists because this logic has been copied three times and
+every copy kept the bug after the original was fixed.
