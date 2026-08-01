@@ -119,7 +119,33 @@ export const couldBeLivingSparql = (person, film) => {
    only signal available and it is a proxy, not a fact. That is a limit of
    the source, not a rule anyone chose. */
 const WD_PRECISION_DAY = 11;
+const WD_PRECISION_MONTH = 10;
+const WD_PRECISION_YEAR = 9;
 const toTheDay = date => !/-01-01$/.test(String(date));
+
+/* How exactly a death is known, in the vocabulary the rest of the project
+   speaks. Wikidata's precisions run past the year into decade (8),
+   century (7) and coarser, and those are not blurry years — they are a
+   different kind of statement. A death recorded as "20th century"
+   serialises as 1901-01-01, and reading four characters off the front of
+   it filed 548 pictures as having wrapped in 1901.
+
+   So anything coarser than a year gives no position at all. The person is
+   still dead, and the picture still closes; it simply cannot be placed on
+   a timeline, which is the same answer as a death nobody dated. */
+const resolutionOf = person => {
+  if (person?.wd?.died) {
+    const p = person.wd.diedPrecision;
+    if (p >= WD_PRECISION_DAY) return 'day';
+    if (p === WD_PRECISION_MONTH) return 'month';
+    if (p === WD_PRECISION_YEAR) return 'year';
+    return 'none';
+  }
+  /* TMDB publishes no precision, so the 1 January ending is the only
+     signal and it can only ever separate "a day" from "a year". */
+  if (person?.tmdb?.died) return toTheDay(person.tmdb.died) ? 'day' : 'year';
+  return 'none';
+};
 
 /* Wikidata hands back "1944-01-02T00:00:00Z"; TMDB hands back
    "1944-01-02". Everything downstream wants the second shape.
@@ -169,9 +195,7 @@ export const fromWikidata = (born, precision, died, diedPrecision) => ({
    one is a claim the whole page is built around, and 2000-01-01 is a year
    wearing a date's clothes. Wikidata publishes precision, so we ask; TMDB
    does not, so the 1 January ending is the only signal there. */
-export const datesAWrap = person =>
-  Boolean((person?.wd?.died && person.wd.diedPrecision >= WD_PRECISION_DAY)
-    || (person?.tmdb?.died && toTheDay(person.tmdb.died)));
+export const datesAWrap = person => resolutionOf(person) === 'day';
 
 /* When did a closed picture close, and who closed it?
 
@@ -222,16 +246,24 @@ export function wrapDate(judged, releaseYear) {
     .sort((a, b) => b.died.localeCompare(a.died));
 
   if (!dated.length) {
-    return { wrapped: null, wrappedYear: null, dateBasis: 'none', last: null };
+    return {
+      wrapped: null, wrappedMonth: null, wrappedYear: null,
+      dateBasis: 'none', last: null,
+    };
   }
 
   const last = dated[0];
-  const precise = Boolean(last.person.datesAWrap ?? datesAWrap(last.person));
+  const basis = resolutionOf(last.person);
 
+  /* Published at the resolution the source actually holds, and no finer.
+     A month-precise death places a picture in a month; a year-precise one
+     places it in a year; and anything coarser places it nowhere, which is
+     a fact about the record rather than a gap in it. */
   return {
-    wrapped: precise ? last.died : null,
-    wrappedYear: last.died.slice(0, 4),
-    dateBasis: precise ? 'day' : 'year',
+    wrapped: basis === 'day' ? last.died : null,
+    wrappedMonth: basis === 'day' || basis === 'month' ? last.died.slice(0, 7) : null,
+    wrappedYear: basis === 'none' ? null : last.died.slice(0, 4),
+    dateBasis: basis,
     last: {
       wikidataId: last.person.wikidataId || null,
       tmdbId: last.person.tmdbId || null,

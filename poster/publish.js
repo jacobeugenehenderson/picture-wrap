@@ -29,8 +29,24 @@
 
      year/<year>.json    the closings of one release year
      day/<MM-DD>.json    every closing that ever happened on one date
+     month/<YYYY-MM>.json  closings known only to a month
+     wrapped/<YYYY>.json   closings known only to a year
      ids.bin             which pictures are closed at all
      summary.json        totals, enough to draw a landing page
+
+   THE RESIDUES, WHICH ARE NOT AN AFTERTHOUGHT
+
+   A closing is placed at the resolution its source actually recorded:
+   88.2% to the day, 0.5% to a month, 4.1% to a year, and 7.3% nowhere at
+   all. Only the first can appear on a calendar day, and the older habit —
+   putting the rest nowhere — threw away a real fact to avoid stating an
+   imprecise one.
+
+   So a month of the calendar can carry, underneath the dated closings, a
+   note that these other pictures wrapped somewhere in it; and a year can
+   carry the ones known only to that year. The residues are separate files
+   rather than mixed in, so nothing that draws a date can accidentally
+   draw an approximation.
 
    ids.bin is a sorted array of 32-bit Wikidata numbers, not JSON. A person
    page asks "is this film closed?" once per credit, up to sixty times, so
@@ -75,6 +91,7 @@ const row = w => ({
   title: w.title,
   year: w.year,
   wrapped: w.wrapped,
+  wrappedMonth: w.wrappedMonth,
   wrappedYear: w.wrappedYear,
   dateBasis: w.dateBasis,
   last: w.last ? { name: w.last.name, died: w.last.died } : null,
@@ -87,6 +104,8 @@ const row = w => ({
 
 const byYear = new Map();
 const byDay = new Map();
+const byMonth = new Map();
+const byWrapYear = new Map();
 const ids = [];
 let closed = 0, open = 0, unchecked = 0;
 
@@ -103,13 +122,21 @@ for (const year of years) {
     if (!byYear.has(year)) byYear.set(year, []);
     byYear.get(year).push(entry);
 
-    /* A picture with no day-precise death has no place on a calendar, and
-       is not given one. It is reachable by release year like everything
-       else. */
-    if (w.wrapped) {
+    /* Each picture placed once, at the finest resolution it has. A
+       month-precise closing is not also listed under its year: the note
+       at the foot of July 1948 and the note at the foot of 1948 would
+       otherwise say the same picture twice, and a reader counting them
+       would be counting it twice. */
+    if (w.dateBasis === 'day') {
       const md = w.wrapped.slice(5);
       if (!byDay.has(md)) byDay.set(md, []);
       byDay.get(md).push(entry);
+    } else if (w.dateBasis === 'month') {
+      if (!byMonth.has(w.wrappedMonth)) byMonth.set(w.wrappedMonth, []);
+      byMonth.get(w.wrappedMonth).push(entry);
+    } else if (w.dateBasis === 'year') {
+      if (!byWrapYear.has(w.wrappedYear)) byWrapYear.set(w.wrappedYear, []);
+      byWrapYear.get(w.wrappedYear).push(entry);
     }
 
     const n = Number(w.id.slice(1));
@@ -127,8 +154,8 @@ const newestFirst = (a, b) =>
   (b.wrapped || b.wrappedYear || '0000').localeCompare(a.wrapped || a.wrappedYear || '0000')
   || a.title.localeCompare(b.title);
 
-for (const list of byYear.values()) list.sort(newestFirst);
-for (const list of byDay.values()) list.sort(newestFirst);
+for (const list of [...byYear.values(), ...byDay.values(),
+                    ...byMonth.values(), ...byWrapYear.values()]) list.sort(newestFirst);
 
 /* --- version ----------------------------------------------------------- */
 
@@ -147,8 +174,10 @@ const base = join(OUT, 'v', version);
 await rm(OUT, { recursive: true, force: true });
 await mkdir(join(base, 'year'), { recursive: true });
 await mkdir(join(base, 'day'), { recursive: true });
+await mkdir(join(base, 'month'), { recursive: true });
+await mkdir(join(base, 'wrapped'), { recursive: true });
 
-const written = { year: 0, day: 0, bytes: 0 };
+const written = { year: 0, day: 0, month: 0, wrapped: 0, bytes: 0 };
 const put = async (path, body) => {
   await writeFile(path, body);
   written.bytes += body.length;
@@ -162,6 +191,16 @@ for (const [year, list] of byYear) {
 for (const [md, list] of byDay) {
   await put(join(base, 'day', `${md}.json`), JSON.stringify(list));
   written.day++;
+}
+
+for (const [ym, list] of byMonth) {
+  await put(join(base, 'month', `${ym}.json`), JSON.stringify(list));
+  written.month++;
+}
+
+for (const [y, list] of byWrapYear) {
+  await put(join(base, 'wrapped', `${y}.json`), JSON.stringify(list));
+  written.wrapped++;
 }
 
 /* Little-endian by contract, because every platform a browser runs on is,
@@ -197,8 +236,22 @@ await put(join(OUT, 'manifest.json'), JSON.stringify({
   surfaces: {
     year: 'year/{year}.json',
     day: 'day/{MM-DD}.json',
+    month: 'month/{YYYY-MM}.json',
+    wrapped: 'wrapped/{YYYY}.json',
     ids: 'ids.bin',
     summary: 'summary.json',
+  },
+  /* Published so a client can say what it is showing and what it is not.
+     A calendar that silently omits 11.9% of the archive is worse than one
+     that says which part it cannot place. */
+  resolution: {
+    day: [...byDay.values()].reduce((n, l) => n + l.length, 0),
+    month: [...byMonth.values()].reduce((n, l) => n + l.length, 0),
+    year: [...byWrapYear.values()].reduce((n, l) => n + l.length, 0),
+    none: closed
+      - [...byDay.values()].reduce((n, l) => n + l.length, 0)
+      - [...byMonth.values()].reduce((n, l) => n + l.length, 0)
+      - [...byWrapYear.values()].reduce((n, l) => n + l.length, 0),
   },
   /* Stated rather than assumed, so a client never has to guess how to
      read the binary table. */
@@ -212,5 +265,7 @@ const yearBytes = [...byYear.values()].map(l => JSON.stringify(l).length).sort((
 console.log(`\npublished ${closed} closings, version ${version}\n`);
 console.log(`  ${written.year} year files   median ${kb(yearBytes[yearBytes.length >> 1])}, largest ${kb(yearBytes.at(-1))}`);
 console.log(`  ${written.day} day files    median ${kb(dayBytes[dayBytes.length >> 1])}, largest ${kb(dayBytes.at(-1))}`);
+console.log(`  ${written.month} month files  known only to a month`);
+console.log(`  ${written.wrapped} year files    known only to a year`);
 console.log(`  ids.bin           ${kb(table.byteLength)} for ${ids.length} pictures`);
 console.log(`  total             ${(written.bytes / 1048576).toFixed(1)} MB in ${OUT}/\n`);

@@ -109,5 +109,14 @@ export async function openCorpus(root = '/') {
 
     year: year => json(manifest.surfaces.year.replace('{year}', String(year))),
     day: md => json(manifest.surfaces.day.replace('{MM-DD}', md)),
+
+    /* The residues: pictures placed at a coarser resolution than a day,
+       because that is all their source recorded. They are asked for
+       separately so that nothing which draws a date can accidentally draw
+       an approximation, and `resolution` says how many of each exist so a
+       view can state what it is not showing. */
+    month: ym => json(manifest.surfaces.month.replace('{YYYY-MM}', ym)),
+    wrapped: y => json(manifest.surfaces.wrapped.replace('{YYYY}', String(y))),
+    resolution: manifest.resolution,
   };
 }

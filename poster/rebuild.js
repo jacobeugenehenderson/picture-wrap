@@ -115,7 +115,7 @@ for (const year of years) {
     continue;
   }
 
-  const tally = { day: 0, year: 0, none: 0, open: 0, changed: 0 };
+  const tally = { day: 0, month: 0, year: 0, none: 0, open: 0, changed: 0 };
   const rebuilt = works.map(work => {
     const record = evidence.get(work.id);
     if (!record || work.verdict !== 'closed') {
@@ -160,7 +160,7 @@ for (const year of years) {
   await writeFile(path + '.part', rebuilt.map(w => JSON.stringify(w)).join('\n') + '\n');
   await rename(path + '.part', path);
 
-  console.log(`${year}  ${works.length} pictures — dated to the day ${tally.day}, ` +
-    `to the year ${tally.year}, undatable ${tally.none}, open ${tally.open}` +
-    (tally.changed ? `  (${tally.changed} dates changed)` : ''));
+  console.log(`${year}  ${works.length} pictures — day ${tally.day}, month ${tally.month}, ` +
+    `year ${tally.year}, unplaceable ${tally.none}, open ${tally.open}` +
+    (tally.changed ? `  (${tally.changed} changed)` : ''));
 }
