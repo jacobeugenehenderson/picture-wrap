@@ -1,0 +1,179 @@
+# Sources, and what is done with them
+
+What this project reads, what it keeps, how it treats what it keeps, and
+how to cite it. Written to be the answer to four different questions asked
+by four different people: a reader who wants to know where a claim came
+from, a researcher who wants to use the archive, someone who appears in it
+and would rather not, and a lawyer.
+
+Nothing here is legal advice, and the open questions at the end are marked
+as open rather than answered.
+
+---
+
+## 1. What is read
+
+### Wikidata
+
+The primary source. Everything about who made a picture and when they
+died comes from here.
+
+| what | property |
+|---|---|
+| the picture | `P31` class, `P577` release date, `P495` country, `P136` genre |
+| its people | `P161` cast, `P725` voice, `P57` director, `P58` writer, `P344` cinematography, `P86` music, `P162` producer, `P1040` editor, `P2554` production design, `P4805` costume design |
+| a person | `P569` birth, `P570` death, `P18` image, `P106` occupation |
+| cross-reference | `P4947` TMDB film id, `P4983` TMDB series id, `P4985` TMDB person id |
+
+Accessed through the public SPARQL endpoint at `query.wikidata.org`, with
+a User-Agent naming the project, a URL and a contact address, and a hard
+cap of four queries in flight per process. Wikidata's content is CC0.
+
+### TMDB
+
+A second opinion, and only that. Wikidata's cast lists are often a
+fraction of the real credits — *The Young Lions* has 19 of 76 — so TMDB is
+asked who else was on a picture, and those people are then resolved back
+against Wikidata by `P4985`.
+
+| endpoint | fields used |
+|---|---|
+| `/movie/{id}/credits` | `cast[].id`, `name`, `character`; `crew[].id`, `name`, `job` |
+| `/tv/{id}/aggregate_credits` | the same, through `roles[]` and `jobs[]` |
+| `/person/{id}` | `name`, `birthday`, `deathday` |
+
+No images, no synopses, no ratings, no titles beyond what a credit
+carries. The attribution TMDB asks for — *"this product uses the TMDB API
+but is not endorsed or certified by TMDB"* — is displayed in the site's
+colophon.
+
+### Wikimedia Commons
+
+Portraits, by way of `P18`, served as thumbnails from Commons. Licences
+vary by file and are held at Commons; nothing is re-hosted.
+
+---
+
+## 2. What is kept
+
+Three artefacts, and they are kept for different lengths of time and
+different reasons.
+
+**The Vault** (`vault/*.json`, published). One record per closed picture:
+title, year, country, genre, the date it closed, who was the last of its
+makers, how many people were on record, how many were unaccounted for.
+
+**The evidence** (`pass/`, ~2 GB, publication undecided — see §6). Every
+person judged on every picture, with the birth and death dates used, the
+precision of each, which database each came from, and the verdict reached.
+This exists so that a conclusion can be checked, and so that a change of
+rule is a re-decision rather than a re-fetch.
+
+**The person table** (`pass/people/`). One row per human: name, Wikidata
+id, TMDB id, birth, death, and when we last looked. Roughly a million rows
+at full corpus.
+
+### This includes personal data about living people
+
+Stated plainly because it is easy to forget while thinking about films:
+the archive holds names and birth dates of people who are alive, and its
+central question is whether they are. Every field is copied from a public
+database and none of it is inferred about private life — but a collection
+assembled around mortality is not the same object as the databases it was
+assembled from, and the ethics of that are in `DECISIONS.md` under *The
+door held open*. The short form:
+
+- A living person appears as a credit on a picture, never as an entry in
+  a list. There is no ranked list of last survivors and there will not be
+  one.
+- Living people are never sorted by age or by proximity to anything.
+- Private individuals are not aggregated. A public record — a Wikipedia
+  article — is the line.
+- Corrections belong upstream. Every page links to the Wikidata item,
+  because that is where a fix helps everybody rather than only us.
+
+---
+
+## 3. How the data is treated in the code
+
+**One judgement, in one file.** `verify.js` decides who is alive, dead or
+unknown, and both the site and the poster import it. Three copies of that
+logic have existed and each kept a bug after the original was fixed.
+
+**Nothing is inferred into "dead" except arithmetic.** A recorded death,
+or an age past the longest documented human life. Silence is never an
+answer, and a lookup that failed is never read as a finding.
+
+**Dates are validated at the boundary, not trusted.** Wikidata's are
+sliced and their precision read; TMDB's go through the same normaliser —
+they did not, and `"7-9-1980"` reached a published wrap date before
+anybody noticed. A value's validation has to match what the value is
+*used for*, and that changes: TMDB dates were a checker's opinion for a
+year and became a printed claim in an afternoon.
+
+**Strings from either source are escaped where they land.** Names and
+character names reach the DOM only through `esc()`. Names reach a SPARQL
+literal only after quotes, backslashes and control characters are
+rejected, because TMDB's names are typed by members of the public.
+
+**The archive records what it set aside.** A person who could not have
+worked on a picture, or whom Wikidata buried under a name match, stays in
+the evidence with a flag. The record should show that we saw somebody and
+decided, not silently lose them.
+
+---
+
+## 4. What is not collected
+
+No analytics. No cookies. No accounts. No logs of who read what — the site
+is static files on a CDN and there is no server to log anything. Nothing
+is collected about readers at all, which is why this document is entirely
+about other people's data rather than yours.
+
+---
+
+## 5. Citing this
+
+Every claim in the archive resolves to three things: a Wikidata item for
+the picture, a Wikidata item for each person, and a date with a stated
+precision. A citation should carry the picture's Q-id and the date the
+archive was consulted, because the underlying databases change:
+
+> Picture Wrap, "The Sawdust Trail" (Q18153746), wrapped 5 October 1974.
+> Consulted 1 August 2026. Derived from Wikidata and TMDB.
+
+Each work record carries `checkedAt` and the rule versions that produced
+it, so an answer can be dated to the rules that made it. `METHOD.md` is
+the procedure in full, written to be quoted.
+
+The honest limits, which any citation of this work should carry with it:
+
+- **"Everyone" means everyone recorded.** Below-the-line crew is in no
+  free database. There are pictures called closed that still have someone
+  living who was there.
+- **Roughly one closing in ten has no day-precise date**, and about half
+  of those have no recorded death at all — they are closed by arithmetic.
+- **Coverage is uneven and measurable.** A third of sampled entries rest
+  on under half of TMDB's credit list; every record carries its own
+  `coverage`, and the thin ones say so.
+- **The corpus is what Wikidata holds**, which is overwhelmingly American
+  and European. Of 1930–45 films it holds 8,285 American titles and 37
+  Indian ones across sixteen years.
+
+---
+
+## 6. Open questions
+
+Marked open because they are decisions, not oversights.
+
+1. **Publishing the evidence.** ~2 GB, of which a large part is TMDB-derived
+   person data. Publishing it makes every claim checkable, which is the
+   point of having it. Whether TMDB's terms permit redistribution at that
+   scale needs an actual reading of them rather than an assumption.
+2. **A licence for our own output.** The Vault is a derived database. CC0
+   matches Wikidata; CC-BY would ask for credit. Undecided.
+3. **Erasure requests.** Somebody living may object to appearing here.
+   The upstream fix is Wikidata's, but a request will arrive here first
+   and there should be an answer before it does.
+4. **How long the person table keeps someone we have decided is dead.**
+   Indefinitely today, because that is what makes the next pass cheap.

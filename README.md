@@ -94,6 +94,7 @@ things done by hand: `picture-wrap-preview`, `picture-wrap-review`,
 | [docs/FORTIFYING.md](docs/FORTIFYING.md) | Making the Vault citable: errata, provenance, and the re-check loop |
 | [docs/VERIFICATION.md](docs/VERIFICATION.md) | How a wrap is decided, in plain prose, no code |
 | [docs/METHOD.md](docs/METHOD.md) | The same procedure written for citation — the source text for the site's "Methods and sources" |
+| [docs/SOURCES.md](docs/SOURCES.md) | What is read, what is kept, how it is treated — privacy, licensing and citation |
 | [poster/README.md](poster/README.md) | The poster in detail |
 | [HANDOFF.md](HANDOFF.md) | Current state and what's unfinished — **read first** |
 

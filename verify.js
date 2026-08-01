@@ -355,9 +355,18 @@ async function deathsByName(people, sparql) {
   const buried = new Map();
 
   /* Quotes and backslashes would break out of the SPARQL literal, and a
-     name that long is a data error rather than a person. */
+     name that long is a data error rather than a person.
+
+     Control characters too, and not only the newline that was named here
+     — a tab or a carriage return inside a SPARQL literal is just as
+     malformed, and TMDB's names are typed by members of the public. The
+     failure was quiet rather than dangerous: a bad name made the whole
+     batch of sixty 400, the error was swallowed, and fifty-nine people
+     nobody could see went unburied. Rejecting the one name costs one
+     lookup instead of sixty. */
+  const unusable = /["\\\u0000-\u001F\u007F]/;
   const asking = people.filter(p =>
-    p.name && p.name.length <= 60 && !/["\\\n]/.test(p.name) && bornYear(p));
+    p.name && p.name.length <= 60 && !unusable.test(p.name) && bornYear(p));
   if (!asking.length) return buried;
 
   for (let i = 0; i < asking.length; i += NAME_BATCH) {
