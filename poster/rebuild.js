@@ -30,7 +30,7 @@
 import { readFile, writeFile, rename, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { wrapDate } from '../verify.js';
+import { wrapDate, impossible } from '../verify.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -123,12 +123,38 @@ for (const year of years) {
       return work;
     }
 
-    const dated = wrapDate(record.judged);
+    /* Re-applied here, not just recorded by the pass, so that every year
+       already on disk is corrected without asking anybody again. That is
+       the whole bargain: a rule arrives late, and the corpus catches up
+       for the cost of reading files. */
+    const judged = record.judged.map(p => ({
+      ...p,
+      impossible: p.impossible ?? impossible(p, record.releaseYear),
+    }));
+    const dated = wrapDate(judged);
     tally[dated.dateBasis]++;
     if ((work.wrapped ?? null) !== (dated.wrapped ?? null)) tally.changed++;
 
     return { ...work, ...dated, rebuiltAt: new Date().toISOString() };
   });
+
+  /* The flag goes back into the evidence, not just into the conclusion.
+
+     Leaving it derived means every future query has to remember to apply
+     it, and the first ad-hoc question I asked of this corpus forgot —
+     producing a list of "last living links to 1898" made entirely of
+     people born in the 1950s. A rule that consumers must remember is a
+     rule that will be forgotten. */
+  const flagged = [...evidence.values()].map(record => ({
+    ...record,
+    judged: record.judged.map(p => ({
+      ...p,
+      impossible: p.impossible ?? impossible(p, record.releaseYear),
+    })),
+  }));
+  const evPath = join(dir, 'evidence.jsonl');
+  await writeFile(evPath + '.part', flagged.map(e => JSON.stringify(e)).join('\n') + '\n');
+  await rename(evPath + '.part', evPath);
 
   const path = join(dir, 'works.jsonl');
   await writeFile(path + '.part', rebuilt.map(w => JSON.stringify(w)).join('\n') + '\n');

@@ -198,7 +198,7 @@ export const datesAWrap = person =>
             no place on a timeline at all. */
 export function wrapDate(judged) {
   const dated = judged
-    .filter(p => p.status === 'dead')
+    .filter(p => p.status === 'dead' && !p.impossible)
     .map(p => ({ person: p, died: p.wd?.died || p.tmdb?.died }))
     .filter(d => d.died)
     .sort((a, b) => b.died.localeCompare(a.died));
@@ -434,7 +434,7 @@ async function deathsByName(people, sparql) {
    more seriously, a *living* person misattributed to an old picture would
    veto it forever — the wrap could never happen, and nothing would ever
    explain why. */
-function impossible(person, releaseYear) {
+export function impossible(person, releaseYear) {
   if (!releaseYear) return false;
   const born = Number(String(person?.wd?.born || person?.tmdb?.born || '').slice(0, 4));
   return born > 0 && born > releaseYear;

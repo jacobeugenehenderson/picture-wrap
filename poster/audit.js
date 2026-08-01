@@ -32,7 +32,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { statusOf, wrapDate } from '../verify.js';
+import { statusOf, wrapDate, impossible } from '../verify.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -60,6 +60,8 @@ function decide(work, judged, ceiling) {
   const releaseYear = Number(work.year) || YEAR;
 
   const status = p => {
+    /* Could not have been on the picture, so gets no vote either way. */
+    if (p.impossible ?? impossible(p, releaseYear)) return 'excluded';
     /* Wikidata buried this person under their own name and birth year,
        which no amount of re-reading their dates can rediscover — the
        burial was a query, and the evidence records its result. Ignoring
@@ -76,7 +78,10 @@ function decide(work, judged, ceiling) {
     return statusOf(p, releaseYear);
   };
 
-  const decided = judged.map(p => ({ ...p, status: status(p) }));
+  const decided = judged.map(p => ({
+    ...p, status: status(p),
+    impossible: p.impossible ?? impossible(p, releaseYear),
+  }));
   if (decided.some(p => p.status === 'alive')) return { verdict: 'open', wrapped: null };
 
   /* The same wrapDate() the pass and the rebuild use. An audit that

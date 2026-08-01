@@ -40,7 +40,7 @@ import { execSync } from 'node:child_process';
 
 import { sparql, qid, sleep } from './lib.js';
 import { WORK_CLASSES, IN_LIST, VALUES, CREDITS, LANGS } from '../shared.js';
-import { survivors, statusOf, fromWikidata, datesAWrap, wrapDate } from '../verify.js';
+import { survivors, statusOf, fromWikidata, datesAWrap, wrapDate, impossible } from '../verify.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -177,11 +177,23 @@ function judgeRecorded(rows, releaseYear) {
     if (role && !person.roles.includes(role)) person.roles.push(role);
   }
 
+  /* Nobody worked on a picture before they were born, and Wikidata's own
+     credits were never asked. The rule has existed since the backfill and
+     was applied only to the people TMDB names — so Under Western Skies
+     (1910) is dated 3 June 2024 by William Russell, born 1924, who is the
+     Doctor Who actor and not the William Russell born 1884 who is also in
+     its cast list. Every one of the longest release-to-wrap gaps in the
+     corpus is this same collision.
+
+     They stay in the evidence, flagged rather than deleted: the record
+     should show that we saw this person and set them aside, not silently
+     lose them. They do not vote and they cannot date a wrap. */
   return [...people.values()].map(p => ({
     ...p,
     source: 'wikidata',
     status: statusOf(p, releaseYear),
     datesAWrap: datesAWrap(p),
+    impossible: impossible(p, releaseYear),
   }));
 }
 
@@ -189,7 +201,7 @@ async function judge(work, creditRows) {
   const releaseYear = Number(work.year) || YEAR;
   const recorded = judgeRecorded(creditRows, releaseYear);
 
-  const living = recorded.filter(p => p.status === 'alive');
+  const living = recorded.filter(p => p.status === 'alive' && !p.impossible);
   const tmdbId = work.tv || work.tmdb || null;
   const media = work.tv ? 'tv' : 'movie';
 
