@@ -63,7 +63,7 @@ different reasons.
 title, year, country, genre, the date it closed, who was the last of its
 makers, how many people were on record, how many were unaccounted for.
 
-**The evidence** (`pass/`, ~2 GB, publication undecided — see §6). Every
+**The evidence** (`pass/`, ~2 GB, **not published**). Every
 person judged on every picture, with the birth and death dates used, the
 precision of each, which database each came from, and the verdict reached.
 This exists so that a conclusion can be checked, and so that a change of
@@ -91,6 +91,29 @@ door held open*. The short form:
   article — is the line.
 - Corrections belong upstream. Every page links to the Wikidata item,
   because that is where a fix helps everybody rather than only us.
+
+### Asking not to be named
+
+`vault/suppressed.json` is a list of Wikidata ids, empty today, honoured
+by the site and by the pass. Add an id and the name disappears from the
+page, from the evidence and from the person table on the next run.
+
+**It takes the name and never the vote.** Removing a living person
+outright would change what the archive claims — a living maker is what
+holds a picture open, so deleting one silently closes a picture that has
+not closed. That is a false claim about a film and an erasure of the
+person's work in the same move. So the row stays, holds its place, and
+says only that somebody is there.
+
+We expect this to be used approximately never. Every fact here is already
+published by Wikidata and by IMDb, and screen credits are a matter of
+public record. What is ours is not the data but the **inference**: no
+source says *this person is the last living link to The Wizard of Oz* —
+that sentence is assembled here. That is the thing a person could
+reasonably object to, and it is the same thing that made a ranked list of
+survivors unpublishable. The mechanism exists because the answer to such a
+request should be a one-line commit rather than an afternoon's argument at
+a bad moment.
 
 ---
 
@@ -166,14 +189,20 @@ The honest limits, which any citation of this work should carry with it:
 
 Marked open because they are decisions, not oversights.
 
-1. **Publishing the evidence.** ~2 GB, of which a large part is TMDB-derived
-   person data. Publishing it makes every claim checkable, which is the
-   point of having it. Whether TMDB's terms permit redistribution at that
-   scale needs an actual reading of them rather than an assumption.
-2. **A licence for our own output.** The Vault is a derived database. CC0
+1. **A licence for our own output.** The Vault is a derived database. CC0
    matches Wikidata; CC-BY would ask for credit. Undecided.
-3. **Erasure requests.** Somebody living may object to appearing here.
-   The upstream fix is Wikidata's, but a request will arrive here first
-   and there should be an answer before it does.
-4. **How long the person table keeps someone we have decided is dead.**
+2. **How long the person table keeps someone we have decided is dead.**
    Indefinitely today, because that is what makes the next pass cheap.
+
+Two questions that were open and are now answered:
+
+**The evidence is not published.** It is a working artefact, roughly two
+gigabytes, a large part of it TMDB-derived person data whose
+redistribution at that scale we have not established a right to. Access
+can be arranged on request for research, preservation or journalism — a
+named person, a stated purpose. Publishing it wholesale buys checkability
+we can provide another way; the per-picture basis is on the page, and
+`METHOD.md` is the procedure in full.
+
+**A person can ask not to be named**, and the mechanism is above rather
+than promised.

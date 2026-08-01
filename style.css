@@ -1161,3 +1161,8 @@ body.viewing { overflow: hidden; }
 
   .card-portrait { flex-basis: 62px; width: 62px; height: 80px; }
 }
+
+/* A person who asked not to be named. Deliberately quiet — not a gap, not
+   a redaction bar, nothing that invites a reader to wonder who. It reads
+   as what it is: a row that is holding its place. */
+.who-withheld { font-style: italic; opacity: .55; }

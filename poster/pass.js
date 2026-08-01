@@ -31,14 +31,14 @@
    its own directory. The Vault is untouched.
    ========================================================================== */
 
-import { writeFile, mkdir, appendFile, rename } from 'node:fs/promises';
+import { writeFile, readFile, mkdir, appendFile, rename } from 'node:fs/promises';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { createGzip } from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 
-import { sparql, qid, sleep } from './lib.js';
+import { sparql, qid, sleep, HERE } from './lib.js';
 import { WORK_CLASSES, IN_LIST, VALUES, CREDITS, LANGS } from '../shared.js';
 import { survivors, statusOf, fromWikidata, datesAWrap, wrapDate, impossible } from '../verify.js';
 
@@ -86,6 +86,21 @@ const RULES = {
 };
 
 const ROLE = new Map(CREDITS.map(([prop, label]) => [prop.replace('wdt:', ''), label]));
+
+/* People who asked not to be named, honoured here as well as on the site.
+
+   A suppression that covered only the pages would be theatre: the name
+   would sit in the evidence, in the person table, and in any copy handed
+   to a researcher. It takes the name and never the vote — the person is
+   still judged, still holds their picture open, and is still counted.
+   What goes is only the identity. */
+const withheld = new Set(
+  JSON.parse(await readFile(join(HERE, '..', 'vault', 'suppressed.json'), 'utf8')
+    .catch(() => '[]')));
+
+const anonymise = person => (person.wikidataId && withheld.has(person.wikidataId)
+  ? { ...person, name: null, tmdbId: null, suppressed: true }
+  : person);
 
 /* --- what happened in this year ---------------------------------------- */
 
@@ -344,7 +359,7 @@ for (let i = 0; i < works.length; i += CONCURRENCY) {
   }));
 
   for (const r of results) {
-    const judged = [...(r.recorded || []), ...(r.resolved || [])];
+    const judged = [...(r.recorded || []), ...(r.resolved || [])].map(anonymise);
 
     await appendFile(worksPath, JSON.stringify({
       id: r.work.id, title: r.work.title, type: r.work.type,
@@ -353,7 +368,12 @@ for (let i = 0; i < works.length; i += CONCURRENCY) {
       verdict: r.verdict, reason: r.reason, tested: r.tested ?? false,
       unverified: r.unverified ?? false,
       wrapped: r.wrapped ?? null, wrappedYear: r.wrappedYear ?? null,
-      dateBasis: r.dateBasis ?? null, last: r.last ?? null,
+      dateBasis: r.dateBasis ?? null,
+      /* Through the same filter as everyone else. The last of a picture's
+         makers is by definition dead, so this should never fire — but a
+         suppression that holds everywhere except one field is the field
+         that leaks. */
+      last: r.last ? anonymise(r.last) : null,
       makerCount: (r.recorded || []).length,
       tmdbCredited: r.tmdbCredited ?? null,
       coverage: r.tmdbCredited ? +((r.recorded.length / r.tmdbCredited).toFixed(3)) : null,

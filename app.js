@@ -376,6 +376,15 @@ async function viewFilm(id) {
   }
 
   everyone = await repairNames([...people.values()], 'p', 'pLabel');
+
+  /* Marked once, here, rather than checked at each place a name could be
+     printed — a name is printed in five places and the sixth would be the
+     one that leaked. */
+  const withheld = await loadSuppressed();
+  for (const person of everyone) {
+    if (person.p && withheld.has(person.p.split('/').pop())) person.suppressed = true;
+  }
+
   meta.qid = id;                     /* the roster needs it for the edit link */
   filmMeta = meta;
 
@@ -851,6 +860,17 @@ function personRow(p) {
      they were in the picture. There is just nowhere to send you. */
   const qid = p.p ? p.p.split('/').pop() : '';
   const gone = Boolean(p.dod);
+
+  /* Asked not to be named. The row stays, holds its place, and says the
+     only thing left to say. */
+  if (p.suppressed) {
+    return `
+    <li class="${gone ? 'gone' : 'living'}">
+      <span class="portrait" aria-hidden="true"></span>
+      <span class="who"><span class="who-name who-withheld">Name withheld by request</span></span>
+      <span class="when">${gone ? '' : `<span class="when-span when-open">&mdash;</span>`}</span>
+    </li>`;
+  }
   return `
     <li class="${qid ? 'is-link ' : ''}${gone ? 'gone' : 'living'}"${
       qid ? ` data-go="${esc(path(p.pLabel, qid))}"` : ''}>
@@ -1183,6 +1203,7 @@ document.addEventListener('click', async e => {
    Nothing here loads a decade the reader hasn't asked for. */
 let summaryCache = null;
 let idsCache = null;
+let suppressedCache = null;
 const decadeCache = new Map();
 
 async function loadJSON(path, fallback) {
@@ -1193,6 +1214,26 @@ async function loadJSON(path, fallback) {
   } catch {
     return fallback;
   }
+}
+
+/* People who asked not to be named here.
+
+   A living person can want no part of this, and the answer has to be
+   something better than "it is all public anyway". But removing them
+   outright would change what the archive claims: a living maker is what
+   holds a picture open, so deleting one silently closes a picture that
+   has not closed. That is a false claim about a film and an erasure of
+   their work in the same move.
+
+   So suppression takes the NAME and never the vote. The person stays in
+   the reckoning exactly as before — the bar sits where it sat, the
+   picture stays open — and the row says only that somebody is there.
+
+   A list of Q-ids, empty today, published so that honouring a request is
+   a one-line commit rather than a migration. */
+async function loadSuppressed() {
+  suppressedCache ??= new Set(await loadJSON('vault/suppressed.json', []));
+  return suppressedCache;
 }
 
 async function loadSummary() {
