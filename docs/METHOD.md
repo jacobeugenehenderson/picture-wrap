@@ -1,8 +1,9 @@
 # How a wrap is determined
 
-*The procedural account. This is the editable source for the "Methods and
-sources" section on the site; the page renders this text and should not
-diverge from it.*
+*The procedural account, in full. The site's "Methods and sources" page is
+the abridged version of this document, written for a reader rather than an
+auditor. The two must not contradict each other; where the page is silent,
+this is the answer.*
 
 *It describes the procedure by which this project decides that a picture
 has wrapped. It is written to be held against the record and found wrong.
@@ -10,8 +11,10 @@ Every threshold is named, every source is named, and every step at which a
 judgement is made rather than a fact retrieved is marked as such.
 Measurements are point-in-time and dated.*
 
-**Last revised 29 July 2026. Figures measured against the archive the same
-day, at 11,457 entries.**
+**Last revised 1 August 2026.** Figures for the published archive are
+measured at 11,457 entries on 29 July 2026. Figures for the full corpus
+pass (§15) are measured on 1 August 2026, with 94 release years judged and
+the pass still running.
 
 ---
 
@@ -72,10 +75,12 @@ not reducible by better method.
 
 Every person examined is placed in one of three states.
 
-**Dead** requires a recorded death date from one of the two databases, or
-a Wikidata assertion of death carrying no date. Nothing else places anyone
-here. Death is never inferred from age, from silence, or from the absence
-of a record.
+**Dead** requires a recorded death date from one of the two databases, a
+Wikidata assertion of death carrying no date, or an age past the longest
+documented human lifespan (§8). Silence never places anyone here, and
+neither does a lookup that failed. The age rule is arithmetic rather than
+inference, and it is the only route into this state that does not rest on
+somebody having recorded something.
 
 **Alive** requires a birth date the procedure will credit (§8) and no
 recorded death anywhere. This is the state that stops a picture closing.
@@ -119,10 +124,20 @@ runs in two stages: a cheap per-year rollup that counts recorded cast
 against recorded dead cast and keeps only the pictures where those match,
 followed by the exact, crew-inclusive test on each survivor of that filter.
 
-**The rollup stage is restricted to works typed as films and requires a
-recorded publication date.** Television series, miniseries and anything
+**The rollup stage requires a recorded publication date**, so anything
 undated cannot be reached by a backfill at any year. This is a boundary of
-the corpus, and it is invisible from the data.
+the corpus and it is invisible from the data.
+
+It was until recently a much larger boundary. The rollup asked only for
+works typed as *film*, and Wikidata does not file early cinema that way:
+1912 holds 2,326 short films against 597 films, so four fifths of that
+year was never examined — not judged wrongly, never seen. Twelve classes
+are now asked for, covering short, silent, animated and anime film, serial
+film, television film and play, miniseries and television series. Music,
+publications and video games are excluded, since a composer credit on an
+album is a credit and an album has no cast to outlive. Television series
+*episodes* are excluded as a matter of scale rather than principle: the
+unit here is the work, and 2015 alone holds 1,911 episodes.
 
 **The watcher** monitors news accounts for reported deaths, resolves the
 named person, and asks whether that person closes anything. It runs ahead
@@ -146,17 +161,33 @@ A candidate is dropped if the picture has **no name in any of the
 sixty-two languages requested**, since there is nothing to publish and
 nothing to call it.
 
-A candidate is dropped if Wikidata records **fewer than five cast
-credits**. This threshold is editorial, not logical, and should be read as
-a choice. Without it, a forty-five day sweep produced 540 pictures of
-which 397 had no cast recorded at all — documentaries and concert films
-where a single director is the only person on record, "closing" the moment
-that one person died. Two properties of the threshold matter: it counts
-ordinary cast credits only and not voice credits, so an animated picture
-with forty voice performers and no live cast scores zero and is dropped;
-and the watcher applies it not at all.
+A candidate reaching **the announcement queue** is dropped if Wikidata
+records fewer than five cast credits. This threshold is editorial, not
+logical. Without it a forty-five day sweep produced 540 pictures of which
+397 had no cast recorded at all — documentaries and concert films where a
+single director is the only person on record, "closing" the moment that
+one person died. An unreadable queue defeats the only protection this
+project has, which is that a person reads every item before it is
+announced.
 
-Every entry currently in the archive satisfies the floor.
+**It no longer governs what is examined or what is recorded.** It had been
+applied at three points, two of which lead to filing rather than
+announcement, so a rule about what is worth posting was deciding what the
+archive contains — and it was excluding pictures whose record is complete
+at a rate of 500 to 780 a year: 585 in 1913, 775 in 1924, 768 in 1960.
+It also counted ordinary cast credits only, so a picture with four cast
+and twelve crew read as "four on record", and an animated picture with
+forty voice performers and no live cast scored zero.
+
+A floor is in any case a poor proxy for thinness. Of forty archive entries
+sampled, all of which cleared it, a third rest on under half of TMDB's
+credit list — *Rhubarb* (1951) is 30 credits of 113. The floor keeps the
+pictures whose thinness is invisible and drops the ones that announce it.
+Thinness is now carried per entry instead, as a maker count, a TMDB credit
+count and the ratio between them.
+
+Every entry in the published archive predates this change and satisfies
+the old floor.
 
 ## 7. The survivor test
 
@@ -203,9 +234,11 @@ human, whose birth year matches exactly. If exactly one such person exists
 and carries a death date, they are recorded as dead. If several match,
 that is ambiguity, and nothing is changed. This pass runs for anyone not
 already dead, including people currently reading as unknown. It does not
-fire for names longer than sixty characters or containing quotation marks,
-and it asks for the name as English text even when the name was taken from
-a non-English label. Because this pass can only move a person out of
+fire for names longer than sixty characters, or containing quotation
+marks, backslashes or control characters — TMDB's names are typed by
+members of the public, and a malformed one does not merely fail, it makes
+the whole batch of sixty fail — and it asks for the name as English text
+even when the name was taken from a non-English label. Because this pass can only move a person out of
 *alive*, its failure costs a closing and never produces a claim.
 
 The test returns three things: the people found alive, a count of the
@@ -264,6 +297,56 @@ The inference produces a death and never a date. A picture can close on it
 recorded death held one open in perpetuity — but a closing date is always
 somebody's recorded death, and the people this rule speaks for are shown
 without dates and counted in `unknownCount`.
+
+**Two further rules are arithmetic and not judgement, and neither carries
+a chosen number.**
+
+*Nobody worked on a picture released before they were born.* A credit
+whose birth year is later than the release year is set aside: it votes on
+nothing and dates nothing. This catches name collisions, which the two
+databases produce and we inherit — *Under Western Skies* (1910) was dated
+3 June 2024 by William Russell, born 1924, while the William Russell born
+1884 sits two credits below him in the same cast list. Every one of the
+longest release-to-wrap gaps in the corpus was this. The rule had applied
+since 2026 to the people TMDB names and never to Wikidata's own credits,
+which is to say to half the people it should have.
+
+*A picture cannot have closed before it was released.* A death earlier
+than the release date cannot date the wrap. Source authors and composers
+of pre-existing music are genuinely credited and are correctly counted as
+dead — Edgar Allan Poe is credited on *The Murders in the Rue Morgue*
+(1914) — and none of them can be the last of a picture's makers. So are
+people appearing only as archival footage, which is how Frederik VIII of
+Denmark came to date a 1937 film.
+
+People set aside by either rule remain in the record, flagged. The
+evidence should show that somebody was seen and set aside, not silently
+lose them.
+
+**Dating the wrap.** The last death decides, at whatever precision it was
+recorded. The tempting alternative — take the last death recorded *to the
+day*, which always yields a printable date — is wrong in a way that
+matters: *Los misterios del turf argentino* would read "Julio Irigoyen was
+the last of its makers, 29 August 1967" while Aparicio Podestá, also
+credited, died in 1979. Twelve years and the wrong name, bought with a
+prettier date. It affected 56 of 1,188 pictures in a single year.
+
+A closing therefore carries one of three dating states:
+
+- **day** — the last death is recorded to the day. Only this may print as
+  a date, and only this may name a person as the last of the makers.
+- **year** — the last death is real but recorded only to the year. The
+  picture closed that year, on a day nobody wrote down.
+- **none** — no death is recorded anywhere. The picture is closed by the
+  age rules above and has no place on a timeline.
+
+Precision is read from the source and never inferred from the shape of the
+date. Wikidata publishes a precision for the death separately from the
+birth, and reading one for the other put a wrap on 2000-01-01. TMDB
+publishes no precision at all, so there a death falling on the first of
+January is treated as a year. Both databases' dates pass through the same
+validation: TMDB's did not until 1 August 2026, and `"7-9-1980"` reached a
+wrap date intact.
 
 ## 9. When the test cannot run
 
@@ -390,10 +473,11 @@ entire sixteen years.
 Set down because a reader assessing this dataset needs it, and because
 none of it is visible from the data.
 
-**Entries do not record when they were verified, or against which
-sources.** An entry confirmed this morning under the current procedure is
-not distinguishable in the data from one filed under an earlier and less
-careful version of it.
+**Published entries do not record when they were verified, or against
+which sources.** An entry confirmed this morning under the current
+procedure is not distinguishable in the data from one filed under an
+earlier and less careful version of it. Records produced by the full
+corpus pass (§15) do carry both, and are intended to replace them.
 
 **Most of the archive has not been re-checked since it was filed.** Every
 entry was verified minutes before filing by the procedure described here,
@@ -435,9 +519,84 @@ than Wikidata's — that discrepancy is precisely what §7 exists to measure,
 and it is the most productive place to look for an error in what we
 publish.
 
+For any claim in the published archive, the working behind it can be
+supplied on request (§15): every person judged, the dates used, their
+precision and their source. That is a slower route than opening a Wikidata
+item and it exists for the cases where the disagreement is about our
+procedure rather than about the data.
+
 Where this record is wrong, it is most likely wrong in one of three ways:
 a person who worked on the picture was never entered into any database; a
 death occurred and was never recorded; or a person is recorded in both
 databases under no shared identifier and no matching name. The procedure
 above is designed to reduce the second and third. It does nothing about
 the first.
+
+## 15. The full corpus pass, and what is kept
+
+Everything above describes how a verdict is reached. This section
+describes an artefact that did not exist before 1 August 2026: a record of
+*how each verdict was reached*, kept so that a conclusion can be checked
+and so that a change of rule is a re-decision rather than a re-fetch.
+
+Every pass this project had run kept the verdict and discarded the working.
+The consequence was that any question about the archive — is that date
+right, what would a different threshold do, how complete is that credit
+list — cost a further multi-hour pass over the network, every time it was
+asked.
+
+The pass now walks one release year at a time and writes four things:
+
+- **the verdicts**, one record per picture, each carrying its coverage, its
+  unknowns *by name* rather than as a count, the time it was checked, and
+  the thresholds and code revision that decided it;
+- **the evidence**, every maker judged on every picture, with the dates
+  used, the precision of each, which database each came from, and the
+  verdict reached for that person;
+- **a person table**, one row per human, merged across years;
+- **a failure ledger**, so that a lookup which did not answer is recorded
+  as such and can be retried rather than being silently absent.
+
+**The test of whether that is sufficient is mechanical, not editorial.**
+Every year is re-decided from its own files with the network unplugged;
+every verdict and every date must reproduce. The same files are then
+re-decided under a different age threshold, which must require no network
+at all. And every wrap date must belong to a named person in the evidence
+whose death is recorded to the day. A year that fails any of these has
+kept too little.
+
+As of 1 August 2026 the pass has judged **94 release years, 160,222
+pictures**: 99,151 closed, 60,222 still running, 849 it could not check.
+Of the closings, 87,723 are dated to the day, 5,041 to the year only, and
+6,387 carry no recorded death at all. 40,921 were tested against Wikidata
+alone for want of a TMDB identifier. Release years 1890 to 1913 are
+complete and will not be revisited: nobody credited on a picture from
+those years can be living, so the arithmetic of §8 settles them
+permanently.
+
+**None of this is published.** It is a working artefact of roughly two
+gigabytes, a substantial part of it TMDB-derived, and the right to
+redistribute that at scale has not been established. Access can be
+arranged on request for research, preservation or journalism. The
+per-picture basis for every claim remains on the picture's own page, and
+this document is the procedure in full.
+
+## 16. Naming, and withholding
+
+Every person here is named from a public database. A living person who
+does not wish to be named can ask, and the name is withheld from the page,
+from the evidence and from the person table.
+
+**Withholding takes the name and never the vote.** Removing a living
+person from the reckoning would close a picture that has not closed, which
+is simultaneously a false claim about the film and an erasure of that
+person's work. The credit continues to count; the row states only that
+somebody is there.
+
+This is expected to be used approximately never, and the reasoning is
+worth stating rather than assuming. Every date here is already published
+by Wikidata and by IMDb, and screen credits are a matter of public record.
+What originates here is not the data but the inference: no source states
+that a particular person is the last living link to a particular picture.
+That sentence is assembled by this procedure, and it is the only thing in
+the record a person could reasonably object to.
