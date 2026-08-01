@@ -684,3 +684,45 @@ people are now read by the same rule as TMDB-resolved ones.
 queries, the re-check, the recovery script and `explain.js`. Written once,
 in the file that exists because this logic has been copied three times and
 every copy kept the bug after the original was fixed.
+
+---
+
+## Listings are free
+
+*1 August 2026.*
+
+**Decision.** The pass applies no minimum cast. Every picture whose record
+is complete — every credited maker dead — is judged and written down,
+whether it has forty names on it or one.
+
+**Why.** `MIN_CAST = 5` was demoted from a correctness guard to an
+editorial one and then kept doing a third job nobody assigned it: deciding
+what the archive contains. It gates `run.js:250` and `:263`, neither of
+which can post — 37 of 11,457 Vault entries have ever been published, and
+7,828 came from a backfill that cannot publish at all. An editorial rule
+justified by what goes to Bluesky was governing an archive that is 99.7%
+never-posted.
+
+**What it was costing.** Complete-record pictures excluded by the floor,
+by year: 585 in 1913, 775 in 1924, 668 in 1931, 516 in 1945, 768 in 1960.
+Roughly 500–780 a year against a Vault of 11,457. And the floor counted
+`P161` only, so a picture with four cast and twelve crew read as "4 on
+record" — a cast-shaped gate on a crew-inclusive test.
+
+**The measurement that settles it.** A floor is a bad proxy for thinness.
+Of 40 Vault entries sampled, all of which passed `MIN_CAST`, a third are
+under 50% of TMDB's credit list — *Rhubarb* (1951) is 30 of 113. The
+floor keeps the pictures whose thinness is invisible and drops the ones
+that announce it: a one-row roster tells a reader exactly what they are
+looking at.
+
+**So thinness is carried, not gated.** Every work record holds
+`makerCount`, `tmdbCredited` and `coverage`, and the unknowns are listed
+by name rather than counted. The claim states its own basis and the reader
+decides.
+
+**Where the floor still belongs.** `run.js:81`, the sweep, where a human
+reads a queue of pictures destined to be posted. A 45-day window with no
+floor queued 540 films, 397 with nothing but a director on record. That is
+a queue-management problem and it is real — but it should count makers
+rather than cast, and it has nothing to do with what the archive holds.

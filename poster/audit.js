@@ -41,7 +41,7 @@ const value = (flag, fallback) => {
 };
 
 const YEAR = Number(value('--year', 0));
-const OUT = value('--out', 'pass');
+const OUT = value('--out', process.env.PW_PASS || 'pass');
 const CEILING = value('--ceiling', null);
 
 if (!YEAR) { console.error('Usage: node audit.js --year 1924'); process.exit(1); }

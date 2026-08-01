@@ -31,7 +31,10 @@
    its own directory. The Vault is untouched.
    ========================================================================== */
 
-import { writeFile, mkdir, appendFile } from 'node:fs/promises';
+import { writeFile, readFile, mkdir, appendFile, rename } from 'node:fs/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { createGzip } from 'node:zlib';
+import { pipeline } from 'node:stream/promises';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 
@@ -46,7 +49,22 @@ const value = (flag, fallback) => {
 };
 
 const YEAR = Number(value('--year', 0));
-const OUT = value('--out', 'pass');
+/* Where the working out lands, and it should not be here.
+
+   The repository lives under Desktop/dev.nosync — a folder named for the
+   fact that iCloud is kept out of it — and `pass/` is gitignored on top
+   of that, on a machine with no Time Machine destination configured. All
+   three are right for source code, which git and GitHub already protect.
+   All three are wrong for the one artifact whose whole purpose is not
+   having to compute it again.
+
+     export PW_PASS=/somewhere/that/is/actually/backed/up
+
+   Same shape as PW_ARCHIVE. --archive additionally drops a gzipped copy
+   of each finished year somewhere else the moment it is done, so a run
+   that dies at hour ninety loses the year in flight and nothing else. */
+const OUT = value('--out', process.env.PW_PASS || 'pass');
+const ARCHIVE = value('--archive', process.env.PW_PASS_ARCHIVE || null);
 const LIMIT = Number(value('--limit', Infinity));
 const CONCURRENCY = Number(value('--concurrency', 4));
 
@@ -310,7 +328,24 @@ for (let i = 0; i < works.length; i += 20) {
   if (i && i % 200 === 0) console.log(`  credits … ${i}/${works.length}`);
 }
 
+/* Merged across every year that has ever run, not just this one.
+
+   people.jsonl is the asset the whole exercise is for: 63% of everyone
+   judged is dead, and dead is final, so a person written down once never
+   has to be asked about again. Starting from an empty map and writing the
+   file at the end made each year clobber the last — a twenty-four-year
+   block would have finished holding only 1913, and nobody would have
+   noticed until the second block was slow for no reason. */
 const people = new Map();
+try {
+  for (const line of (await readFile(peoplePath, 'utf8')).split('\n')) {
+    if (!line.trim()) continue;
+    const prior = JSON.parse(line);
+    people.set(prior.key, prior);
+  }
+  if (people.size) console.log(`  ${people.size} people already known from earlier years\n`);
+} catch { /* first year of a block: nothing to carry forward */ }
+
 const tally = { closed: 0, open: 0, unchecked: 0, unverified: 0, dated: 0, undated: 0 };
 let done = 0;
 
@@ -396,4 +431,25 @@ console.log(`  unchecked     ${tally.unchecked}`);
 console.log(`  unverified    ${tally.unverified}  (no TMDB id, Wikidata's word alone)`);
 console.log(`  people kept   ${people.size}`);
 console.log(`  written to    ${dir}/ and ${peoplePath}`);
+
+/* The year, sealed into one compressed file somewhere else, the moment it
+   is finished. A hundred-hour run on an unbacked-up laptop otherwise has
+   a hundred hours of single points of failure; with this it has one
+   year's worth. Written to a temporary name and renamed, so an archive
+   file that exists is always a complete one. */
+if (ARCHIVE) {
+  await mkdir(ARCHIVE, { recursive: true });
+  const target = join(ARCHIVE, `${YEAR}.jsonl.gz`);
+  const bundle = [worksPath, evidencePath, failuresPath];
+  const source = createReadStream(bundle[0]);
+  const out = createWriteStream(target + '.part');
+  await pipeline(source, createGzip(), out);
+  for (const extra of bundle.slice(1)) {
+    await pipeline(createReadStream(extra), createGzip(),
+      createWriteStream(target + '.part', { flags: 'a' }));
+  }
+  await rename(target + '.part', target);
+  console.log(`  archived to   ${target}`);
+}
+
 console.log(`  beyondLiving cutoff in force: born before ${2026 - RULES.maximumAge}\n`);
