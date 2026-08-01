@@ -556,10 +556,24 @@ event this archive is actually about — the distribution runs 1940s 10,
 
 Fifty-seven countries are represented, but coverage is heavily American
 and European, and this is a property of the sources rather than of cinema.
-For the years 1930 to 1945, Wikidata holds 8,285 American titles and 1,681
-French ones against 399 Japanese titles, from an industry then producing
-roughly five hundred pictures a year, and 37 Indian titles across the
-entire sixteen years.
+For pictures released between 1930 and 1945 the corpus holds 9,948
+American titles, 1,938 British, 1,758 French and 1,653 German, against 410
+Japanese from an industry then producing roughly five hundred pictures a
+year.
+
+**The figure this section used to give for India was wrong, and wrong in a
+way worth recording.** It said 37 titles across the sixteen years, which
+was a count of pictures labelled *India* — and Wikidata labels a picture
+with the state that existed when it was released, so almost every South
+Asian picture from that period is filed under *British Raj*. The true
+figure is **928: 895 under British Raj and 33 under India.** British Raj is
+the fifth largest country label of the period, ahead of Italy and the
+Soviet Union.
+
+The imbalance the sentence was describing is real and roughly ten to one.
+The number it gave was out by a factor of twenty-five, and the mechanism
+was the archive's own: asking a question in present-day terms of a record
+kept in period terms. §8 of `FINDINGS.md` states the general form.
 
 ## 13. What the record does not currently state
 

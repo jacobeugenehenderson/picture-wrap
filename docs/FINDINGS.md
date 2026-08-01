@@ -246,9 +246,29 @@ in the corpus, 24 belong to states that no longer exist.
 **A query for "Indian" pictures finds almost nothing before 1947**, and a
 query for "British Raj" finds nothing after. Anyone crossing country with
 era will hit that discontinuity and read it as a collapse in Indian
-film-making, which is backwards: Indian production was enormous and is
-almost entirely unrecorded here — 37 titles across 1930-45 against 8,285
-American ones.
+film-making, which is backwards.
+
+This project did exactly that. It stated, in the colophon and in METHOD,
+that Wikidata held **37 Indian titles across 1930-45** — a count of
+pictures labelled *India* in a period when they are labelled *British
+Raj*. The true figure is **928**, and British Raj is the fifth largest
+label of the period, ahead of Italy and the Soviet Union.
+
+| 1930-45 | pictures |
+|---|---|
+| American | 9,948 |
+| British | 1,938 |
+| French | 1,758 |
+| German | 1,653 |
+| **British Raj** | **895** |
+| Italian | 783 |
+| Soviet | 660 |
+| Indian | 33 |
+
+The coverage imbalance is real — roughly ten to one against South Asia,
+and far worse for cinemas with no colonial-era label at all. The number
+was out by a factor of twenty-five, for the length of time it took to
+store the field and look.
 
 ---
 

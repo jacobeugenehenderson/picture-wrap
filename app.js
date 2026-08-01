@@ -22,12 +22,12 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear } from './verify.js?v=42';
+import { survivors, beyondLiving, earliestLivingBirthYear } from './verify.js?v=43';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js?v=42';
+} from './shared.js?v=43';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -1519,9 +1519,14 @@ function viewAbout() {
         <li>Coverage varies by picture and is stated per entry. A third of
           sampled entries rest on under half of TMDB&rsquo;s credit list.</li>
         <li>The corpus is what Wikidata holds, which is overwhelmingly
-          American and European. Of films from 1930 to 1945 it holds 8,285
-          American titles, 1,681 French, 399 Japanese from an industry making
-          around five hundred a year, and 37 Indian across sixteen years.</li>
+          American and European. Of pictures released between 1930 and 1945,
+          it holds 9,948 American against 410 Japanese, from an industry then
+          making around five hundred a year.</li>
+        <li>Country is recorded as the state that existed at the time, so a
+          search under a modern name misses everything before it. Of the same
+          period we hold 928 South Asian pictures &mdash; 895 filed under
+          British Raj and 33 under India. This site said &ldquo;37 Indian
+          titles&rdquo; for months, having asked the wrong question.</li>
         <li>A death date may simply be wrong, or entered in error.</li>
       </ul>
 

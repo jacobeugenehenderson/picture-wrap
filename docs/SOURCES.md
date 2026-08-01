@@ -180,8 +180,12 @@ The honest limits, which any citation of this work should carry with it:
   on under half of TMDB's credit list; every record carries its own
   `coverage`, and the thin ones say so.
 - **The corpus is what Wikidata holds**, which is overwhelmingly American
-  and European. Of 1930–45 films it holds 8,285 American titles and 37
-  Indian ones across sixteen years.
+  and European: 9,948 American pictures released 1930–45 against 410
+  Japanese.
+- **Country is the state that existed at the time.** A search under a
+  modern name misses everything before it — 895 of the period's South
+  Asian pictures are filed under *British Raj* and 33 under *India*, and
+  this project cited the second figure alone for months.
 
 ---
 
