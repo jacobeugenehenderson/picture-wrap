@@ -60,6 +60,13 @@ function decide(work, judged, ceiling) {
   const releaseYear = Number(work.year) || YEAR;
 
   const status = p => {
+    /* Wikidata buried this person under their own name and birth year,
+       which no amount of re-reading their dates can rediscover — the
+       burial was a query, and the evidence records its result. Ignoring
+       the flag made the audit re-decide 49 pictures in 1952 alone as
+       still running, and report the pass as unreproducible when the pass
+       was right and the checker was wrong. */
+    if (p.buriedByName) return 'dead';
     if (!ceiling) return statusOf(p, releaseYear);
     /* Replay: the same evidence, a different line. Only the arithmetic
        moves — a recorded death is still a recorded death. */

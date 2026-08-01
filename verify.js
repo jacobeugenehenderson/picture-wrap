@@ -325,7 +325,16 @@ export function statusOf(person, releaseYear) {
 const NAME_BATCH = 60;
 
 async function deathsByName(people, sparql) {
-  const buried = new Set();
+  /* A map, not a set: which Wikidata item matched and what death it
+     carried, so the burial can be checked later instead of taken on
+     trust. It was a bare set of ids, which recorded THAT we had decided
+     someone was dead and nothing about why — on an inference from a name
+     and a birth year, which is the weakest evidence this file acts on.
+
+     The date is kept for the record and is deliberately not allowed to
+     date a wrap: a name match is good enough to stop claiming somebody
+     is alive, and not good enough to put a day on the headline claim. */
+  const buried = new Map();
 
   /* Quotes and backslashes would break out of the SPARQL literal, and a
      name that long is a data error rather than a person. */
@@ -361,7 +370,13 @@ async function deathsByName(people, sparql) {
         Number(String(r.dob || '').slice(0, 4)) === born);
 
       /* One match, and it has a death date. Anything else is a guess. */
-      if (candidates.length === 1 && candidates[0].dod) buried.add(person.id);
+      if (candidates.length === 1 && candidates[0].dod) {
+        buried.set(person.id, {
+          wikidataId: candidates[0].p ? String(candidates[0].p).split('/').pop() : null,
+          died: day(candidates[0].dod),
+          matchedOn: `${person.name}, born ${born}`,
+        });
+      }
     }
   }
 
@@ -634,7 +649,7 @@ export async function survivors({ film, tmdbId, media = 'movie', year, sparql, t
           tmdbId: p.id,
           wikidataId: p.wdEntity,
           status: buried.has(p.id) ? 'dead' : statusOf(p, releaseYear),
-          buriedByName: buried.has(p.id),
+          buriedByName: buried.get(p.id) ?? false,
           /* Recorded so a stored verdict can be re-decided later without
              asking anybody again. Precision travels with the date: a
              later pass changing a threshold needs to know whether a year
