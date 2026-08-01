@@ -71,6 +71,99 @@ not reducible by better method.
 
 "Everyone" throughout this document means *everyone recorded*.
 
+### How many names a closing actually rests on
+
+The phrase does most of its work at the thin end of the corpus, and the
+distribution is not a footnote to the claim — it is a description of what
+the claim means.
+
+| names on the record | share of closings |
+|---|---|
+| one | 34.0% |
+| two | 15.5% |
+| three or four | 18.2% |
+| five to nine | 17.2% |
+| ten to nineteen | 11.2% |
+| twenty or more | 3.9% |
+
+**Half of all closings rest on one or two recorded people.** For those, a
+wrap marks the end of a filing entry rather than the end of a living
+connection to the picture: a 1911 one-reeler whose only recorded name is
+its producer closes the day that producer dies, while the dozens of
+uncredited people who made it are outside the record entirely and some of
+them certainly outlived him.
+
+The share is U-shaped by release decade rather than simply declining, and
+the shape follows how fully credits were recorded rather than anything
+about cinema:
+
+| release decade | closings resting on one or two names |
+|---|---|
+| 1890s | 93% |
+| 1900s | 81% |
+| 1910s | 57% |
+| 1920s | 43% |
+| 1930s | 31% |
+| 1940s | 31% |
+| 1950s | 37% |
+| 1960s | 60% |
+| 1970s | 73% |
+| 1980s | 81% |
+
+The middle of the century is the only stretch where a wrap approximates
+the thing it sounds like. Before it, studio-era credit lists had not been
+transcribed; after it, Wikidata's coverage of recent pictures thins again.
+Any statement about the archive as a whole is a statement about a
+population whose meaning changes across it.
+
+### Two ways to be the last of a picture's makers
+
+They are structurally different and neither has anything to do with
+prominence.
+
+**One name standing for a production.** The people who close the most
+pictures are producers and directors credited on hundreds of shorts where
+they are the only recorded name: William Nicholas Selig closed 859
+pictures, Siegmund Lubin 522, Lewin Fitzhamon 417, Georges Méliès 381. The
+median number of credits on the pictures they closed is one or two. They
+did not outlive their collaborators; they *were* the record.
+
+**The youngest person on a crowded set.** Where a credit list is long, the
+last survivor is usually whoever was a child on it — Dickie Moore, Cora
+Sue Collins, Robert Blake and Phyllis Coates all appear as closers of
+1930s and 1950s pictures. Of everyone who closed five or more pictures,
+roughly 110 were sixteen or younger when the picture was released; that is
+a small number of people closing a large number of well-documented
+pictures.
+
+This distinction explains results that otherwise look like findings about
+film. Documentaries close earlier and faster than any other genre in every
+release cohort measured, which is not a property of documentaries: they
+credit a handful of adults where a musical credits dozens of performers
+including children.
+
+### The unit of analysis is the death, not the picture
+
+A consequence of the above, and it bears on any statistic computed from
+this archive. Pictures do not close independently of one another. One
+death can close hundreds, so counting pictures counts consequences of an
+event rather than events.
+
+| release decade | closings | distinct deaths | closings per death |
+|---|---|---|---|
+| 1900s | 3,027 | 364 | 8.3 |
+| 1910s | 23,947 | 3,458 | 6.9 |
+| 1920s | 12,909 | 3,931 | 3.3 |
+| 1930s | 13,814 | 4,647 | 3.0 |
+| 1950s | 11,062 | 5,039 | 2.2 |
+| 1960s | 8,291 | 4,374 | 1.9 |
+
+Selig's single death accounts for 812 of the 1910s closings; Méliès's for
+280 of the 1900s, or 9% of that decade. **Any measure of confidence over
+early-cinema figures should be computed on distinct deaths, and a
+per-picture count overstates it by up to sevenfold.** By the 1950s the
+inflation is roughly double, which is material but not disqualifying.
+
 ## 4. Three states, of which only one is an answer
 
 Every person examined is placed in one of three states.

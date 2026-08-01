@@ -409,3 +409,10 @@ simply a proxy for young casts is the same open question.
 release cohort at a time, x-axis years-since-release rather than calendar
 date. That form cannot express the artefact, which is its main virtue.
 
+**And the confidence band must be computed on distinct deaths rather than
+pictures** — see METHOD §3. Within a single genre cohort the concentration
+is mild (no single death accounts for more than 4% of a genre's closings
+in the 1930s or 1950s), but the correction is roughly a halving of the
+effective sample, and for anything reaching back before 1920 it is a
+division by seven.
+
