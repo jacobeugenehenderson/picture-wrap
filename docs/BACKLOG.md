@@ -475,3 +475,54 @@ Everyone in this view is dead, which is why it can be built at all: the
 living equivalent is the ranked list refused under *The door held open*.
 The distinguishing test is not the metric but the tense.
 
+---
+
+## Faceting: any one column is less informative than any two crossed
+
+*Noted 1 August 2026. The table exists; the interface does not.*
+
+Every result this archive produced on its first day of having a corpus
+came from crossing two columns, and every result that came from reading
+one was wrong.
+
+- Genre alone said westerns were rising through the century. Genre crossed
+  with release cohort said they never were: that was when westerns were
+  made.
+- Genre alone said documentaries close fastest. Genre crossed with maker
+  count said documentaries credit four adults where a musical credits
+  forty people including children.
+- Closer role alone said the archive shifted from crew to cast and back.
+  Crossed with the coverage table it said credit lists got fuller and then
+  thinner, which is a fact about cataloguing.
+
+So the exploratory surface is not a set of charts, it is a cross-tab, and
+`facts.bin` exists to make one cheap: 103,408 rows of 24 bytes, about
+2.4 MB, one fetch, filtered in memory with no query engine.
+
+**Two columns are there to keep it honest, and an interface should be
+built so that ignoring them is harder than not.**
+
+`closer` is the person whose death closed the picture. `corpus.js` offers
+`count()` and no bare total, and it returns pictures *and* distinct
+deaths, because pictures are consequences of an event rather than events.
+The difference is not cosmetic:
+
+    westerns as a share of closings, 1910s   1.5% by picture   5.4% by death
+                                     1950s   5.6% by picture   7.0% by death
+
+A quarter of the archive's apparent movement in that measure is one
+counting error.
+
+`makers` is how many people the record held. Nearly every apparent trend
+here is that number changing over time. 52,203 closings — half the archive
+— rest on one or two names, and they come from 13,492 deaths.
+
+**What is missing before this is worth building.** Country is not in the
+pass at all: the old Vault carried it and the work record does not, so
+"which cinemas closed when" cannot be asked yet. It is a film-level fact
+like genre and belongs in `enrich.js`, one query per year.
+
+Also worth stating in any interface: the facts table holds closings only.
+The 60,000 pictures still open are not in it, so every share it computes
+has closed pictures as its denominator, which is a different question from
+a share of all cinema.

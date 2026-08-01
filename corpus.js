@@ -58,6 +58,75 @@ function membership(buffer, format) {
   };
 }
 
+/* The packed table of closings, read through a DataView.
+
+   Nothing is decoded up front: a hundred thousand objects would cost more
+   memory and more time than the fetch did, and most questions touch a few
+   columns. Rows are read on demand and the caller filters. */
+function factsTable(buffer, dict, format) {
+  const view = new DataView(buffer);
+  const { rowBytes, rows } = format;
+  const genreBit = new Map(dict.genres.map((g, i) => [g, i]));
+
+  const at = i => {
+    const o = i * rowBytes;
+    const flags = view.getUint8(o + 8);
+    const coverage = view.getUint8(o + 10);
+    const type = view.getUint8(o + 11);
+    const closer = view.getUint32(o + 12, true);
+    return {
+      qid: `Q${view.getUint32(o, true)}`,
+      releaseYear: view.getUint16(o + 4, true),
+      wrapYear: view.getUint16(o + 6, true) || null,
+      basis: dict.basis[flags & 0b11],
+      onScreen: (flags & 0b100) ? Boolean(flags & 0b1000) : null,
+      makers: view.getUint8(o + 9),
+      coverage: coverage === 255 ? null : coverage / 100,
+      type: type === 255 ? null : dict.types[type],
+      closer: closer === 0xFFFFFFFF ? null : closer,
+      closerName: closer === 0xFFFFFFFF ? null : dict.closers[closer],
+    };
+  };
+
+  const hasGenre = (i, name) => {
+    const bit = genreBit.get(name);
+    if (bit === undefined) return false;
+    const o = i * rowBytes + (bit < 32 ? 16 : 20);
+    return Boolean(view.getUint32(o, true) & (1 << (bit % 32)));
+  };
+
+  return {
+    rows,
+    genres: dict.genres,
+    types: dict.types,
+    row: at,
+    hasGenre,
+
+    /* Every row matching a predicate, as objects. */
+    where(fn) {
+      const out = [];
+      for (let i = 0; i < rows; i++) {
+        const r = at(i);
+        if (fn(r, i)) out.push(r);
+      }
+      return out;
+    },
+
+    /* Pictures AND the deaths behind them. Never one without the other. */
+    count(fn) {
+      let pictures = 0;
+      const deaths = new Set();
+      for (let i = 0; i < rows; i++) {
+        const r = at(i);
+        if (!fn(r, i)) continue;
+        pictures++;
+        if (r.closer !== null) deaths.add(r.closer);
+      }
+      return { pictures, deaths: deaths.size };
+    },
+  };
+}
+
 export async function openCorpus(root = '/') {
   const at = path => new URL(path, new URL(root, location.href)).href;
 
@@ -79,7 +148,7 @@ export async function openCorpus(root = '/') {
   };
 
   let ids = null;
-  const table = () => {
+  const membershipTable = () => {
     ids ??= fetch(from(manifest.surfaces.ids))
       .then(res => res.arrayBuffer())
       .then(buffer => membership(buffer, manifest.idsFormat))
@@ -104,7 +173,7 @@ export async function openCorpus(root = '/') {
     async has(qid) {
       const n = Number(String(qid).replace(/^Q/i, ''));
       if (!Number.isFinite(n)) return false;
-      return (await table())(n);
+      return (await membershipTable())(n);
     },
 
     year: year => json(manifest.surfaces.year.replace('{year}', String(year))),
@@ -118,5 +187,24 @@ export async function openCorpus(root = '/') {
     month: ym => json(manifest.surfaces.month.replace('{YYYY-MM}', ym)),
     wrapped: y => json(manifest.surfaces.wrapped.replace('{YYYY}', String(y))),
     resolution: manifest.resolution,
+
+    /* Every closing at once, packed, for questions the shards cannot
+       answer — anything that crosses two columns. One fetch of about
+       2.5 MB, then filtering happens in memory.
+
+       `count()` is deliberately the only aggregate offered, and it
+       deliberately returns two numbers. Pictures are not independent
+       observations: one death closes up to 812 of them, so a count of
+       pictures overstates the evidence behind it by up to sevenfold. Any
+       figure taken from this table should be reported as "n pictures,
+       from m deaths", and making that the easiest thing to do is the
+       point of not offering a bare total. */
+    async facts() {
+      const [buffer, dict] = await Promise.all([
+        fetch(from(manifest.surfaces.facts)).then(r => r.arrayBuffer()),
+        json(manifest.surfaces.factsDictionary),
+      ]);
+      return factsTable(buffer, dict, manifest.factsFormat);
+    },
   };
 }

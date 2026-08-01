@@ -33,6 +33,8 @@
      wrapped/<YYYY>.json   closings known only to a year
      ids.bin             which pictures are closed at all
      summary.json        totals, enough to draw a landing page
+     facts.bin           every closing as one packed row, for crossing
+     facts.json          the dictionaries those rows index into
 
    THE RESIDUES, WHICH ARE NOT AN AFTERTHOUGHT
 
@@ -53,6 +55,32 @@
    it cannot fetch per lookup and cannot afford a megabyte of quoted
    strings. Binary and sorted, it is a quarter of the size and answers by
    binary search with no parsing at all.
+
+   THE FACTS TABLE, AND WHY IT IS ONE FILE
+
+   The surfaces above each answer one question. Nothing built from them can
+   answer a crossed one — "documentaries with fewer than five makers whose
+   last survivor was behind the camera" needs every row at once, and every
+   result this archive has produced that was worth anything came from
+   crossing two columns rather than reading one.
+
+   So the whole corpus also ships as a single packed table: 24 bytes a
+   picture, about 2.5 MB for a hundred thousand of them, one fetch, filter
+   in memory. That is the price of a photograph for arbitrary cross-tabs
+   with no query engine and no server.
+
+   Two columns exist purely to keep whoever uses it honest.
+
+   `closer` is the index of the person whose death closed the picture.
+   Pictures are not independent observations — one death closes up to 812
+   of them — so any count over this table has to report distinct closers
+   beside distinct pictures or it will overstate its evidence by up to
+   sevenfold. See METHOD §3.
+
+   `makers` is how many people the record held. Nearly every apparent
+   trend in this archive is that number changing over time rather than
+   anything about cinema, and a cross-tab that does not carry it will
+   rediscover the same artefact in a new costume.
 
    Nothing here decides anything. Every verdict was reached by the pass and
    this only arranges the results.
@@ -214,6 +242,92 @@ for (const [y, list] of byWrapYear) {
 const table = new Uint32Array(ids);
 await put(join(base, 'ids.bin'), Buffer.from(table.buffer, table.byteOffset, table.byteLength));
 
+/* --- the packed table -------------------------------------------------- */
+
+/* Fixed 24-byte rows, little-endian, described in the manifest so a reader
+   never has to infer the layout:
+
+     0   uint32  Wikidata number
+     4   uint16  release year
+     6   uint16  wrap year, 0 when the closing cannot be placed
+     8   uint8   flags — bits 0-1 date basis, 2 on-screen known,
+                  3 on-screen, 4 unverified, 5 tested against TMDB
+     9   uint8   makers on record, capped at 255
+     10  uint8   coverage percent, 255 when not measurable
+     11  uint8   type, 255 when absent
+     12  uint32  closer, 0xFFFFFFFF when nobody is named
+     16  uint32  genre bits 0-31
+     20  uint32  genre bits 32-63
+
+   Two 32-bit halves rather than one 64-bit field, so a browser reading
+   this never needs BigInt for what is a set of checkboxes. */
+const ROW = 24;
+const BASIS = { none: 0, year: 1, month: 2, day: 3 };
+
+const everyClosing = [...byYear.values()].flat();
+
+const dictionary = (values, limit = Infinity) => {
+  const counts = new Map();
+  for (const v of values) counts.set(v, (counts.get(v) || 0) + 1);
+  return [...counts].sort((a, b) => b[1] - a[1]).slice(0, limit).map(([v]) => v);
+};
+
+const types = dictionary(everyClosing.map(e => e.type).filter(Boolean));
+/* 64 because that is what fits the bitset, and they cover 97% of all
+   genre tags in the corpus; the long tail of 372 rarer labels is in the
+   per-picture files where nothing has to be packed. */
+const genreList = dictionary(everyClosing.flatMap(e => e.genres || []), 64);
+const genreBit = new Map(genreList.map((g, i) => [g, i]));
+
+/* Named rather than numbered, because a quarter of closers have no
+   Wikidata id in the record and would otherwise collapse into one
+   another — which is exactly the count this column exists to protect. */
+const closerKey = e => (e.last ? (e.last.wikidataId || `name:${e.last.name}`) : null);
+const closers = dictionary(everyClosing.map(closerKey).filter(Boolean));
+const closerIndex = new Map(closers.map((c, i) => [c, i]));
+const closerNames = new Map();
+for (const e of everyClosing) if (e.last) closerNames.set(closerKey(e), e.last.name);
+
+const facts = Buffer.alloc(everyClosing.length * ROW);
+everyClosing.forEach((e, i) => {
+  const at = i * ROW;
+  facts.writeUInt32LE(Number(String(e.id).slice(1)) || 0, at);
+  facts.writeUInt16LE(Number(e.year) || 0, at + 4);
+  facts.writeUInt16LE(Number(e.wrappedYear) || 0, at + 6);
+
+  let flags = BASIS[e.dateBasis] ?? 0;
+  if (e.last && e.last.onScreen !== null && e.last.onScreen !== undefined) {
+    flags |= 1 << 2;
+    if (e.last.onScreen) flags |= 1 << 3;
+  }
+  facts.writeUInt8(flags, at + 8);
+  facts.writeUInt8(Math.min(255, e.makers ?? 0), at + 9);
+  facts.writeUInt8(e.coverage == null ? 255 : Math.min(255, Math.round(e.coverage * 100)), at + 10);
+  facts.writeUInt8(types.indexOf(e.type) === -1 ? 255 : types.indexOf(e.type), at + 11);
+
+  const ci = closerKey(e) === null ? 0xFFFFFFFF : closerIndex.get(closerKey(e));
+  facts.writeUInt32LE(ci ?? 0xFFFFFFFF, at + 12);
+
+  let lo = 0, hi = 0;
+  for (const g of e.genres || []) {
+    const bit = genreBit.get(g);
+    if (bit === undefined) continue;
+    if (bit < 32) lo |= 1 << bit; else hi |= 1 << (bit - 32);
+  }
+  facts.writeUInt32LE(lo >>> 0, at + 16);
+  facts.writeUInt32LE(hi >>> 0, at + 20);
+});
+
+await put(join(base, 'facts.bin'), facts);
+await put(join(base, 'facts.json'), JSON.stringify({
+  rows: everyClosing.length,
+  rowBytes: ROW,
+  basis: Object.keys(BASIS),
+  types,
+  genres: genreList,
+  closers: closers.map(c => closerNames.get(c) ?? c),
+}));
+
 const decades = {};
 for (const [year, list] of byYear) {
   const d = Math.floor(year / 10) * 10;
@@ -245,6 +359,26 @@ await put(join(OUT, 'manifest.json'), JSON.stringify({
     wrapped: 'wrapped/{YYYY}.json',
     ids: 'ids.bin',
     summary: 'summary.json',
+    facts: 'facts.bin',
+    factsDictionary: 'facts.json',
+  },
+  /* The layout, stated rather than left to be inferred. */
+  factsFormat: {
+    rows: everyClosing.length,
+    rowBytes: ROW,
+    endian: 'little',
+    fields: {
+      qid: { at: 0, type: 'uint32' },
+      releaseYear: { at: 4, type: 'uint16' },
+      wrapYear: { at: 6, type: 'uint16', zeroMeans: 'unplaceable' },
+      flags: { at: 8, type: 'uint8', bits: ['basis0', 'basis1', 'onScreenKnown', 'onScreen', 'unverified', 'tested'] },
+      makers: { at: 9, type: 'uint8' },
+      coverage: { at: 10, type: 'uint8', unit: 'percent', sentinel: 255 },
+      type: { at: 11, type: 'uint8', sentinel: 255 },
+      closer: { at: 12, type: 'uint32', sentinel: 4294967295 },
+      genresLo: { at: 16, type: 'uint32' },
+      genresHi: { at: 20, type: 'uint32' },
+    },
   },
   /* Published so a client can say what it is showing and what it is not.
      A calendar that silently omits 11.9% of the archive is worse than one
@@ -273,4 +407,6 @@ console.log(`  ${written.day} day files    median ${kb(dayBytes[dayBytes.length 
 console.log(`  ${written.month} month files  known only to a month`);
 console.log(`  ${written.wrapped} year files    known only to a year`);
 console.log(`  ids.bin           ${kb(table.byteLength)} for ${ids.length} pictures`);
+console.log(`  facts.bin         ${kb(facts.length)} — ${everyClosing.length} rows of ${ROW} bytes`);
+console.log(`  facts.json        ${types.length} types, ${genreList.length} genres, ${closers.length} closers`);
 console.log(`  total             ${(written.bytes / 1048576).toFixed(1)} MB in ${OUT}/\n`);
