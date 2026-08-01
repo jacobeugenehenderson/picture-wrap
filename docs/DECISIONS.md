@@ -726,3 +726,77 @@ reads a queue of pictures destined to be posted. A 45-day window with no
 floor queued 540 films, 397 with nothing but a director on record. That is
 a queue-management problem and it is real — but it should count makers
 rather than cast, and it has nothing to do with what the archive holds.
+
+---
+
+## The door held open
+
+*1 August 2026.*
+
+**Decision.** A living person appears on this site as a credit on a
+picture. Never as an entry in a list. There is no ranked list of last
+survivors, and there will not be one — not sorted by age, not by how close
+their picture is to closing, not at all. The same facts are published as a
+documented dataset, for people who come looking on purpose.
+
+**What was proposed and rejected.** The pass can identify, exactly,
+every picture that hangs on one living person: 40,962 still running,
+**19,751 of them held open by a single person.** As a page that is a death
+watch. Every date in it is already public, which is beside the point —
+the aggregation is the artifact. A list of human beings ordered by
+proximity to their own death is not a fact about cinema, whatever it was
+assembled from.
+
+**The framing that replaces it.** When a picture wraps, the world
+circumscribed by that picture goes out — not the film, which survives, but
+the living connection to it: nobody left who was there. Until then the
+door to that world is held open, sometimes by one person.
+
+That is the same sentence read from the other end, and everything about it
+is different. A watch list asks *when will this person die*. This asks
+*what is still reachable, and for how long* — the subject is the world, the
+person is the one holding the door, and it is addressed to the reader.
+
+**Four rules follow.**
+
+1. The subject of a page is a picture. A living person is a credit on it.
+2. Never sort living people by age, proximity or fragility. Sort by the
+   picture, oldest first, which keeps the subject where it belongs.
+3. Don't aggregate private individuals. Someone with a Wikipedia article
+   has a public record; a bit player with one credit did not ask for
+   this. Sitelink counts already give a usable line — `fame` computes
+   them.
+4. The language is *held open by*, not *last surviving*.
+
+**The site already draws this and never says it.** The gold bar rising as
+the living block shrinks IS the door closing, and when one person is left
+the bar sits one row from the top. The page shows it perfectly and does
+not name it. What is missing is the other direction: you can only see a
+door about to shut if you already knew to open that film. Nothing lets a
+reader ask which doors are nearly closed.
+
+**So the surface to build is an invitation, not an index.** Oldest
+pictures still open, first. It expires, which is exactly why it is worth
+publishing.
+
+**The research case, and why "obituary" is the wrong word for it.** News
+desks and preservationists do prepare material in advance, and they have
+Liza Minnelli covered. They have never heard of Caren Marsh Doll, who is
+107 and the reason The Wizard of Oz has not closed. But the higher use of
+that fact is not the obituary — it is the interview. The value expires
+while somebody can still answer the phone, and the framing decides which
+one happens: *who can still tell us about this picture* prompts a call,
+*who is about to go* prompts a draft. The first is defensible to the
+person themselves, which is the test.
+
+**The honesty clause, which makes the metaphor better rather than
+weaker.** The door is held open by more feet than we can see. Below-the-
+line crew is in no free database, so the people we can name are the ones
+somebody wrote down — Caren Marsh Doll counts only because TMDB records a
+stand-in. There are pictures this archive calls closed that still have
+someone living who was there: a grip, an extra, a child on set, recorded
+nowhere.
+
+Which is the strongest argument for the whole project. The recorded world
+is smaller than the real one, and the only way it grows is if somebody
+asks while there is still somebody to ask.
