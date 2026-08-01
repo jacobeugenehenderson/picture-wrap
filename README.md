@@ -95,6 +95,7 @@ things done by hand: `picture-wrap-preview`, `picture-wrap-review`,
 | [docs/VERIFICATION.md](docs/VERIFICATION.md) | How a wrap is decided, in plain prose, no code |
 | [docs/METHOD.md](docs/METHOD.md) | The same procedure written for citation — the source text for the site's "Methods and sources" |
 | [docs/SOURCES.md](docs/SOURCES.md) | What is read, what is kept, how it is treated — privacy, licensing and citation |
+| [docs/FINDINGS.md](docs/FINDINGS.md) | What the corpus says, what it only appears to say, and the rules for plotting it |
 | [poster/README.md](poster/README.md) | The poster in detail |
 | [HANDOFF.md](HANDOFF.md) | Current state and what's unfinished — **read first** |
 
