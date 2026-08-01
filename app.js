@@ -22,12 +22,12 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear } from './verify.js?v=41';
+import { survivors, beyondLiving, earliestLivingBirthYear } from './verify.js?v=42';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js?v=41';
+} from './shared.js?v=42';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -1429,84 +1429,143 @@ function viewAbout() {
     </section>
 
     <div class="prose">
+      <h3>1. What this site states</h3>
       <p>
-        Every picture wraps twice: first when the shooting stops, and
-        finally when the last person who made it is gone. This is a record
-        of the second one.
+        For each picture, whether every person recorded as having worked on
+        it has died, and if so, the date of the last recorded death. Nothing
+        here is a claim about anyone&rsquo;s health, whereabouts or private
+        life. Every date is copied from a public database and none is
+        inferred from anything else.
       </p>
 
-      <h3>The gold bar</h3>
+      <h3>2. How a person is classified</h3>
       <p>
-        A film&rsquo;s page is one list of everyone credited on it, divided
-        by a gold bar. The living sit above it, the dead below. As people
-        die they cross the bar, the living section shrinks, and it rises. When
-        there is nobody left it comes to rest beneath the title, and the
-        picture has, finally, wrapped.
+        Each credited person is <strong>dead</strong>, <strong>living</strong>
+        or <strong>unrecorded</strong>. The three are not interchangeable and
+        an unrecorded person is never counted as dead.
+      </p>
+      <ul>
+        <li><strong>Dead</strong> &mdash; a death date in Wikidata or TMDB,
+          or a death asserted without a date; or an age past 122 years, the
+          longest documented human lifespan.</li>
+        <li><strong>Living</strong> &mdash; a usable birth date, no death
+          recorded anywhere, and an age under 112. A birth date is usable if
+          it is precise to the day, or if both databases give one and agree
+          on the year.</li>
+        <li><strong>Unrecorded</strong> &mdash; anything else, including an
+          age between 112 and 122, and any case where a lookup failed.</li>
+      </ul>
+      <p>
+        Two further rules are arithmetic rather than judgement. Nobody can
+        have worked on a picture released before they were born, so such
+        credits are set aside. And a picture cannot have closed before it was
+        released, so a death earlier than the release date cannot date it &mdash;
+        which is why source authors and composers of pre-existing music,
+        both of whom are credited, never appear as the last of a
+        picture&rsquo;s makers.
       </p>
       <p>
-        Almost always, being gone means a recorded death date. The
-        exception is age: the longest documented life is Jeanne
-        Calment&rsquo;s 122 years, so anyone born before ${earliestLivingBirthYear()}
-        is counted as gone whether or not a death was written down, as is
-        anyone credited on a picture older than that. It can close a
-        picture. It can never date one &mdash; a wrap always carries
-        somebody&rsquo;s recorded death, and the people it speaks for
-        appear at the foot of the page with a dash.
+        Anyone born before ${earliestLivingBirthYear()} is therefore counted
+        as dead whether or not a death was recorded, as is anyone credited on
+        a picture older than that. This can close a picture. It cannot date
+        one: a date is only ever a death recorded to the day.
       </p>
 
-      <h3>Where the data comes from</h3>
+      <h3>3. How the page is drawn</h3>
       <p>
-        Cast, credits and death dates come from
-        <a href="https://www.wikidata.org" rel="noopener">Wikidata</a><span
-          id="about-tmdb" hidden>, and we cross check each entry against
-          <a href="https://www.themoviedb.org" rel="noopener">TMDB</a> for a
-          fuller picture</span>. Portraits come from
+        A picture&rsquo;s page lists everyone credited, divided by a gold
+        bar: living above, dead below. The bar rises as the living section
+        shrinks. When it reaches the top, nobody recorded as having worked on
+        the picture is still living.
+      </p>
+      <p>
+        People whose dates cannot be established appear below the credits
+        with a dash. They are neither counted as living nor as dead.
+      </p>
+
+      <h3>4. Sources</h3>
+      <p>
+        Credits and dates come from
+        <a href="https://www.wikidata.org" rel="noopener">Wikidata</a>,
+        which is published under CC0<span id="about-tmdb" hidden>, checked
+        against <a href="https://www.themoviedb.org" rel="noopener">TMDB</a>,
+        whose cast lists are frequently fuller</span>. Portraits come from
         <a href="https://commons.wikimedia.org" rel="noopener">Wikimedia
-        Commons</a>. All are written by volunteers. None is complete.
+        Commons</a> under the licence of each file. All are edited by
+        volunteers and none is complete.
       </p>
       <p id="about-tmdb-2" hidden>
         This product uses the TMDB API but is not endorsed or certified by
         TMDB.
       </p>
 
-      <h3>Makers</h3>
+      <h3>5. Scope</h3>
       <p>
-        Here, a maker is anyone credited: cast, direction, writing, camera,
-        music, cutting, production, costume design. Below-the-line crew like
-        grips, gaffers, second unit and sound is not recorded in any free
-        database and so is not recorded here, either.
+        A maker is anyone credited in cast, direction, writing,
+        cinematography, music, editing, production or costume design.
+        Below-the-line crew &mdash; grips, gaffers, second unit, sound
+        &mdash; is not held in any free database and is therefore absent
+        here. <strong>&ldquo;Everyone&rdquo; means everyone recorded</strong>,
+        which is a smaller set than everyone who worked on a picture.
       </p>
 
-      <h3>Whose cinema is here?</h3>
+      <h3>6. Known limits</h3>
+      <ul>
+        <li>A picture may be shown as closed while somebody who was never
+          recorded is living.</li>
+        <li>About one closing in ten has no day-precise date; roughly half of
+          those have no recorded death at all and are closed by the age
+          rules above.</li>
+        <li>Coverage varies by picture and is stated per entry. A third of
+          sampled entries rest on under half of TMDB&rsquo;s credit list.</li>
+        <li>The corpus is what Wikidata holds, which is overwhelmingly
+          American and European. Of films from 1930 to 1945 it holds 8,285
+          American titles, 1,681 French, 399 Japanese from an industry making
+          around five hundred a year, and 37 Indian across sixteen years.</li>
+        <li>A death date may simply be wrong, or entered in error.</li>
+      </ul>
+
+      <h3>7. The Vault</h3>
       <p>
-        Overwhelmingly American and European, and that is a limit of the
-        source, not the importance of the films. Of films from 1930 to 1945, Wikidata
-        holds 8,285 American titles and 1,681 French ones. It holds 399
-        Japanese titles, from an industry making around five hundred
-        pictures a year, and <strong>37 Indian titles across sixteen
-        years</strong>.
+        Closed pictures, most recent first. It is the only part of this site
+        not computed live: the result is worked out in advance and stored, so
+        it can lag. If a living person is added to a picture in the Vault,
+        that picture&rsquo;s own page will show it as open while the Vault
+        still lists it as closed, until the next check.
       </p>
 
-      <h3>The Vault</h3>
+      <h3>8. Corrections</h3>
       <p>
-        Pictures with no one left, newest closing first.
-      </p>
-      <p>
-        It is the only part of this site that isn&rsquo;t live: the answer is
-        worked out in advance and stored.
-      </p>
-      <p>
-        That means it can also drift. If someone adds a living cast member
-        to a film in the Vault, that film&rsquo;s own page will show it
-        correctly as open while the Vault still lists it as closed, until
-        the next check.
+        Errors here are almost always errors upstream. Every picture and
+        person links to its Wikidata item, which is where a correction should
+        be made: it is fixed at the source and everyone benefits, and this
+        site follows on its next pass.
       </p>
 
-      <h3>Mistakes</h3>
+      <h3>9. Privacy</h3>
       <p>
-        A film may show a bar at the top because everyone recorded has died,
-        while people who were never recorded are alive. A death date may be
-        wrong, or added by someone in error.
+        This site sets no cookies, runs no analytics and keeps no logs. It is
+        static files served from a CDN and nothing about readers is collected.
+      </p>
+      <p>
+        It does hold names and birth dates of living people, all of them
+        already published by the sources above. Living people appear only as
+        credits on a picture, never as a list, and are never ranked or
+        ordered by age. A person who does not wish to be named here can say
+        so &mdash; their name is withheld from the page while their credit
+        continues to count, so no picture is wrongly reported as closed.
+        Requests go to the address in the footer.
+      </p>
+
+      <h3>10. Citation</h3>
+      <p>
+        Cite the picture&rsquo;s Wikidata identifier and the date consulted,
+        since the underlying databases change:
+      </p>
+      <p class="cite">
+        Picture Wrap, &ldquo;The Sawdust Trail&rdquo; (Q18153746), wrapped
+        5 October 1974. Consulted 1 August 2026. Derived from Wikidata and
+        TMDB.
       </p>
     </div>`);
   revealTmdb();

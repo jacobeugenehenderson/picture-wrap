@@ -982,6 +982,33 @@ main,
 
 .prose strong { color: var(--ink); font-weight: 400; }
 
+/* Lists in the methods page carry definitions and limits — things a
+   reader scans rather than reads. They need to look like a list. */
+.prose ul {
+  margin-top: 0.9rem;
+  padding-left: 1.1rem;
+  list-style: none;
+}
+
+.prose li {
+  position: relative;
+  margin-top: 0.6rem;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  line-height: 1.62;
+  color: var(--ink-soft);
+}
+
+.prose li::before {
+  content: "";
+  position: absolute;
+  left: -1.1rem;
+  top: 0.72em;
+  width: 0.32rem;
+  height: 1px;
+  background: var(--rule);
+}
+
 .prose a {
   color: var(--ink);
   border-bottom: 1px solid var(--rule);
@@ -1166,3 +1193,13 @@ body.viewing { overflow: hidden; }
    a redaction bar, nothing that invites a reader to wonder who. It reads
    as what it is: a row that is holding its place. */
 .who-withheld { font-style: italic; opacity: .55; }
+
+/* A citation, shown as the literal string somebody should copy. */
+.prose .cite {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .82rem;
+  line-height: 1.6;
+  padding: .7rem .9rem;
+  border-left: 2px solid rgba(210, 175, 95, .35);
+  opacity: .85;
+}
