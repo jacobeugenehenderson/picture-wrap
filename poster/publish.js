@@ -128,6 +128,7 @@ const row = w => ({
   last: w.last
     ? { name: w.last.name, died: w.last.died, onScreen: w.last.onScreen ?? null }
     : null,
+  countries: w.countries?.length ? w.countries : undefined,
   type: w.type,
   genres: w.genres?.length ? w.genres : undefined,
   makers: w.makerCount,
@@ -258,10 +259,11 @@ await put(join(base, 'ids.bin'), Buffer.from(table.buffer, table.byteOffset, tab
      12  uint32  closer, 0xFFFFFFFF when nobody is named
      16  uint32  genre bits 0-31
      20  uint32  genre bits 32-63
+     24  uint8   country, 255 when absent
 
    Two 32-bit halves rather than one 64-bit field, so a browser reading
    this never needs BigInt for what is a set of checkboxes. */
-const ROW = 24;
+const ROW = 25;
 const BASIS = { none: 0, year: 1, month: 2, day: 3 };
 
 const everyClosing = [...byYear.values()].flat();
@@ -278,6 +280,15 @@ const types = dictionary(everyClosing.map(e => e.type).filter(Boolean));
    per-picture files where nothing has to be packed. */
 const genreList = dictionary(everyClosing.flatMap(e => e.genres || []), 64);
 const genreBit = new Map(genreList.map((g, i) => [g, i]));
+
+/* One byte, so one country, and a co-production has to choose. The first
+   named is kept and the per-picture files carry the complete list — the
+   packed table is for crossing, and a reader who needs to know that a
+   picture is Franco-Italian rather than French is asking about that
+   picture rather than about a trend. 254 countries fit; the archive has
+   far fewer. */
+const countryList = dictionary(everyClosing.flatMap(e => e.countries || []), 254);
+const countryIndex = new Map(countryList.map((c, i) => [c, i]));
 
 /* Named rather than numbered, because a quarter of closers have no
    Wikidata id in the record and would otherwise collapse into one
@@ -316,6 +327,9 @@ everyClosing.forEach((e, i) => {
   }
   facts.writeUInt32LE(lo >>> 0, at + 16);
   facts.writeUInt32LE(hi >>> 0, at + 20);
+
+  const country = countryIndex.get((e.countries || [])[0]);
+  facts.writeUInt8(country === undefined ? 255 : country, at + 24);
 });
 
 await put(join(base, 'facts.bin'), facts);
@@ -325,6 +339,7 @@ await put(join(base, 'facts.json'), JSON.stringify({
   basis: Object.keys(BASIS),
   types,
   genres: genreList,
+  countries: countryList,
   closers: closers.map(c => closerNames.get(c) ?? c),
 }));
 
@@ -378,6 +393,7 @@ await put(join(OUT, 'manifest.json'), JSON.stringify({
       closer: { at: 12, type: 'uint32', sentinel: 4294967295 },
       genresLo: { at: 16, type: 'uint32' },
       genresHi: { at: 20, type: 'uint32' },
+      country: { at: 24, type: 'uint8', sentinel: 255, note: 'first named; full list is in the per-picture files' },
     },
   },
   /* Published so a client can say what it is showing and what it is not.
@@ -408,5 +424,5 @@ console.log(`  ${written.month} month files  known only to a month`);
 console.log(`  ${written.wrapped} year files    known only to a year`);
 console.log(`  ids.bin           ${kb(table.byteLength)} for ${ids.length} pictures`);
 console.log(`  facts.bin         ${kb(facts.length)} — ${everyClosing.length} rows of ${ROW} bytes`);
-console.log(`  facts.json        ${types.length} types, ${genreList.length} genres, ${closers.length} closers`);
+console.log(`  facts.json        ${types.length} types, ${genreList.length} genres, ${countryList.length} countries, ${closers.length} closers`);
 console.log(`  total             ${(written.bytes / 1048576).toFixed(1)} MB in ${OUT}/\n`);

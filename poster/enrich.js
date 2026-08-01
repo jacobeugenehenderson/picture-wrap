@@ -1,7 +1,7 @@
 /* ==========================================================================
    PICTURE WRAP — poster/enrich.js
 
-   Film-level facts, added to years already judged.
+   Film-level facts — genre and country — added to years already judged.
 
      node enrich.js --years 1890-1974
      node enrich.js --year 1924
@@ -21,17 +21,29 @@
 
    What it buys: "a long run of westerns closing in the mid-eighties" is
    the kind of question this archive should be able to answer, and it
-   cannot answer any question about genre at all today. The naive version
-   of that query is a trap — westerns rise from 0.4% of closings in the
-   1910s to 6.1% in the 2020s purely because of when westerns were MADE
-   against a corpus of 1910s one-reelers. Comparing within a release
-   cohort is the real question, and it needs the field stored.
+   could not answer any question about genre at all. The naive version of
+   that query is a trap — westerns rise from 0.4% of closings in the 1910s
+   to 6.1% in the 2020s purely because of when westerns were MADE against
+   a corpus of 1910s one-reelers. Comparing within a release cohort is the
+   real question, and it needs the field stored.
+
+   Country the same, and it is the more consequential of the two. The
+   corpus is overwhelmingly American and European, which the project says
+   in prose everywhere and could not demonstrate from its own data: the
+   old Vault carried a country and the work records never did. Every
+   claim about whose cinema this archive holds was, until now, a claim
+   about a field the archive did not have.
+
+   Countries come as demonyms — "American", "French" — because that is
+   what a page says and what the Vault has always stored. A co-production
+   carries several, and all of them are kept: reducing a picture to one
+   country is a choice a reader should be able to see us not making.
    ========================================================================== */
 
 import { readFile, writeFile, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { sparql, qid } from './lib.js';
+import { sparql, qid, pickDemonym } from './lib.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -65,12 +77,35 @@ if (!years.length) { console.error('Usage: node enrich.js --year 1924 | --years 
    a genre comes back, and the ones that are not our pictures fall out
    when we intersect with what the pass judged. Cheaper than the join. */
 const genreQuery = (year, from, to) => `
-SELECT ?film ?genreLabel WHERE {
+SELECT ?film ?value WHERE {
   ?film wdt:P577 ?rd ; wdt:P136 ?genre .
   FILTER(YEAR(?rd) = ${year})
-  ${from === 1 && to === 12 ? '' : `FILTER(MONTH(?rd) >= ${from} && MONTH(?rd) <= ${to})`}
-  ?genre rdfs:label ?genreLabel . FILTER(LANG(?genreLabel) = "en")
+  ${months(from, to)}
+  ?genre rdfs:label ?value . FILTER(LANG(?value) = "en")
 }`;
+
+/* Demonyms, all of them, grouped per country and reduced by the same
+   pickDemonym the site uses.
+
+   P1549 carries several forms — American and Americans, British and
+   Briton — so taking each row as it comes lists a country twice under two
+   spellings. The first run of this did exactly that: "Americans 670,
+   American 670". shared.js has solved it once already, preferring the
+   adjective and the singular, and a second rule here would be a second
+   rule to keep in step. */
+const countryQuery = (year, from, to) => `
+SELECT ?film ?country (GROUP_CONCAT(DISTINCT ?form; separator="|") AS ?forms)
+       (SAMPLE(?name) AS ?fallback) WHERE {
+  ?film wdt:P577 ?rd ; wdt:P495 ?country .
+  FILTER(YEAR(?rd) = ${year})
+  ${months(from, to)}
+  OPTIONAL { ?country wdt:P1549 ?form . FILTER(LANG(?form) = "en") }
+  OPTIONAL { ?country rdfs:label ?name . FILTER(LANG(?name) = "en") }
+} GROUP BY ?film ?country`;
+
+function months(from, to) {
+  return from === 1 && to === 12 ? '' : `FILTER(MONTH(?rd) >= ${from} && MONTH(?rd) <= ${to})`;
+}
 
 /* Some years are too big for one answer.
 
@@ -84,21 +119,38 @@ SELECT ?film ?genreLabel WHERE {
    bad half discarded a good one. It now splits recursively down to single
    months and keeps whatever any range returns. A year is lost only if some
    individual month is unanswerable, and then only that month. */
-async function genresFor(year, from = 1, to = 12) {
+async function facet(build, year, from = 1, to = 12) {
   try {
-    return await sparql(genreQuery(year, from, to));
+    return await sparql(build(year, from, to));
   } catch (err) {
     if (from === to) throw err;
     const mid = Math.floor((from + to) / 2);
     const parts = await Promise.allSettled([
-      genresFor(year, from, mid),
-      genresFor(year, mid + 1, to),
+      facet(build, year, from, mid),
+      facet(build, year, mid + 1, to),
     ]);
     const got = parts.filter(p => p.status === 'fulfilled').flatMap(p => p.value);
     if (!got.length && parts.every(p => p.status === 'rejected')) throw err;
     return got;
   }
 }
+
+/* film id -> the distinct values it carries */
+const collect = (rows, valueOf = r => r.value) => {
+  const out = new Map();
+  for (const r of rows) {
+    const id = qid(r.film);
+    const value = valueOf(r);
+    if (!out.has(id)) out.set(id, []);
+    if (value && !out.get(id).includes(value)) out.get(id).push(value);
+  }
+  return out;
+};
+
+/* One name per country: the demonym the site would print, or the
+   country's own name where it has no demonym — the Soviet Union has none,
+   and "Soviet" would be us inventing one. */
+const countryName = r => pickDemonym(r.forms) || r.fallback || null;
 
 for (const year of years) {
   const path = join(OUT, String(year), 'works.jsonl');
@@ -107,16 +159,15 @@ for (const year of years) {
     works = (await readFile(path, 'utf8')).trim().split('\n').filter(Boolean).map(l => JSON.parse(l));
   } catch { console.log(`${year} — no pass output, skipping`); continue; }
 
-  let rows;
-  try { rows = await genresFor(year); }
-  catch (err) { console.log(`${year} — query failed (${err.message}), skipping`); continue; }
+  let genreRows, countryRows;
+  try { genreRows = await facet(genreQuery, year); }
+  catch (err) { console.log(`${year} — genre query failed (${err.message}), skipping`); continue; }
+  try { countryRows = await facet(countryQuery, year); }
+  catch (err) { console.log(`${year} — country query failed (${err.message})`); countryRows = []; }
 
-  const genres = new Map();
-  for (const r of rows) {
-    const id = qid(r.film);
-    if (!genres.has(id)) genres.set(id, []);
-    if (!genres.get(id).includes(r.genreLabel)) genres.get(id).push(r.genreLabel);
-  }
+  const genres = collect(genreRows);
+  const countries = collect(countryRows, countryName);
+
   /* Wikidata uses several labels as BOTH a class and a genre — "silent
      film" is the common one, and "short film", "animated film" and
      "documentary film" do it too. A picture typed as a silent film very
@@ -133,19 +184,22 @@ for (const year of years) {
      type and its genres together, deduplicated — never the two summed. */
   const same = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
 
-  let touched = 0, deduped = 0;
+  let touched = 0, deduped = 0, placed = 0;
   const out = works.map(w => {
+    const c = countries.get(w.id) || w.countries || [];
+    if (c.length) placed++;
+
     const g = (genres.get(w.id) || []).filter(label => {
       if (w.type && same(label, w.type)) { deduped++; return false; }
       return true;
     });
-    if (!genres.has(w.id)) return { ...w, genres: w.genres ?? [] };
+    if (!genres.has(w.id)) return { ...w, genres: w.genres ?? [], countries: c };
     touched++;
-    return { ...w, genres: g };
+    return { ...w, genres: g, countries: c };
   });
 
   await writeFile(path + '.part', out.map(w => JSON.stringify(w)).join('\n') + '\n');
   await rename(path + '.part', path);
-  console.log(`${year}  ${touched} of ${works.length} pictures carry a genre` +
+  console.log(`${year}  ${touched} of ${works.length} carry a genre, ${placed} a country` +
     (deduped ? `  (${deduped} genre labels dropped as repeats of the type)` : ''));
 }

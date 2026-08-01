@@ -74,6 +74,7 @@ function factsTable(buffer, dict, format) {
     const coverage = view.getUint8(o + 10);
     const type = view.getUint8(o + 11);
     const closer = view.getUint32(o + 12, true);
+    const country = view.getUint8(o + 24);
     return {
       qid: `Q${view.getUint32(o, true)}`,
       releaseYear: view.getUint16(o + 4, true),
@@ -85,6 +86,7 @@ function factsTable(buffer, dict, format) {
       type: type === 255 ? null : dict.types[type],
       closer: closer === 0xFFFFFFFF ? null : closer,
       closerName: closer === 0xFFFFFFFF ? null : dict.closers[closer],
+      country: country === 255 ? null : dict.countries[country],
     };
   };
 
@@ -99,6 +101,7 @@ function factsTable(buffer, dict, format) {
     rows,
     genres: dict.genres,
     types: dict.types,
+    countries: dict.countries,
     row: at,
     hasGenre,
 
