@@ -94,7 +94,12 @@ const row = w => ({
   wrappedMonth: w.wrappedMonth,
   wrappedYear: w.wrappedYear,
   dateBasis: w.dateBasis,
-  last: w.last ? { name: w.last.name, died: w.last.died } : null,
+  /* `onScreen` travels with the closer so a reader can ask for the
+     pictures whose last maker was in front of the camera, or behind it.
+     null where neither database said which. */
+  last: w.last
+    ? { name: w.last.name, died: w.last.died, onScreen: w.last.onScreen ?? null }
+    : null,
   type: w.type,
   genres: w.genres?.length ? w.genres : undefined,
   makers: w.makerCount,

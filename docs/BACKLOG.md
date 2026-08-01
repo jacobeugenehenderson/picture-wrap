@@ -416,3 +416,62 @@ in the 1930s or 1950s), but the correction is roughly a halving of the
 effective sample, and for anything reaching back before 1920 it is a
 division by seven.
 
+---
+
+## Two graphics the archive can support, and what each is actually about
+
+*Noted 1 August 2026.*
+
+### "Who counted", by release decade
+
+The most useful graphic in the project, because it is the denominator
+behind every other claim it makes. Share of pictures whose Wikidata record
+carries each craft, measured across the corpus pass:
+
+    decade  median makers   cast   director   writer   camera   music   editor
+    1890s        1           19%      96%        7%      20%      1%       1%
+    1910s        2           54%      92%       26%      13%      1%       1%
+    1930s        5           67%      98%       50%      44%     42%      21%
+    1950s        6           69%      94%       53%      45%     55%      27%
+    1980s        4           66%      93%       50%      35%     47%      23%
+
+Read it as a picture of cataloguing rather than of film-making. A director
+is recorded for nine pictures in ten in every era — the record has always
+known who directed. Everything else arrives late and unevenly: composers
+appear at 1% before 1920 and 55% by the 1950s; editors are 1% until the
+1920s; costume design is *under 1% in every decade of the corpus* and is
+effectively absent as a craft.
+
+This is the honest form of the coverage caveat in METHOD §3, and it
+explains several results that otherwise look like history: the U-shaped
+share of closings resting on one or two names, the U-shaped split between
+on-screen and behind-the-camera closers, and the apparent early dominance
+of producers among the people who close pictures. All three track this
+table rather than anything about cinema.
+
+It also carries the project's sharpest single fact about itself: **a
+picture from the 1890s has a median of one recorded maker.** When that
+person dies the picture "wraps", and what has ended is a catalogue entry.
+
+### "One death, one body of work"
+
+Within a genre and a release decade, the largest share a single person's
+death closed:
+
+    65%   91/139    1900s fantasy       Georges Méliès, director (d. 1938)
+    32%   87/276    1910s documentary   William N. Selig, producer (d. 1948)
+    30%   37/122    1930s family        Mae Questel, voice (d. 1998)
+    29%   57/196    1900s documentary   Cecil Hepworth, cinematography (d. 1953)
+    20%   16/81     1930s cartoon       Dick Lundy (d. 1990)
+
+Two different phenomena share this shape and a graphic should not merge
+them. Méliès is largely the first table showing through: he is the only
+credited name on most of his own pictures, so his death closes them by
+construction. Mae Questel is the real thing — 1930s cartoons carry full
+credit lists, she voiced hundreds of them, and she outlived those casts by
+decades. A whole genre of a decade held open until 1998 by one performer.
+
+Everyone in this view is dead, which is why it can be built at all: the
+living equivalent is the ranked list refused under *The door held open*.
+The distinguishing test is not the metric but the tense.
+

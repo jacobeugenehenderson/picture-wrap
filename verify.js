@@ -270,6 +270,13 @@ export function wrapDate(judged, releaseYear) {
       name: last.person.name,
       died: last.died,
       source: last.person.source || null,
+      /* In front of the camera or behind it. Derived from the credit
+         where Wikidata supplied it and from TMDB's own billing
+         otherwise; null when neither said. */
+      onScreen: last.person.onScreen
+        ?? (last.person.roles?.length
+          ? last.person.roles.some(r => r === 'Cast' || r === 'Voice')
+          : null),
     },
   };
 }
@@ -712,6 +719,14 @@ export async function survivors({ film, tmdbId, media = 'movie', year, sparql, t
           name: p.name,
           tmdbId: p.id,
           wikidataId: p.wdEntity,
+          /* Kept for everyone judged, not only for survivors. Whether the
+             last of a picture's makers was in front of the camera or
+             behind it separates the two ways of being last — the child on
+             a crowded set, and the producer who was the whole of a
+             one-reeler's record — and it was being computed and thrown
+             away for the 28% of closers TMDB supplies. */
+          role: billing.get(p.id)?.role ?? null,
+          onScreen: billing.get(p.id)?.onScreen ?? null,
           status: buried.has(p.id) ? 'dead' : statusOf(p, releaseYear),
           buriedByName: buried.get(p.id) ?? false,
           /* Recorded so a stored verdict can be re-decided later without
