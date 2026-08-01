@@ -58,26 +58,74 @@ export const MAX_LISTED = 5;
 
 /* --- query ------------------------------------------------------------- */
 
+/* How many queries this process will ever have in flight at once.
+
+   Wikimedia asks clients to keep to a handful of parallel queries and to
+   identify themselves, and the User-Agent above does the second part.
+   This does the first part on purpose rather than by accident: until now
+   the number was whatever `pass.js --concurrency` happened to be, which
+   meant politeness was a side effect of a flag nobody thought of as a
+   politeness setting. A hundred-hour run against a service that is free,
+   donated, and shared with everybody else should not depend on that.
+
+   Four, against their guidance of about five, because we are the ones who
+   want something here. */
+const MAX_PARALLEL_QUERIES = 4;
+
+let inFlight = 0;
+const waiting = [];
+
+const takeSlot = () => (inFlight < MAX_PARALLEL_QUERIES
+  ? (inFlight++, Promise.resolve())
+  : new Promise(resolve => waiting.push(resolve)));
+
+const freeSlot = () => {
+  const next = waiting.shift();
+  if (next) next(); else inFlight--;
+};
+
+/* When the service says how long to wait, wait that long.
+
+   `Retry-After` is either seconds or an HTTP date, and ignoring it in
+   favour of a backoff we invented is how a client turns a polite refusal
+   into a hammering. Capped at two minutes so a bad header cannot park the
+   run for an hour. */
+const patience = (res, attempt) => {
+  const header = res.headers.get('retry-after');
+  if (header) {
+    const seconds = /^\d+$/.test(header.trim())
+      ? Number(header)
+      : (Date.parse(header) - Date.now()) / 1000;
+    if (Number.isFinite(seconds) && seconds > 0) return Math.min(seconds, 120) * 1000;
+  }
+  return attempt * 5000;
+};
+
 export async function sparql(query, { retries = 3 } = {}) {
-  for (let attempt = 1; ; attempt++) {
-    const res = await fetch(WDQS + '?query=' + encodeURIComponent(query), {
-      headers: { Accept: 'application/sparql-results+json', 'User-Agent': AGENT },
-    });
-
-    if (res.ok) {
-      const json = await res.json();
-      return json.results.bindings.map(row => {
-        const out = {};
-        for (const k in row) out[k] = row[k].value;
-        return out;
+  await takeSlot();
+  try {
+    for (let attempt = 1; ; attempt++) {
+      const res = await fetch(WDQS + '?query=' + encodeURIComponent(query), {
+        headers: { Accept: 'application/sparql-results+json', 'User-Agent': AGENT },
       });
-    }
 
-    /* 429 and 503 are the query service asking for patience. */
-    if (attempt > retries || ![429, 500, 502, 503, 504].includes(res.status)) {
-      throw new Error(`WDQS ${res.status} after ${attempt} attempt(s)`);
+      if (res.ok) {
+        const json = await res.json();
+        return json.results.bindings.map(row => {
+          const out = {};
+          for (const k in row) out[k] = row[k].value;
+          return out;
+        });
+      }
+
+      /* 429 and 503 are the query service asking for patience. */
+      if (attempt > retries || ![429, 500, 502, 503, 504].includes(res.status)) {
+        throw new Error(`WDQS ${res.status} after ${attempt} attempt(s)`);
+      }
+      await sleep(patience(res, attempt));
     }
-    await sleep(attempt * 5000);
+  } finally {
+    freeSlot();
   }
 }
 

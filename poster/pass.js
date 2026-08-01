@@ -31,7 +31,7 @@
    its own directory. The Vault is untouched.
    ========================================================================== */
 
-import { writeFile, readFile, mkdir, appendFile, rename } from 'node:fs/promises';
+import { writeFile, mkdir, appendFile, rename } from 'node:fs/promises';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { createGzip } from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
@@ -262,11 +262,12 @@ async function judge(work, creditRows) {
 
 const dir = join(OUT, String(YEAR));
 await mkdir(dir, { recursive: true });
+await mkdir(join(OUT, 'people'), { recursive: true });
 
 const worksPath    = join(dir, 'works.jsonl');
 const evidencePath = join(dir, 'evidence.jsonl');
 const failuresPath = join(dir, 'failures.jsonl');
-const peoplePath   = join(OUT, 'people.jsonl');
+const peoplePath   = join(OUT, 'people', `${YEAR}.jsonl`);
 
 for (const path of [worksPath, evidencePath, failuresPath]) await writeFile(path, '');
 
@@ -303,23 +304,20 @@ for (let i = 0; i < works.length; i += 20) {
   if (i && i % 200 === 0) console.log(`  credits … ${i}/${works.length}`);
 }
 
-/* Merged across every year that has ever run, not just this one.
+/* One file per year, folded together on demand.
 
-   people.jsonl is the asset the whole exercise is for: 63% of everyone
-   judged is dead, and dead is final, so a person written down once never
-   has to be asked about again. Starting from an empty map and writing the
-   file at the end made each year clobber the last — a twenty-four-year
-   block would have finished holding only 1913, and nobody would have
-   noticed until the second block was slow for no reason. */
+   The person table is the asset the whole exercise is for: 63% of
+   everyone judged is dead, dead is final, and a person written down once
+   never has to be asked about again. But it was being held as one merged
+   file that every year read whole and rewrote whole — fine at 13,000
+   people and a 240 MB rewrite per year by the 1970s, for a file that
+   barely changes.
+
+   So each year writes only what it learned. `rebuild.js --people` folds
+   them into pass/people.jsonl whenever the merged view is wanted, which
+   is the same bargain as the rest of this design: keep the parts, derive
+   the whole, and never pay for the whole while doing the parts. */
 const people = new Map();
-try {
-  for (const line of (await readFile(peoplePath, 'utf8')).split('\n')) {
-    if (!line.trim()) continue;
-    const prior = JSON.parse(line);
-    people.set(prior.key, prior);
-  }
-  if (people.size) console.log(`  ${people.size} people already known from earlier years\n`);
-} catch { /* first year of a block: nothing to carry forward */ }
 
 const tally = { closed: 0, open: 0, unchecked: 0, unverified: 0, dated: 0, undated: 0 };
 let done = 0;

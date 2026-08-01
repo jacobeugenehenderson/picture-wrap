@@ -27,7 +27,7 @@
    is a rendering choice somebody makes later in five minutes.
    ========================================================================== */
 
-import { readFile, writeFile, rename } from 'node:fs/promises';
+import { readFile, writeFile, rename, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { wrapDate } from '../verify.js';
@@ -40,6 +40,7 @@ const value = (flag, fallback) => {
 
 const OUT = value('--out', process.env.PW_PASS || 'pass');
 const single = Number(value('--year', 0));
+const foldPeople = args.includes('--people');
 const range = value('--years', null);
 
 const years = single ? [single]
@@ -49,7 +50,56 @@ const years = single ? [single]
     })()
   : [];
 
-if (!years.length) { console.error('Usage: node rebuild.js --year 1924 | --years 1890-1913'); process.exit(1); }
+if (!years.length && !foldPeople) {
+  console.error('Usage: node rebuild.js --year 1924 | --years 1890-1913 | --people');
+  process.exit(1);
+}
+
+/* Every year's people, folded into one file.
+
+   The pass writes pass/people/<year>.jsonl and nothing else, so a year
+   costs what a year learned rather than what the whole corpus knows. This
+   is the merged view, built when somebody wants it: last writer wins per
+   person, except that a record carrying a death always beats one that
+   does not — a death is the one fact about a person that cannot be
+   superseded. */
+if (foldPeople) {
+  const dir = join(OUT, 'people');
+  let files = [];
+  try { files = (await readdir(dir)).filter(f => f.endsWith('.jsonl')).sort(); }
+  catch { console.error(`no ${dir} to fold`); process.exit(1); }
+
+  const merged = new Map();
+  /* An earlier merged file, from before the pass wrote per-year ones. */
+  try {
+    for (const line of (await readFile(join(OUT, 'people.jsonl'), 'utf8')).split('\n')) {
+      if (line.trim()) { const p = JSON.parse(line); merged.set(p.key, p); }
+    }
+  } catch { /* none yet */ }
+
+  for (const file of files) {
+    for (const line of (await readFile(join(dir, file), 'utf8')).split('\n')) {
+      if (!line.trim()) continue;
+      const person = JSON.parse(line);
+      const prior = merged.get(person.key);
+      const priorKnowsDeath = prior?.wd?.died || prior?.tmdb?.died;
+      const nowKnowsDeath = person.wd?.died || person.tmdb?.died;
+      if (!prior || nowKnowsDeath || !priorKnowsDeath) merged.set(person.key, person);
+    }
+  }
+
+  const out = join(OUT, 'people.jsonl');
+  await writeFile(out + '.part',
+    [...merged.values()].sort((a, b) => a.key.localeCompare(b.key))
+      .map(p => JSON.stringify(p)).join('\n') + '\n');
+  await rename(out + '.part', out);
+
+  const dead = [...merged.values()].filter(p => p.wd?.died || p.tmdb?.died).length;
+  console.log(`${files.length} year files folded → ${merged.size} people in ${out}`);
+  console.log(`  ${dead} carry a death date and never need asking about again ` +
+    `(${Math.round(100 * dead / merged.size)}%)`);
+  if (!years.length) process.exit(0);
+}
 
 const lines = async path =>
   (await readFile(path, 'utf8')).trim().split('\n').filter(Boolean).map(l => JSON.parse(l));
