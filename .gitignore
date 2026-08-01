@@ -49,3 +49,11 @@ node_modules/
 
 # Rotating queue snapshots, taken while a long backfill runs.
 poster/snapshots/
+
+# A pass's raw output. One year is 3.6 MB of evidence and the corpus is
+# 127 of them, so this is roughly half a gigabyte of JSONL — the working
+# out, not the work. Where it should finally live is undecided: the whole
+# argument for keeping it is that a rule change becomes a re-decision
+# instead of a re-fetch, and that argument dies if it only ever exists on
+# one laptop. Until that is settled it stays out of the history.
+pass/

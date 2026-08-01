@@ -80,6 +80,42 @@ export const KINDS = [
   'Q202866',     // animated film
 ];
 
+/* What the archive is allowed to consider a picture, as Wikidata's own
+   P31 values.
+
+   KINDS above answers a different question — what search should offer —
+   and using it, or Q11424 alone, to enumerate a year is how the corpus
+   went wrong. The backfill has only ever asked for Q11424, and Wikidata
+   does not file the silent era under it:
+
+       1912   short film   2,326        1924   film          1,057
+              film           597               short film      102
+              silent film     30               silent film      19
+              animated short   5               animated short   20
+
+   Four fifths of 1912 was invisible. Not a judgement about one-reelers —
+   the pipeline never saw them, so nothing about them was ever judged.
+
+   Only moving pictures. Wikidata files albums, sheet music, pamphlets and
+   video games against these same credit properties — a composer credit is
+   a credit — and none of them have a cast to outlive. Television series
+   episodes are excluded too: this project's unit is the work, and 1,911
+   episodes in 2015 alone would make it something else. */
+export const WORK_CLASSES = [
+  'Q11424',      // film
+  'Q24862',      // short film
+  'Q226730',     // silent film
+  'Q202866',     // animated film
+  'Q17517379',   // animated short film
+  'Q20650540',   // anime film
+  'Q7751682',    // serial film
+  'Q506240',     // television film
+  'Q7697093',    // television play
+  'Q1259759',    // miniseries
+  'Q5398426',    // television series
+  'Q117467246',  // animated television series
+];
+
 /* Occupations worth searching. Generous on purpose: Wikidata carries a
    dozen overlapping occupation items and tagging is inconsistent between
    them. Catherine Deneuve is "film actor" but NOT "actor", so a filter

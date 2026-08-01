@@ -140,6 +140,39 @@ const day = iso => {
    an assertion — it says this person is gone and nobody recorded when. */
 const asserted = value => value != null && String(value) !== '';
 
+/* A Wikidata query's raw columns, turned into the record `statusOf` reads.
+
+   Exported because callers that judge Wikidata's own credits — the pass,
+   and anything else that holds dates before this file sees them — were
+   otherwise going to re-implement the three lines above: which slice is a
+   date, what an undated death means, where precision lives. Those are not
+   parsing details, they are the difference between a verdict and an
+   accident, and this file exists so there is one copy of them.
+
+   Two precisions, and they are not interchangeable. The first pilot run
+   dated a wrap to 2000-01-01 on Mary Parker, whose BIRTH is recorded to
+   the day and whose death is a bare year — because a single `precision`
+   field was written by the birth and then read by the death. A record
+   with one precision on it will always end up answering for the wrong
+   date eventually. */
+export const fromWikidata = (born, precision, died, diedPrecision) => ({
+  born: day(born),
+  precision: Number(precision ?? 0),
+  died: day(died),
+  diedPrecision: Number(diedPrecision ?? 0),
+  deathAsserted: asserted(died),
+});
+
+/* Is a death date solid enough to date a wrap with?
+
+   Vetoing on a shaky record is safe — it leaves a picture open. Dating on
+   one is a claim the whole page is built around, and 2000-01-01 is a year
+   wearing a date's clothes. Wikidata publishes precision, so we ask; TMDB
+   does not, so the 1 January ending is the only signal there. */
+export const datesAWrap = person =>
+  Boolean((person?.wd?.died && person.wd.diedPrecision >= WD_PRECISION_DAY)
+    || (person?.tmdb?.died && toTheDay(person.tmdb.died)));
+
 /* The year either database gives, preferring Wikidata where both do. */
 const bornYear = person =>
   Number(String(person?.wd?.born || person?.tmdb?.born || '').slice(0, 4)) || 0;
@@ -407,14 +440,24 @@ export async function survivors({ film, tmdbId, media = 'movie', year, sparql, t
        The birth date comes through the full statement path rather than
        `wdt:`, because that is the only way to reach its precision. */
     const rows = await sparql(`
-      SELECT ?tmdb ?p ?pLabel ?dob ?prec ?dod ?img WHERE {
+      SELECT ?tmdb ?p ?pLabel ?dob ?prec ?dod ?deathPrec ?img WHERE {
         VALUES ?tmdb { ${missing.map(i => `"${i}"`).join(' ')} }
         ?p wdt:P4985 ?tmdb .
         OPTIONAL {
           ?p p:P569/psv:P569 ?birth .
           ?birth wikibase:timeValue ?dob ; wikibase:timePrecision ?prec .
         }
+        /* Both paths for the death, and both are needed. The truthy one
+           still answers "is there a death at all", including the undated
+           assertion that has no time value to reach. The statement path
+           answers "how precisely is it known", which is what may date a
+           wrap. Asking only the second would read an undated death as no
+           death. */
         OPTIONAL { ?p wdt:P570 ?dod }
+        OPTIONAL {
+          ?p p:P570/psv:P570 ?death .
+          ?death wikibase:timePrecision ?deathPrec .
+        }
         OPTIONAL { ?p wdt:P18 ?img }
         SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
       }`).catch(() => []);
@@ -465,6 +508,7 @@ export async function survivors({ film, tmdbId, media = 'movie', year, sparql, t
         born: day(r.dob),
         precision: Number(r.prec ?? 0),
         died: day(r.dod),
+        diedPrecision: Number(r.deathPrec ?? 0),
         deathAsserted: asserted(r.dod),
       });
     }
@@ -537,14 +581,29 @@ export async function survivors({ film, tmdbId, media = 'movie', year, sparql, t
       ? credible.map(p => ({
           name: p.name,
           tmdbId: p.id,
+          wikidataId: p.wdEntity,
           status: buried.has(p.id) ? 'dead' : statusOf(p, releaseYear),
           buriedByName: buried.has(p.id),
-          wikidata: p.wd ? { born: p.wd.born, precision: p.wd.precision, died: p.wd.died } : null,
+          /* Recorded so a stored verdict can be re-decided later without
+             asking anybody again. Precision travels with the date: a
+             later pass changing a threshold needs to know whether a year
+             was a year or a placeholder. */
+          datesAWrap: datesAWrap(p),
+          wikidata: p.wd
+            ? { born: p.wd.born, precision: p.wd.precision, died: p.wd.died,
+                deathAsserted: p.wd.deathAsserted }
+            : null,
           tmdb: p.tmdb ? { born: p.tmdb.born, died: p.tmdb.died } : null,
         }))
       : undefined;
 
-    return { alive, unknown, ok: true, ...(detail ? { working } : {}) };
+    /* How many people TMDB credits at all — the denominator of coverage,
+       free here because the credits list is already in hand, and needing
+       a second fetch of the same endpoint anywhere else. */
+    return {
+      alive, unknown, ok: true, tmdbCredited: everyone.length,
+      ...(detail ? { working } : {}),
+    };
   } catch {
     return { alive: [], unknown: 0, ok: false };
   }
