@@ -64,11 +64,11 @@ if (!years.length) { console.error('Usage: node enrich.js --year 1924 | --years 
    No class filter either. Anything Wikidata dates to this year and gives
    a genre comes back, and the ones that are not our pictures fall out
    when we intersect with what the pass judged. Cheaper than the join. */
-const genreQuery = (year, half) => `
+const genreQuery = (year, from, to) => `
 SELECT ?film ?genreLabel WHERE {
   ?film wdt:P577 ?rd ; wdt:P136 ?genre .
   FILTER(YEAR(?rd) = ${year})
-  ${half === null ? '' : `FILTER(MONTH(?rd) ${half ? '>' : '<='} 6)`}
+  ${from === 1 && to === 12 ? '' : `FILTER(MONTH(?rd) >= ${from} && MONTH(?rd) <= ${to})`}
   ?genre rdfs:label ?genreLabel . FILTER(LANG(?genreLabel) = "en")
 }`;
 
@@ -76,17 +76,27 @@ SELECT ?film ?genreLabel WHERE {
 
    1938 came back as 472 KB of truncated JSON with a thread dump on the
    end, four times running — the query service had begun streaming and
-   then died. Splitting the year in half by release month asks for less
-   at once, which is the only lever a client has over a server-side
-   timeout, and it is free for every year that never needed it. */
-async function genresFor(year) {
-  try { return await sparql(genreQuery(year, null)); }
-  catch {
-    const halves = await Promise.all([
-      sparql(genreQuery(year, false)),
-      sparql(genreQuery(year, true)),
+   then died. Asking for less at once is the only lever a client has over
+   a server-side timeout.
+
+   Halving was not enough: three more years failed because one half was
+   still too large, and the pair was fetched with Promise.all, so a single
+   bad half discarded a good one. It now splits recursively down to single
+   months and keeps whatever any range returns. A year is lost only if some
+   individual month is unanswerable, and then only that month. */
+async function genresFor(year, from = 1, to = 12) {
+  try {
+    return await sparql(genreQuery(year, from, to));
+  } catch (err) {
+    if (from === to) throw err;
+    const mid = Math.floor((from + to) / 2);
+    const parts = await Promise.allSettled([
+      genresFor(year, from, mid),
+      genresFor(year, mid + 1, to),
     ]);
-    return halves.flat();
+    const got = parts.filter(p => p.status === 'fulfilled').flatMap(p => p.value);
+    if (!got.length && parts.every(p => p.status === 'rejected')) throw err;
+    return got;
   }
 }
 
