@@ -110,12 +110,38 @@ export async function sparql(query, { retries = 3 } = {}) {
       });
 
       if (res.ok) {
-        const json = await res.json();
-        return json.results.bindings.map(row => {
-          const out = {};
-          for (const k in row) out[k] = row[k].value;
-          return out;
-        });
+        /* A 200 that isn't.
+
+           The query service can answer 200 with a body that stops in the
+           middle of a JSON object and has a Java stack trace stapled to
+           the end of it — the query died server-side after it had already
+           begun streaming results. 1938's genres came back exactly like
+           that: 504,845 bytes, truncated at "mystery film", then
+           "SPARQL-QUERY: queryStr=..." and a thread dump.
+
+           A truncated object never parses, so this is caught rather than
+           silently believed — but only because it is checked. Treat it as
+           the transient server failure it is and retry, rather than
+           throwing at the caller, which is what turned one bad year into
+           "query failed, skipping". */
+        const text = await res.text();
+        let json = null;
+        try { json = JSON.parse(text); } catch { /* handled below */ }
+
+        if (json) {
+          return json.results.bindings.map(row => {
+            const out = {};
+            for (const k in row) out[k] = row[k].value;
+            return out;
+          });
+        }
+
+        if (attempt > retries) {
+          throw new Error(`WDQS returned an unparseable body (${text.length} bytes, ` +
+            `likely truncated) after ${attempt} attempt(s)`);
+        }
+        await sleep(attempt * 5000);
+        continue;
       }
 
       /* 429 and 503 are the query service asking for patience. */

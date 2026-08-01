@@ -196,11 +196,29 @@ export const datesAWrap = person =>
             picture wrapped that year, on a day nobody wrote down.
      none   no death recorded anywhere. Closed by arithmetic, and it has
             no place on a timeline at all. */
-export function wrapDate(judged) {
+export function wrapDate(judged, releaseYear) {
+  /* A picture cannot have wrapped before it existed.
+
+     Pure arithmetic, no chosen number: whatever a credit means, the last
+     person who made a picture did not die before it was released. It
+     catches three different things at once — source authors and
+     pre-existing composers whom Wikidata credits as writers and music
+     (Edgar Allan Poe dating The Murders in the Rue Morgue to 1849, Franz
+     Schubert dating a 1931 picture to 1828), people who appear only as
+     archival footage (Frederik VIII of Denmark on a 1937 film), and
+     plain bad dates.
+
+     Note what it does NOT do: exclude them from the picture. Poe is
+     credited and the record should say so. He simply cannot be the last
+     of its makers. Dying shortly before release is ordinary and stays
+     ordinary — an actor who does not live to the premiere still dates
+     the wrap if nobody outlives them. */
+  const floor = Number(String(releaseYear || '').slice(0, 4)) || 0;
+
   const dated = judged
     .filter(p => p.status === 'dead' && !p.impossible)
     .map(p => ({ person: p, died: p.wd?.died || p.tmdb?.died }))
-    .filter(d => d.died)
+    .filter(d => d.died && (!floor || Number(d.died.slice(0, 4)) >= floor))
     .sort((a, b) => b.died.localeCompare(a.died));
 
   if (!dated.length) {
@@ -589,7 +607,12 @@ export async function survivors({ film, tmdbId, media = 'movie', year, sparql, t
       if (personCache.has(id)) return [id, personCache.get(id)];
       const p = await tmdb(`/person/${encodeURIComponent(id)}`);
       const rec = p
-        ? { name: p.name || null, born: p.birthday || null, died: p.deathday || null }
+        /* Through the same normaliser Wikidata's dates go through. TMDB
+           publishes whatever an editor typed, and "7-9-1980" travelled
+           all the way into a wrap date on El hombre de acero before
+           anything looked at it. A date that is not a date is not a
+           date, whichever database handed it over. */
+        ? { name: p.name || null, born: day(p.birthday), died: day(p.deathday) }
         : null;
       personCache.set(id, rec);
       return [id, rec];

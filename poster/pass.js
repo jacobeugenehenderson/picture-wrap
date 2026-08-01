@@ -217,7 +217,7 @@ async function judge(work, creditRows) {
   }
 
   if (!tmdbId) {
-    const dated = wrapDate(recorded);
+    const dated = wrapDate(recorded, releaseYear);
     return {
       verdict: 'closed', reason: 'wikidata-only', tested: false, unverified: true,
       recorded, resolved: [], unknownCount: null, tmdbCredited: null,
@@ -256,7 +256,7 @@ async function judge(work, creditRows) {
   const alive = found.alive.length > 0;
   const dated = alive
     ? { wrapped: null, wrappedYear: null, dateBasis: null, last: null }
-    : wrapDate([...recorded, ...resolved]);
+    : wrapDate([...recorded, ...resolved], releaseYear);
 
   return {
     verdict: alive ? 'open' : 'closed',

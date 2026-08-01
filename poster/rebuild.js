@@ -131,7 +131,7 @@ for (const year of years) {
       ...p,
       impossible: p.impossible ?? impossible(p, record.releaseYear),
     }));
-    const dated = wrapDate(judged);
+    const dated = wrapDate(judged, record.releaseYear);
     tally[dated.dateBasis]++;
     if ((work.wrapped ?? null) !== (dated.wrapped ?? null)) tally.changed++;
 

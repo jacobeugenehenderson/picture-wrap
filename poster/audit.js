@@ -86,7 +86,7 @@ function decide(work, judged, ceiling) {
 
   /* The same wrapDate() the pass and the rebuild use. An audit that
      re-implements what it is auditing tests only its own opinion. */
-  return { verdict: 'closed', wrapped: wrapDate(decided).wrapped ?? null };
+  return { verdict: 'closed', wrapped: wrapDate(decided, releaseYear).wrapped ?? null };
 }
 
 /* --- 1 and 2 ----------------------------------------------------------- */
@@ -117,7 +117,7 @@ for (const work of works) {
 
 /* --- 3 ----------------------------------------------------------------- */
 
-let undatedClosed = 0, orphanDate = 0, unknownMismatch = 0, imprecise = 0;
+let undatedClosed = 0, orphanDate = 0, unknownMismatch = 0, imprecise = 0, beforeRelease = 0;
 for (const work of works) {
   const record = evidence.get(work.id);
   if (!record) continue;
@@ -131,6 +131,11 @@ for (const work of works) {
        So ask the evidence instead: whoever this date belongs to must have
        a death Wikidata records to the day, or a TMDB date that isn't the
        1 January a year-only record collapses to. */
+    /* A picture cannot wrap before it exists. Fifty-three did, on
+       source authors, archival footage and one date TMDB spelled
+       "7-9-1980". */
+    if (Number(work.wrapped.slice(0, 4)) < (Number(work.year) || 0)) beforeRelease++;
+
     const owner = record.judged.find(p => (p.wd?.died || p.tmdb?.died) === work.wrapped);
     if (!owner) orphanDate++;
     else if (!owner.datesAWrap
@@ -163,6 +168,7 @@ if (CEILING) {
 
   console.log('\n3. INTEGRITY');
   console.log(mark(imprecise === 0, 'every wrap date rests on a death recorded to the day', `${imprecise} wrap dates rest on a year, not a day`));
+  console.log(mark(beforeRelease === 0, 'no picture wraps before it was released', `${beforeRelease} wrap before release`));
   console.log(mark(orphanDate === 0, 'every wrap date belongs to someone in the evidence', `${orphanDate} wrap dates belong to nobody recorded`));
   console.log(mark(unknownMismatch === 0, 'unknown counts match the unknowns listed', `${unknownMismatch} unknown counts disagree`));
   console.log(`   note  ${undatedClosed} closed pictures have no day-precise death, so they close undated\n`);
