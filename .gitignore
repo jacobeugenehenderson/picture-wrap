@@ -57,3 +57,8 @@ poster/snapshots/
 # instead of a re-fetch, and that argument dies if it only ever exists on
 # one laptop. Until that is settled it stays out of the history.
 pass/
+
+# Build output. Derived from pass/, republished by poster/publish.js
+# whenever the corpus changes, and content-versioned so it never needs
+# invalidating. Nothing here belongs in the history.
+dist/
