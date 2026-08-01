@@ -32,7 +32,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { statusOf } from '../verify.js';
+import { statusOf, wrapDate } from '../verify.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -72,12 +72,9 @@ function decide(work, judged, ceiling) {
   const decided = judged.map(p => ({ ...p, status: status(p) }));
   if (decided.some(p => p.status === 'alive')) return { verdict: 'open', wrapped: null };
 
-  const datable = decided
-    .filter(p => p.status === 'dead' && p.datesAWrap)
-    .map(p => ({ ...p, died: p.wd?.died || p.tmdb?.died }))
-    .sort((a, b) => (b.died || '').localeCompare(a.died || ''));
-
-  return { verdict: 'closed', wrapped: datable[0]?.died ?? null };
+  /* The same wrapDate() the pass and the rebuild use. An audit that
+     re-implements what it is auditing tests only its own opinion. */
+  return { verdict: 'closed', wrapped: wrapDate(decided).wrapped ?? null };
 }
 
 /* --- 1 and 2 ----------------------------------------------------------- */

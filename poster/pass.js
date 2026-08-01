@@ -40,7 +40,7 @@ import { execSync } from 'node:child_process';
 
 import { sparql, qid, sleep } from './lib.js';
 import { WORK_CLASSES, IN_LIST, VALUES, CREDITS, LANGS } from '../shared.js';
-import { survivors, statusOf, fromWikidata, datesAWrap } from '../verify.js';
+import { survivors, statusOf, fromWikidata, datesAWrap, wrapDate } from '../verify.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -185,33 +185,6 @@ function judgeRecorded(rows, releaseYear) {
   }));
 }
 
-/* The wrap date, and who it belongs to.
-
-   Whoever died last, from EITHER database — which is the fix this pass
-   exists to bake in. The archive dates every closing from Wikidata's
-   credits alone, and one entry in five is therefore too early: Fine
-   Manners is filed 1984-01-11 while Roland Drew, whom TMDB credits, died
-   in 1988.
-
-   Only day-precise deaths may date a wrap. A picture whose last death is
-   a 1 January placeholder closes without a date rather than with a false
-   one — the verdict is not in doubt, only the day. */
-function dateTheWrap(judged) {
-  const datable = judged
-    .filter(p => p.status === 'dead' && p.datesAWrap)
-    .map(p => ({ ...p, died: p.wd?.died || p.tmdb?.died }))
-    .sort((a, b) => (b.died || '').localeCompare(a.died || ''));
-
-  const last = datable[0] || null;
-  return {
-    wrapped: last ? last.died : null,
-    last: last
-      ? { wikidataId: last.wikidataId || null, tmdbId: last.tmdbId || null,
-          name: last.name, died: last.died, source: last.source }
-      : null,
-  };
-}
-
 async function judge(work, creditRows) {
   const releaseYear = Number(work.year) || YEAR;
   const recorded = judgeRecorded(creditRows, releaseYear);
@@ -227,12 +200,12 @@ async function judge(work, creditRows) {
     return {
       verdict: 'open', reason: 'wikidata-living', tested: false,
       recorded, resolved: [], unknownCount: null, tmdbCredited: null,
-      wrapped: null, last: null, ok: true,
+      wrapped: null, wrappedYear: null, dateBasis: null, last: null, ok: true,
     };
   }
 
   if (!tmdbId) {
-    const dated = dateTheWrap(recorded);
+    const dated = wrapDate(recorded);
     return {
       verdict: 'closed', reason: 'wikidata-only', tested: false, unverified: true,
       recorded, resolved: [], unknownCount: null, tmdbCredited: null,
@@ -249,7 +222,7 @@ async function judge(work, creditRows) {
     return {
       verdict: 'unchecked', reason: 'tmdb-no-answer', tested: true,
       recorded, resolved: [], unknownCount: null, tmdbCredited: null,
-      wrapped: null, last: null, ok: false,
+      wrapped: null, wrappedYear: null, dateBasis: null, last: null, ok: false,
     };
   }
 
@@ -269,7 +242,9 @@ async function judge(work, creditRows) {
   }));
 
   const alive = found.alive.length > 0;
-  const dated = alive ? { wrapped: null, last: null } : dateTheWrap([...recorded, ...resolved]);
+  const dated = alive
+    ? { wrapped: null, wrappedYear: null, dateBasis: null, last: null }
+    : wrapDate([...recorded, ...resolved]);
 
   return {
     verdict: alive ? 'open' : 'closed',
@@ -367,7 +342,8 @@ for (let i = 0; i < works.length; i += CONCURRENCY) {
       tmdbId: r.work.tv || r.work.tmdb || null, media: r.work.tv ? 'tv' : 'movie',
       verdict: r.verdict, reason: r.reason, tested: r.tested ?? false,
       unverified: r.unverified ?? false,
-      wrapped: r.wrapped ?? null, last: r.last ?? null,
+      wrapped: r.wrapped ?? null, wrappedYear: r.wrappedYear ?? null,
+      dateBasis: r.dateBasis ?? null, last: r.last ?? null,
       makerCount: (r.recorded || []).length,
       tmdbCredited: r.tmdbCredited ?? null,
       coverage: r.tmdbCredited ? +((r.recorded.length / r.tmdbCredited).toFixed(3)) : null,

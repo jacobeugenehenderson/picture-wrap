@@ -173,6 +173,57 @@ export const datesAWrap = person =>
   Boolean((person?.wd?.died && person.wd.diedPrecision >= WD_PRECISION_DAY)
     || (person?.tmdb?.died && toTheDay(person.tmdb.died)));
 
+/* When did a closed picture close, and who closed it?
+
+   Here rather than in a caller, because within an hour of the rule being
+   written there were three copies of it — the pass, the rebuild and the
+   audit — and two of them already disagreed. That is the exact history
+   this file exists to stop repeating.
+
+   The rule: the LAST death decides, whatever precision it was recorded
+   at. Taking the last precisely-recorded death instead is the tempting
+   version, because it always yields a printable date — and it is wrong
+   in a way that matters. Los misterios del turf argentino would have read
+   "Julio Irigoyen was the last of its makers, 29 August 1967" while
+   Aparicio Podestá, also credited, died in 1979. Twelve years and the
+   wrong name, bought with a prettier date. 56 pictures in 1924 alone.
+
+   So three answers, and the caller renders what it likes:
+
+     day    a death recorded to the day. The only one that may print as a
+            date, and the only one that may name a person in a wrap line.
+     year   the last death is real but recorded only to the year. The
+            picture wrapped that year, on a day nobody wrote down.
+     none   no death recorded anywhere. Closed by arithmetic, and it has
+            no place on a timeline at all. */
+export function wrapDate(judged) {
+  const dated = judged
+    .filter(p => p.status === 'dead')
+    .map(p => ({ person: p, died: p.wd?.died || p.tmdb?.died }))
+    .filter(d => d.died)
+    .sort((a, b) => b.died.localeCompare(a.died));
+
+  if (!dated.length) {
+    return { wrapped: null, wrappedYear: null, dateBasis: 'none', last: null };
+  }
+
+  const last = dated[0];
+  const precise = Boolean(last.person.datesAWrap ?? datesAWrap(last.person));
+
+  return {
+    wrapped: precise ? last.died : null,
+    wrappedYear: last.died.slice(0, 4),
+    dateBasis: precise ? 'day' : 'year',
+    last: {
+      wikidataId: last.person.wikidataId || null,
+      tmdbId: last.person.tmdbId || null,
+      name: last.person.name,
+      died: last.died,
+      source: last.person.source || null,
+    },
+  };
+}
+
 /* The year either database gives, preferring Wikidata where both do. */
 const bornYear = person =>
   Number(String(person?.wd?.born || person?.tmdb?.born || '').slice(0, 4)) || 0;
