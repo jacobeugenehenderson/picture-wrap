@@ -40,7 +40,7 @@
    country is a choice a reader should be able to see us not making.
    ========================================================================== */
 
-import { readFile, writeFile, rename } from 'node:fs/promises';
+import { readFile, writeFile, rename, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { sparql, qid, pickDemonym } from './lib.js';
@@ -52,6 +52,7 @@ const value = (flag, fallback) => {
 };
 
 const OUT = value('--out', process.env.PW_PASS || 'pass');
+const dictionaryOnly = args.includes('--countries');
 const single = Number(value('--year', 0));
 const range = value('--years', null);
 
@@ -62,7 +63,146 @@ const years = single ? [single]
     })()
   : [];
 
-if (!years.length) { console.error('Usage: node enrich.js --year 1924 | --years 1890-1974'); process.exit(1); }
+if (!years.length && !dictionaryOnly) {
+  console.error('Usage: node enrich.js --year 1924 | --years 1890-1974 | --countries');
+  process.exit(1);
+}
+
+/* --- what a country label means -----------------------------------------
+
+   A picture is labelled with the state that existed when it was released,
+   which is right for an archive organised by release date and opaque to a
+   reader in 2026. "British Raj" needs a footnote; so do Soviet, Yugoslav,
+   Czechoslovak, West German.
+
+   The obvious footnote is the successor state, and Wikidata does record
+   one — P1366 — but reading it shows why it cannot be printed:
+
+     West Germany   → Germany
+     Soviet Union   → Lithuania, Russia, Belarus, Estonia, Latvia, … 15
+     British Raj    → India, Dominion of Pakistan, British rule in Myanmar
+     Czechoslovakia → nothing recorded
+
+   "SOVIET (NOW LITHUANIA, RUSSIA, BELARUS…)" helps nobody, and "BRITISH
+   RAJ (NOW INDIA)" is a partition erased inside a parenthesis. Choosing
+   one successor is a political claim and this archive does not have a
+   view.
+
+   What it can say is when the state stopped existing, which is one fact,
+   always available, and answers the reader's actual question — why does
+   this say Soviet. So: the period label always, the dissolution year when
+   there is one, and the successor named only in the single unambiguous
+   case where Wikidata records exactly one.
+
+       SOVIET (to 1991)          BRITISH RAJ (to 1947)
+       WEST GERMAN (now German)  AMERICAN
+
+   Written once into pass/countries.json rather than onto every picture:
+   it is a fact about a country, not about a film. */
+async function buildCountryDictionary() {
+  const seen = new Map();
+
+  for (const year of (await readdir(OUT)).filter(n => /^\d{4}$/.test(n))) {
+    let works;
+    try {
+      works = (await readFile(join(OUT, year, 'works.jsonl'), 'utf8'))
+        .trim().split('\n').filter(Boolean).map(l => JSON.parse(l));
+    } catch { continue; }
+    for (const w of works) for (const c of w.countries || []) seen.set(c, (seen.get(c) || 0) + 1);
+  }
+
+  /* Asked by demonym, because that is what the pictures carry. */
+  /* The 73 labels we actually hold, handed to the query as VALUES.
+
+     Searching for them the other way round — every country, every
+     historical country, every subclass, then matched by label — either
+     returns the wrong set or does not return at all. The first attempt
+     restricted to `country` and its subclasses and found two dissolved
+     states in a corpus that plainly contains the Soviet Union and the
+     British Raj, because Wikidata types those as "historical country".
+     Broadening the traversal made the query time out instead.
+
+     We know the strings. Asking about them directly is bounded, fast, and
+     cannot quietly return a different population than the one on the
+     shelf. */
+  const forms = [...seen.keys()].filter(f => f && f.length <= 60 && !/["\\\u0000-\u001F]/.test(f));
+  const rows = [];
+
+  for (let i = 0; i < forms.length; i += 40) {
+    const batch = forms.slice(i, i + 40);
+    const got = await sparql(`
+SELECT ?form ?cLabel ?dissolved (GROUP_CONCAT(DISTINCT ?nextLabel; separator="|") AS ?successors) WHERE {
+  VALUES ?form { ${batch.map(f => `"${f}"@en`).join(' ')} }
+  { ?c wdt:P1549 ?form } UNION { ?c rdfs:label ?form }
+  ?c wdt:P31 ?kind .
+  VALUES ?kind { wd:Q6256 wd:Q3024240 wd:Q3624078 wd:Q133442 wd:Q161243 }
+  OPTIONAL { ?c wdt:P576 ?dissolved }
+  OPTIONAL { ?c wdt:P1366 ?next . ?next rdfs:label ?nextLabel . FILTER(LANG(?nextLabel) = "en") }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+} GROUP BY ?form ?cLabel ?dissolved`).catch(() => []);
+    rows.push(...got);
+  }
+
+  /* A demonym belongs to whichever state still uses it.
+
+     "French" matches the Kingdom of France, dissolved 1791, as well as
+     the republic that has it now; so does "British", "German", "Italian",
+     "Russian", "Dutch". Preferring the row that carried a dissolution
+     date — which seemed the careful choice — footnoted 2,698 French
+     pictures as belonging to a state that ended in 1791.
+
+     So: if ANY item bearing this demonym still exists, the demonym is
+     current and takes no footnote. Only a label that every matching state
+     has stopped using gets one, and then from the last of them. That
+     leaves exactly the set a reader needs explaining — Soviet, British
+     Raj, Czechoslovak, Yugoslav, West German — and leaves French alone. */
+  const matches = new Map();
+  for (const r of rows) {
+    if (!seen.has(r.form)) continue;
+    if (!matches.has(r.form)) matches.set(r.form, []);
+    matches.get(r.form).push({
+      country: r.cLabel || null,
+      dissolved: r.dissolved ? Number(String(r.dissolved).slice(0, 4)) : null,
+      successors: (r.successors || '').split('|').filter(Boolean),
+    });
+  }
+
+  const meta = new Map();
+  for (const [form, all] of matches) {
+    const extant = all.some(m => !m.dissolved);
+    const last = all.filter(m => m.dissolved).sort((a, b) => b.dissolved - a.dissolved)[0];
+    const chosen = extant ? all.find(m => !m.dissolved) : last;
+
+    meta.set(form, {
+      demonym: form,
+      country: chosen?.country ?? null,
+      pictures: seen.get(form),
+      endedIn: extant ? null : (last?.dissolved ?? null),
+      /* Named only when there is exactly one successor and it is
+         unambiguous; otherwise the count, because "now India" for the
+         British Raj is a partition erased in a parenthesis. */
+      becameIn: !extant && last?.successors.length === 1 ? last.successors[0] : null,
+      successors: !extant && last?.successors.length > 1 ? last.successors : undefined,
+    });
+  }
+
+  for (const [form, count] of seen) {
+    if (!meta.has(form)) meta.set(form, { demonym: form, country: null, pictures: count, endedIn: null, becameIn: null });
+  }
+
+  const out = [...meta.values()].sort((a, b) => b.pictures - a.pictures);
+  await writeFile(join(OUT, 'countries.json'), JSON.stringify(out, null, 1));
+
+  const gone = out.filter(c => c.endedIn);
+  console.log(`${out.length} country labels in the corpus, ${gone.length} of states that no longer exist:`);
+  for (const c of gone.slice(0, 12)) {
+    console.log(`  ${String(c.pictures).padStart(6)}  ${c.demonym} (to ${c.endedIn})` +
+      (c.becameIn ? ` — now ${c.becameIn}` : c.successors ? ` — ${c.successors.length} successor states` : ''));
+  }
+  console.log(`\nwritten to ${join(OUT, 'countries.json')}`);
+}
+
+if (dictionaryOnly) { await buildCountryDictionary(); process.exit(0); }
 
 /* Every genre Wikidata puts on every picture from one year, in one ask.
 
