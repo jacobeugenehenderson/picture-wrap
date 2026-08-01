@@ -117,15 +117,35 @@ for (const year of years) {
     if (!genres.has(id)) genres.set(id, []);
     if (!genres.get(id).includes(r.genreLabel)) genres.get(id).push(r.genreLabel);
   }
-  let touched = 0;
+  /* Wikidata uses several labels as BOTH a class and a genre — "silent
+     film" is the common one, and "short film", "animated film" and
+     "documentary film" do it too. A picture typed as a silent film very
+     often also carries silent film as its genre, so the same word arrives
+     down two different properties.
+
+     Keeping both is how a page comes to read "Silent film · Silent film"
+     and how a tally comes to count 35,103 silent films twice. Dropping
+     the genre when it merely repeats the type loses nothing: the fact is
+     still on the record, in `type`, and a picture typed plainly as "film"
+     keeps "silent film" as a genre because there it is informative.
+
+     The rule for anyone aggregating this data: a picture's facets are its
+     type and its genres together, deduplicated — never the two summed. */
+  const same = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
+
+  let touched = 0, deduped = 0;
   const out = works.map(w => {
-    const g = genres.get(w.id);
-    if (!g?.length) return { ...w, genres: w.genres ?? [] };
+    const g = (genres.get(w.id) || []).filter(label => {
+      if (w.type && same(label, w.type)) { deduped++; return false; }
+      return true;
+    });
+    if (!genres.has(w.id)) return { ...w, genres: w.genres ?? [] };
     touched++;
     return { ...w, genres: g };
   });
 
   await writeFile(path + '.part', out.map(w => JSON.stringify(w)).join('\n') + '\n');
   await rename(path + '.part', path);
-  console.log(`${year}  ${touched} of ${works.length} pictures carry a genre`);
+  console.log(`${year}  ${touched} of ${works.length} pictures carry a genre` +
+    (deduped ? `  (${deduped} genre labels dropped as repeats of the type)` : ''));
 }

@@ -364,3 +364,48 @@ claim, and a draft that lands in review flagged `provisional`.
 
 Worth being at the keyboard for it rather than trusting it, and worth
 checking afterwards whether the name-extraction heuristic produced noise.
+
+---
+
+## A genre timeline, and the trap in it
+
+*Noted 1 August 2026. The data exists; the graphic does not.*
+
+Genre is now recorded per picture, which makes "when did each kind of
+picture close" answerable for the first time. It is also the most
+misleading question in the archive if asked carelessly, and both halves
+are worth writing down before somebody builds a chart.
+
+**The trap.** Westerns rise from 0.4% of all closings in the 1910s to 6.1%
+in the 2020s. That looks like a finding and is an artefact: it reflects
+when westerns were MADE, against a corpus whose early years are mostly
+one-reelers. Any genre chart plotted against closing date alone will
+reproduce the release-date distribution and call it a discovery.
+
+**The honest form** holds the release cohort fixed and compares survival
+within it. Measured on pictures released 1950-59:
+
+    documentary  91% closed, median wait 49 years
+    western      72% closed, median wait 62 years
+    crime        56%
+    comedy       54%
+    drama        51%
+    musical      50%
+    romance      47%
+    horror       43% closed, median wait 63 years
+
+Documentaries close first and fastest, in both the 1930s and 1950s
+cohorts, and by a distance — 49 years against 62-63 for everything else.
+The plain explanation is cast size and cast composition: a documentary
+credits a handful of adults, a musical credits dozens of young performers,
+and the last survivor of a picture is usually whoever was youngest on it.
+That is a hypothesis the archive can test — the maker count and the
+birth-year distribution are both stored — and it has not been tested.
+
+Horror sits at the other end of both cohorts. Whether that is genre or
+simply a proxy for young casts is the same open question.
+
+**What a graphic should probably be.** Survival curves by genre, one
+release cohort at a time, x-axis years-since-release rather than calendar
+date. That form cannot express the artefact, which is its main virtue.
+
