@@ -222,6 +222,36 @@ main,
 
 .search input::placeholder { color: var(--ink-faint); }
 
+/* The bar, at hairline weight, under the way in.
+
+   The gold bar is this site's one idea — the line between the pictures
+   that still have somebody and the ones that don't — and the landing
+   page was showing 54px of it above the wordmark and nothing else. This
+   is the same three-stop gradient, two pixels tall and fading out before
+   the corners, so the field a reader types into is visibly part of the
+   same object as the bar they meet on every page below it.
+
+   Half-lit at rest, full on focus. Which also makes focus two signals
+   rather than one for a reader who cannot see the colour: the border
+   changes and the bar brightens. */
+.search::after {
+  content: "";
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  bottom: 1px;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(90deg,
+    transparent 3%, var(--gold-dark) 20%, var(--gold-light) 50%,
+    var(--gold-dark) 80%, transparent 97%);
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.search:focus-within::after { opacity: 1; }
+
 .search input:focus {
   outline: none;
   border-color: var(--gold);

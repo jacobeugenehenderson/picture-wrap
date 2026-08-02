@@ -1050,6 +1050,15 @@ What is deliberately *not* changed is the count. Fewer doors would fix
 the same problem by taking away the genres that made the row worth
 having.
 
+**And a hairline of the bar under the search field.** The gold bar is
+this site's one idea, and the page most people see was showing 54px of
+it above the wordmark and nothing else. The field now carries the same
+three-stop gradient at two pixels, fading out before the corners: half
+lit at rest, full on focus. It ties the way in to the object it searches,
+and it makes focus two signals rather than one — the border changes
+colour and the bar brightens — which is what a reader who cannot
+distinguish the gold needs.
+
 ### How far down the lists the doors go
 
 Ten of each was the first guess, and the counts make its failure plain:
