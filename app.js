@@ -22,13 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear } from './verify.js?v=45';
-import { openCorpus } from './corpus.js?v=45';
+import { survivors, beyondLiving, earliestLivingBirthYear } from './verify.js?v=48';
+import { openCorpus } from './corpus.js?v=48';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js?v=45';
+} from './shared.js?v=48';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -672,15 +672,38 @@ function renderRoster() {
   const bar =
     `<li class="bar" role="separator" aria-label="Above: living. Below: died."></li>`;
 
+  /* The fold opens when it holds the person the page is talking about.
+
+     Otherwise the page names somebody and hides them: The Sundial says
+     "Iga Cembrzyńska was the last of its makers" and she is its composer,
+     so she sat behind a click. The Wizard of Oz has the same problem from
+     the other side — the one living person holding it open is a stand-in,
+     which is a crew credit.
+
+     Everywhere else it stays shut. A fold is for the people a reader has
+     not asked about yet, and on a picture with forty crew that is still
+     most of them. */
+  const crewHoldsTheStory = wrapped
+    ? Boolean(lastOne && back.dead[0] === lastOne)
+    : back.living.length > 0;
+
+  /* The divider separates living from dead, so it only means anything
+     when there is one of each. With everyone gone it floats to the top of
+     the fold and reads as a second wrap bar — which is the one mark on
+     this site that is supposed to appear once. */
+  const crewDivider = back.living.length && back.dead.length
+    ? `<li class="hairline" role="separator" aria-label="Above: living. Below: died."></li>`
+    : '';
+
   const crewFold = crew.length ? `
-    <details class="fold">
+    <details class="fold"${crewHoldsTheStory ? ' open' : ''}>
       <summary>
         <span class="fold-title">Behind the camera</span>
         <span class="fold-hint">${crew.length}</span>
       </summary>
       <ul class="roster">
         ${back.living.map(personRow).join('')}
-        <li class="hairline" role="separator" aria-label="Above: living. Below: died."></li>
+        ${crewDivider}
         ${back.dead.map(personRow).join('')}
       </ul>
     </details>` : '';
@@ -1659,26 +1682,54 @@ function viewAbout() {
    Once the poster has written an archive, the way in becomes the most
    recent closings — so the page keeps itself current. PICKS is only the
    fallback for an empty archive. */
+/* Which way in the reader is looking. Sticky for the session, because
+   somebody who chose "best known" once is telling you something. */
+let landingSort = 'recent';
+
 async function viewLanding() {
   /* The front door carries no qualifier — the site's own name is what's up. */
   setTitle('');
   const summary = await loadSummary();
-  const recent = summary.recent;
 
-  const picks = recent.length
-    ? recent.map(f => `<button data-go="${esc(path(f.title, f.id))}">${esc(f.title)}` +
-        `<span class="pick-year">${esc(year(f.wrapped))}</span></button>`).join('')
+  /* Two ways in, and the second exists because the first is honest but
+     unwelcoming: closings are obscure by the arithmetic of the thing —
+     the famous pictures close last — so "recently wrapped" shows five
+     titles a first-time reader has never heard of. Sorting by how widely
+     a picture is known is the only sort that guarantees recognition. */
+  const lists = {
+    recent: { label: 'Recently wrapped', films: summary.recent ?? [] },
+    known: { label: 'Best known', films: (summary.bestKnown ?? []).slice(0, 5) },
+  };
+
+  const available = Object.entries(lists).filter(([, l]) => l.films.length);
+  const chosen = lists[landingSort]?.films.length ? landingSort : available[0]?.[0];
+  const films = chosen ? lists[chosen].films : [];
+
+  const picks = films.length
+    ? films.map(f => `<button data-go="${esc(path(f.title, f.id))}">${esc(f.title)}` +
+        `<span class="pick-year">${esc(year(f.wrapped) || f.wrappedYear || f.year)}</span></button>`).join('')
     : PICKS.map(p => `<button data-go="${esc(path(p.name, p.id))}">${esc(p.name)}</button>`).join('');
 
-  /* The way through sits below the pictures, not up in the masthead —
-     you should meet a few closings before you're offered all of them. */
+  /* A switch, not a filter: two words, and only when there are two. */
+  const switcher = available.length > 1
+    ? `<p class="landing-label">${available.map(([key, l]) =>
+        `<button class="landing-sort" data-sort="${key}"${
+          key === chosen ? ' aria-current="true"' : ''}>${esc(l.label)}</button>`).join('')}</p>`
+    : films.length ? `<p class="landing-label">${esc(lists[chosen].label)}</p>` : '';
+
+  /* The way through sits below the pictures — you should meet a few
+     closings before you're offered all of them. It stays the small line
+     it always was; only the number is given weight, because the number is
+     where every hour of computation went and it should not read as a
+     footnote to five titles. */
   show(`
     <section class="landing">
-      ${recent.length ? `<p class="landing-label">Recently wrapped</p>` : ''}
+      ${switcher}
       <div class="landing-picks">${picks}</div>
       <p class="landing-more">
-        <a href="#/archive">The Vault${
-          summary.total ? ` &middot; ${summary.total.toLocaleString('en')}` : ''}</a>
+        <a href="#/archive">The Vault${summary.total
+          ? ` &middot; <span class="landing-vault-count">${summary.total.toLocaleString('en')}</span>`
+          : ''}</a>
       </p>
     </section>`);
 }
@@ -1688,6 +1739,13 @@ async function viewLanding() {
 
 /* One delegated handler for every navigable thing on the page. */
 document.addEventListener('click', e => {
+  const sort = e.target.closest('[data-sort]');
+  if (sort) {
+    landingSort = sort.dataset.sort;
+    viewLanding();
+    return;
+  }
+
   const vault = e.target.closest('[data-vault]');
   if (vault) {
     vaultFilter = vault.dataset.vault;

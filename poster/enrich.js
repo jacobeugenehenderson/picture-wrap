@@ -1,7 +1,8 @@
 /* ==========================================================================
    PICTURE WRAP — poster/enrich.js
 
-   Film-level facts — genre and country — added to years already judged.
+   Film-level facts — genre, country, and how widely a picture is known —
+   added to years already judged.
 
      node enrich.js --years 1890-1974
      node enrich.js --year 1924
@@ -224,6 +225,26 @@ SELECT ?film ?value WHERE {
   ?genre rdfs:label ?value . FILTER(LANG(?value) = "en")
 }`;
 
+/* How many Wikipedias carry an article about this picture.
+
+   A proxy for how widely known it is, and the only one available that
+   costs nothing: `wikibase:sitelinks` is already on the item. The poster
+   has used it for years to decide which closings to name in a post; the
+   corpus never carried it, so the site could offer no way in other than
+   the most recent closing.
+
+   It is a proxy and should be read as one. It measures how much has been
+   written about a picture, which correlates with fame and also with being
+   European, English-language and old enough for somebody to have got
+   round to it. */
+const fameQuery = (year, from, to) => `
+SELECT ?film ?value WHERE {
+  ?film wdt:P577 ?rd .
+  FILTER(YEAR(?rd) = ${year})
+  ${months(from, to)}
+  ?film wikibase:sitelinks ?value .
+}`;
+
 /* Demonyms, all of them, grouped per country and reduced by the same
    pickDemonym the site uses.
 
@@ -305,8 +326,13 @@ for (const year of years) {
   try { countryRows = await facet(countryQuery, year); }
   catch (err) { console.log(`${year} — country query failed (${err.message})`); countryRows = []; }
 
+  let fameRows;
+  try { fameRows = await facet(fameQuery, year); }
+  catch (err) { console.log(`${year} — sitelink query failed (${err.message})`); fameRows = []; }
+
   const genres = collect(genreRows);
   const countries = collect(countryRows, countryName);
+  const fame = new Map(fameRows.map(r => [qid(r.film), Number(r.value) || 0]));
 
   /* Wikidata uses several labels as BOTH a class and a genre — "silent
      film" is the common one, and "short film", "animated film" and
@@ -333,13 +359,14 @@ for (const year of years) {
       if (w.type && same(label, w.type)) { deduped++; return false; }
       return true;
     });
-    if (!genres.has(w.id)) return { ...w, genres: w.genres ?? [], countries: c };
+    const f = fame.get(w.id) ?? w.fame ?? 0;
+    if (!genres.has(w.id)) return { ...w, genres: w.genres ?? [], countries: c, fame: f };
     touched++;
-    return { ...w, genres: g, countries: c };
+    return { ...w, genres: g, countries: c, fame: f };
   });
 
   await writeFile(path + '.part', out.map(w => JSON.stringify(w)).join('\n') + '\n');
   await rename(path + '.part', path);
-  console.log(`${year}  ${touched} of ${works.length} carry a genre, ${placed} a country` +
+  console.log(`${year}  ${touched} of ${works.length} carry a genre, ${placed} a country, ${fame.size} a sitelink count` +
     (deduped ? `  (${deduped} genre labels dropped as repeats of the type)` : ''));
 }

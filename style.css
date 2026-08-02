@@ -1203,3 +1203,39 @@ body.viewing { overflow: hidden; }
   border-left: 2px solid rgba(210, 175, 95, .35);
   opacity: .85;
 }
+
+
+/* --- the landing's two ways in ----------------------------------------- */
+
+/* A switch between "recently wrapped" and "best known". Two words, sitting
+   where the single label used to, so nothing new appears on the page — the
+   label simply became choosable. */
+.landing-sort {
+  font: inherit;
+  color: var(--ink-faint);
+  background: none;
+  border: 0;
+  padding: 0 0.5rem;
+  cursor: pointer;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+.landing-sort:first-child { padding-left: 0; }
+.landing-sort + .landing-sort { border-left: 1px solid var(--rule); }
+.landing-sort:hover { color: var(--ink-soft); }
+.landing-sort[aria-current="true"] { color: var(--ink); }
+
+/* The Vault line keeps the shape it always had. Only the count is lifted
+   out of the small caps — brighter, and in the display face at reading
+   size rather than label size — because it is the one number on the page
+   that took a hundred and forty years of computation to produce. */
+.landing-vault-count {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.landing-more a:hover .landing-vault-count { color: var(--gold); }

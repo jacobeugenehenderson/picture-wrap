@@ -157,6 +157,7 @@ const row = w => ({
   wrappedMonth: w.wrappedMonth,
   wrappedYear: w.wrappedYear,
   dateBasis: w.dateBasis,
+  fame: w.fame || undefined,
   /* `onScreen` travels with the closer so a reader can ask for the
      pictures whose last maker was in front of the camera, or behind it.
      null where neither database said which. */
@@ -413,6 +414,23 @@ const recent = [...byDay.values()].flat()
   .sort((a, b) => (b.wrapped || '').localeCompare(a.wrapped || ''))
   .slice(0, 5);
 
+/* The other way in.
+
+   "Recently wrapped" is the feed and it is the right front door, but it
+   answers a question nobody asked on their first visit: it shows five
+   pictures they have never heard of, because most closings are obscure by
+   the arithmetic of the thing — the famous ones close last.
+
+   So the landing offers the same archive sorted by how widely a picture
+   is known, which is the only sort that guarantees a reader recognises
+   something. Sitelinks are the proxy, and they are a proxy: they measure
+   how much has been written, which is not the same as importance and
+   leans European, English-language and old. */
+const bestKnown = everyClosing
+  .filter(e => e.fame)
+  .sort((a, b) => b.fame - a.fame)
+  .slice(0, 12);
+
 /* Counts over the whole corpus, not a filtered view, so a filter row does
    not rearrange itself as somebody clicks through it. */
 const countryCounts = {};
@@ -427,6 +445,7 @@ await put(join(base, 'summary.json'), JSON.stringify({
   years: [...byYear.keys()].sort((a, b) => a - b),
   decades,
   closingDecades,
+  bestKnown,
   /* Closings with no year at all: real, closed, and off every timeline. */
   unplaceable: closed - [...byClosingYear.values()].reduce((n, l) => n + l.length, 0),
   recent,
