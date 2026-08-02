@@ -50,6 +50,13 @@
   --gold-light: #f0d67a;
   --bar-height: 7px;
 
+  /* Light thrown up into the search field by the bar under it. Bronze
+     rather than gold — the bar is the lit thing and this is only what
+     falls off it, so it has to sit below the bar in both brightness and
+     saturation or the two read as two decorations instead of one.
+     Lower on paper, where a warm wash goes yellow faster.           */
+  --field-sheen: rgba(122, 94, 20, 0.045);
+
   /* --- type ----------------------------------------------------------- */
   --font-display: "Iowan Old Style", "Palatino Linotype", Palatino,
                   "Book Antiqua", Georgia, serif;
@@ -89,6 +96,8 @@
     --gold-dark:  #7a5c12;
     --gold:       #c9a227;
     --gold-light: #f5dc8c;
+
+    --field-sheen: rgba(176, 132, 45, 0.075);
 
     --portrait-filter: grayscale(1) contrast(0.96) brightness(0.92);
   }
@@ -213,7 +222,13 @@ main,
 .search input {
   width: 100%;
   padding: 0.85rem 1rem;
-  background: var(--paper-raised);
+  /* The field is lit from its own bottom edge, where the bar is. Two
+     stops rather than one so the falloff is quick — a wash across the
+     whole field would read as a coloured input, and this has to read as
+     nothing at all until somebody looks for it. */
+  background:
+    linear-gradient(to top, var(--field-sheen), transparent 42%),
+    var(--paper-raised);
   border: 1px solid var(--rule);
   border-radius: 3px;
   font-size: 1rem;

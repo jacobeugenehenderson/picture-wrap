@@ -1059,6 +1059,14 @@ and it makes focus two signals rather than one — the border changes
 colour and the bar brightens — which is what a reader who cannot
 distinguish the gold needs.
 
+The field is then lit from that edge: a bronze wash rising out of the
+bottom and gone by 42%, so the bar reads as a light source rather than a
+sticker. Bronze and not gold, and set below the bar in both brightness
+and saturation, or the two stop being one thing. It is deliberately at
+the threshold of perception — `--field-sheen` is the single value to
+move, and setting it to `transparent` removes the idea without leaving a
+trace of it.
+
 ### How far down the lists the doors go
 
 Ten of each was the first guess, and the counts make its failure plain:
