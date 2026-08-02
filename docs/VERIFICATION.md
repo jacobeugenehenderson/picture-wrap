@@ -30,9 +30,9 @@ asserted rather than quietly implied to be safe.
 | 4 | A birth date is creditable if **precise to the day**, or if **both databases give one and agree on the year** | `verify.js` `statusOf` | reproduced |
 | 5 | Where the databases disagree on birth year, the **later** year is used — the reading most likely to keep a person alive | `verify.js` | asserted |
 | **Arithmetic, not judgement** | | | |
-| 6 | Nobody worked on a picture **released before they were born**; such credits vote on nothing and date nothing | `verify.js` `impossible` | reproduced |
-| 7 | A picture **cannot close before it was released**; an earlier death cannot date it | `verify.js` `wrapDate` | integrity check |
-| 8 | Past 122 a person is dead whether or not a death was recorded — including via the release year, when no birth date exists | `verify.js` `beyondLiving` | reproduced |
+| 6 | Nobody worked on a picture **released before they were born**; such credits vote on nothing and date nothing | `verify.js` `impossible`, `app.js` `readPeople` | reproduced |
+| 7 | A picture **cannot close before it was released**; an earlier death cannot date it | `verify.js` `wrapDate`, `app.js` `readPeople` | integrity check |
+| 8 | Past 122 a person is dead whether or not a death was recorded — including via the release year, when no birth date exists | `verify.js` `beyondLiving`, `app.js` `readPeople` | reproduced |
 | **Dates** | | | |
 | 9 | The **last** death decides the wrap, at whatever precision it carries | `verify.js` `wrapDate` | reproduced |
 | 10 | Only a **day-precise** death may print as a date or name a person; a month gives a month, a year gives a year, anything coarser gives no position at all | `verify.js` `resolutionOf` | integrity check |
@@ -57,6 +57,8 @@ asserted rather than quietly implied to be safe.
 | 25 | A demonym belongs to whichever state **still uses it**; only a label every matching state has abandoned gets a dissolution footnote | `enrich.js` | asserted |
 | **People** | | | |
 | 26 | Withholding a name takes **the name and never the vote** | `pass.js`, `app.js` | asserted |
+| **Where the rules are applied** | | | |
+| 27 | A **person page asks Wikidata directly** and must apply rules 6, 7 and 8 itself; the audit does not reach it | `app.js` `readPeople` | asserted |
 
 ### What the audit actually does
 
@@ -76,10 +78,35 @@ circular rather than decorative:
    counts match the unknowns listed.
 
 **Asserted means only that a human wrote it down.** Rules 5, 12, 13, 15,
-18 and 20-26 are not checked by anything, and the honest reading of that
+18 and 20-27 are not checked by anything, and the honest reading of that
 column is that those are where the next drift will be found — which is
 how rule 6 was found on 1 August, having been applied to half the people
 it named for as long as it had existed.
+
+Rule 27 is the same lesson a second time, and it is worth stating plainly
+because it bounds everything above. **The audit checks the corpus, and the
+corpus is not the only thing that decides.** A person page cannot read a
+verdict off the corpus alone: a filmography spans years the pass may not
+have reached, and the corpus is a snapshot while Wikidata is live. So it
+asks Wikidata for the credits and judges them in the browser — a second
+implementation of rules 6, 7 and 8, in a second language, that no audit
+run touches.
+
+It drifted exactly as the column predicts. Until 2 August the page
+counted credits, deaths and the too-old, and closed a picture when the
+numbers met. Rules 6 and 7 are not expressible as counts, so they were
+not applied, and Philip Glass — born 1937, credited on *Dracula* (1931)
+for the score he wrote in 1999 — held that picture open on this page
+while the Vault had it closed on Carla Laemmle in 2014. Being alive, he
+would have held it open indefinitely, and nothing would have explained
+why.
+
+The page now returns the people rather than the arithmetic, so a new rule
+is a new line of JavaScript over the same facts `verify.js` is given,
+rather than another `COUNT` column that some rules cannot be written as.
+That makes the two implementations easier to keep in step. It does not
+make them one implementation, and this row stays *asserted* until
+something checks them against each other.
 
 ---
 

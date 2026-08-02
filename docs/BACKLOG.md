@@ -530,17 +530,24 @@ a share of all cinema.
 
 ---
 
-## Wiring the corpus into the site
+## Wiring the corpus into the site — DONE, except the hosting
 
-*The largest item here as of 2 August, having overtaken the Desk.*
+*Closed on the evening of 2 August. What remains of it is the upload.*
 
-The corpus pass produced 355,717 judged pictures and 122,839 closings,
+The corpus pass produced 355,717 judged pictures and 123,956 closings,
 audited, published as static shards by `build-corpus.js` and readable by
-`corpus.js`. **Nothing imports `corpus.js`.** The site still reads
-`vault/summary.json`, `vault/ids.json` and `vault/<decade>.json`, which is
-the 11,457-entry Vault built by the old queue path.
+`corpus.js`. All three call sites now go through it, the decade drawers
+open onto years, and the landing page reads its sorts and its doors out
+of `summary.json`. Nothing in `app.js` opens `vault/*.json` any more —
+which means **those files are now dead weight in the repository and
+should be deleted**.
 
-Decided, so this is work rather than debate:
+**What is left is hosting.** `CORPUS_BASE` points at a local `corpus/`
+directory. Cloudflare R2, immutable tree first and `manifest.json` last.
+Until that is done the live site still serves the old 11,457-entry Vault.
+
+The decisions the work was done under, kept because they explain the
+shape:
 
 - **The corpus replaces the Vault.** Not beside it.
 - **Decade drawers stay**, because a decade is where browsing starts — but
@@ -564,11 +571,46 @@ The three call sites:
 Vault browses `closed` — when a picture's last maker died. `year` is when
 the picture came out. Both are published.
 
-**Open:** how the ongoing sweep merges new closings into a corpus the pass
-owns. The pass is a batch job over a release year; the sweep is
+**Still open:** how the ongoing sweep merges new closings into a corpus
+the pass owns. The pass is a batch job over a release year; the sweep is
 incremental and event-driven. Simplest coherent answer is that a new death
 triggers a re-pass of the affected release years, which is minutes, but
 nothing is built.
+
+---
+
+## Something that checks the person page against `verify.js`
+
+*Raised 2 August, after the second time this drifted.*
+
+Rule 27 in `VERIFICATION.md` is *asserted*, and it is the only rule whose
+subject is the code rather than the data: a person page asks Wikidata
+directly and applies rules 6, 7 and 8 itself, in the browser, in a second
+implementation the audit never reaches.
+
+It has to be a second implementation. A filmography reaches release years
+the pass may not have run, and the corpus is a snapshot while Wikidata is
+live, so the page cannot read a verdict off the corpus alone. That is a
+constraint, not a shortcut.
+
+It drifted twice. First by omission — the page decided by counting
+credits, deaths and the too-old, and rules 6 and 7 cannot be written as
+counts, so Philip Glass (born 1937, credited on *Dracula* (1931) for a
+1999 score) held that picture open on his co-workers' pages while the
+Vault had it closed on Carla Laemmle in 2014. Fixed by returning the
+people rather than the arithmetic, which at least makes a new rule a new
+line of JavaScript over the same facts `verify.js` is given.
+
+**What would check it.** For a sample of pictures the corpus has closed,
+run the page's `readPeople` over the live filmography query and compare
+verdict and wrap date against the stored closing. Disagreements are
+expected — Wikidata moves — so the test is not equality but that every
+disagreement is explained by a credit added since the pass ran. That is
+a script, offline apart from the queries, and it would have caught this
+in one run over any year.
+
+Until it exists, the two are kept in step by hand, and the honest place
+to say so is the *checked?* column.
 
 ---
 

@@ -1,125 +1,109 @@
-# Handoff — 2 August 2026
+# Handoff — 2 August 2026, evening
 
-Read this before touching anything. The one job still running is named
-below; everything else is a clean state.
+Read this before touching anything. Nothing is running; every job this
+project has is finished and its output is on disk.
 
 ## Where things stand
 
 | | |
 |---|---|
-| **The corpus pass** | 136 release years judged, **355,717 pictures** — 122,839 closed, 231,477 still running, 1,401 unchecked. 2026 in flight, then done. |
-| `archive.json` (the old Vault) | **11,457** — still what the live site serves, and now superseded |
+| **The corpus** | 137 release years, **355,717 pictures** — 123,956 closed, 232,151 still running, 1,403 unchecked. Audited, 0 failures. |
+| Enrichment | genre, country and type on every year; **fame on 103,842 of 123,956 closings** — the rest have no sitelinks at all |
+| Built corpus | `dist/`, 101.5 MB, version `367e76377eda`, gitignored |
+| **The site** | reads the corpus. `app.js` no longer opens `vault/*.json` for anything. |
+| `archive.json` (the old Vault) | **11,457** — superseded, still in the repository |
+| Live site | **still serving the old Vault**; the corpus is not hosted yet |
 | `poster/queue.json` | empty |
 | Evidence | 1.7 GB local; 128 MB as one gzipped file per year on the Desktop and in iCloud |
-| Built corpus | `dist/`, 92 MB, gitignored |
-| Live site | current with `main`, `?v=43`, **serving the old Vault** |
 | Bluesky | 26 posts; 37 entries survive |
 
-**The important sentence:** the corpus exists, is audited, and is
-connected to nothing. `app.js` still reads `vault/*.json`. Nothing a
-visitor sees has changed.
+**The important sentence has changed.** It used to be *the corpus is
+connected to nothing*. The wiring is done — landing, Vault, film pages,
+person pages and search all read the corpus. What is left is **hosting**:
+`CORPUS_BASE` points at `corpus/`, a local copy, and nothing has been
+uploaded.
 
 ## What happened on 1–2 August
 
-A corpus pass was built, run across every release year, and audited. What
-it found along the way was mostly this project being wrong about itself.
+A corpus pass was built, run across every release year, audited, and then
+wired into the site. `DECISIONS.md` has each choice with its evidence;
+`FINDINGS.md` has what the archive actually says; `VERIFICATION.md` §*The
+canon* is the authoritative list of the 27 rules in force and which of
+them anything checks.
 
-**The corpus was the wrong shape.** The backfill asked Wikidata only for
-`Q11424`, and Wikidata does not file early cinema under it: 1912 is 2,326
-short films to 597 films. Four fifths of that year had never been seen.
-`WORK_CLASSES` in `shared.js` now names twelve classes.
+The short version of what the pass found is that it was mostly this
+project being wrong about itself: the corpus was the wrong shape
+(`Q11424` alone missed four fifths of 1912), the born-after-release rule
+had only ever been applied to the people TMDB names, 53 pictures wrapped
+before they were released, 548 were dated from century-precision deaths,
+and `MIN_CAST` was silently deciding what the archive contained.
 
-**Nobody worked on a picture before they were born — including in
-Wikidata's own credits.** The rule existed since the backfill and was
-applied only to the people TMDB names. *Under Western Skies* (1910) was
-dated 2024 by William Russell, born 1924, while the William Russell born
-1884 sat two credits below him in the same cast list.
-
-**A picture cannot wrap before it is released.** 53 did, on source authors
-(Edgar Allan Poe dating a 1914 picture), pre-existing composers (Schubert,
-1931) and archival footage (Frederik VIII of Denmark, 1937).
-
-**The last death decides, at whatever precision it carries.** Dating from
-the last *day-precise* death always yields a printable date and names the
-wrong person: 56 pictures in 1924 alone. Closings now carry `day`,
-`month`, `year` or `none`, and 548 that were dated from century-precision
-deaths — Wikidata serialises "20th century" as `1901-01-01` — are placed
-nowhere at all.
-
-**`MIN_CAST` was deciding what the archive contains.** It gated two
-backfill sites that cannot post, in an archive where 37 of 11,457 entries
-have ever been posted, and excluded 500–780 complete-record pictures a
-year. Removed from the pass; thinness is carried per entry instead.
-
-**Genre and country are recorded now**, one query per year in
-`enrich.js`. Country immediately caught the project citing "37 Indian
-titles across 1930–45" in its own colophon — a count of pictures labelled
-*India* in a period when Wikidata labels them *British Raj*. The real
-figure is 928, and British Raj is the fifth largest label of that period.
-
-Full detail in `DECISIONS.md`. Every measured fact is in `FINDINGS.md`,
-which is new, and is where to start if you want to know what this archive
-actually says rather than how it works.
+**On the evening of 2 August, the same class of fault turned up on the
+person pages** — see *Known and unfixed* below, which is now the shortest
+it has been.
 
 ## The machinery
 
 | file | what it does |
 |---|---|
 | `poster/pass.js` | one release year, judged, with the working written down |
+| `poster/judge.js` | the judgement itself, shared by the pass and the repair |
 | `poster/audit.js` | re-decides a year from its own files, network unplugged |
 | `poster/rebuild.js` | re-derives conclusions from stored evidence, offline |
-| `poster/enrich.js` | genre and country per year; `--countries` builds the label dictionary |
+| `poster/retest.js` | repairs verdicts that predate a rule change; needs the network |
+| `poster/enrich.js` | genre, country and fame per year; `--countries` builds the label dictionary, `--fame` skips the two already stored |
 | `poster/build-corpus.js` | pass output → static sharded files + `manifest.json` |
 | `corpus.js` | the browser client for those files |
+| `verify.js` | the single judgement, imported by the site, the poster and the pass |
 
-`build-corpus.js` was briefly called `publish.js`, which collides with the
-name the Desk entry reserves for the publish-and-file path. That name is
-free again and still wanted.
+`build-corpus.js` was briefly called `publish.js`, which collides with
+the name the Desk entry reserves. That name is free again and still
+wanted.
 
-## The order to work in
+## What to do next, in order
 
-1. **Let the pass finish** (2026 in flight) and let the runner's enrich
-   sweep follow it.
-2. **`node rebuild.js --years 1890-2026`** — the early years were judged
-   before the later rules landed. Offline, minutes, and the corpus is then
-   internally consistent under one set of rules.
-3. **`node enrich.js --countries`** to regenerate the label dictionary.
-4. **`node build-corpus.js`**, and read its summary.
-5. **Then the wiring**, which is a session of its own.
+1. **Host the corpus.** Cloudflare R2, immutable tree first and
+   `manifest.json` last, so a half-finished upload is invisible rather
+   than broken. Then point `CORPUS_BASE` at it. This is the only thing
+   standing between the work and the live site.
+2. **Decide the licence.** CC0 is the recommendation, matching Wikidata.
+3. **Delete `vault/*.json`.** Committed, dead, and now misleading —
+   nothing reads them.
+4. Then the Desk, which is still the largest thing not built on the
+   posting side.
 
-## The largest thing not built — and it is no longer the Desk
+Still open beyond that: how an ongoing sweep merges new closings into a
+corpus the pass owns.
 
-**The corpus is connected to nothing.** `loadIds` reads `vault/ids.json`;
-`loadDecade` reads `vault/<decade>.json`; `corpus.js` is imported by no
-file. These decisions are already taken, so this is work rather than
-debate:
+## Reproducing the corpus from what is on disk
 
-- the corpus **replaces** the Vault
-- **decade drawers stay**, opening onto years rather than lists, because a
-  closing decade is up to 6 MB and a closing year is 600 KB
-- hosting is **Cloudflare R2**, deployed immutable tree first and
-  `manifest.json` last, so a half-finished upload is invisible rather than
-  broken
+```
+node poster/rebuild.js --years 1890-2026     # offline, minutes
+node poster/enrich.js --countries            # the label dictionary
+node poster/build-corpus.js                  # → dist/
+```
 
-Still open: the licence — CC0 is the recommendation, matching Wikidata —
-and how the ongoing sweep merges new closings into a corpus the pass owns.
-
-The Desk is still the largest thing not built on the *posting* side, and
-`preview.js` remains unrunnable: it renders 3,329 queue items with
-per-item API calls and an 80ms sleep.
+**If you change what `build-corpus.js` writes — a new key, a renamed
+surface, a different packing — bump `FORMAT` in it.** The version digest
+reads the closings and cannot see the shape they are written in, so
+without the bump the version does not move, the immutable URLs do not
+move, and a returning reader keeps a year-stale copy of a file that
+changed. This was found by adding `doors` and watching the version stay
+put.
 
 ## The one limit worth knowing about the evidence
 
-`rebuild.js` re-decides a year offline, and that is sound **only where the
-pass gathered the full population**. It short-circuits on a living
-Wikidata credit and never asks TMDB, so a rule that later makes *alive*
+`rebuild.js` re-decides a year offline, and that is sound **only where
+the pass gathered the full population**. It short-circuits on a living
+Wikidata credit and never asks TMDB, so a rule that later makes *living*
 stricter leaves those pictures untested rather than closed.
 
-That happened on 2 August: the born-after-release rule reached Wikidata's
-own credits and 965 pictures across 69 years were left open by people who
-could not have been on them. `retest.js` repaired them with the network,
-using the same `judge.js` the pass uses. Records now carry `heldOpenBy`,
-so the next time is a query rather than an audit failure to interpret.
+That happened on 2 August: the born-after-release rule reached
+Wikidata's own credits and 965 pictures across 69 years were left open by
+people who could not have been on them. `retest.js` repaired them with
+the network, using the same `judge.js` the pass uses; all 965 closed and
+0 were genuinely open. Records now carry `heldOpenBy`, so the next time
+is a query rather than an audit failure to interpret.
 
 The audit distinguishes the two: *does not reproduce* means the record
 kept too little, and is a defect; *predates a rule change* means the
@@ -127,30 +111,47 @@ verdict is stale and needs the network.
 
 ## Known and unfixed
 
-- **The old Vault's dates are wrong in roughly one entry in five** — 45 of
-  1924's 199 filed entries move. Deliberately not fixed; the corpus
-  supersedes them.
+- **The audit does not reach the person pages.** A filmography spans
+  years the pass may not have run and the corpus is a snapshot while
+  Wikidata is live, so a person page asks Wikidata directly and judges
+  in the browser — a second implementation of rules 6, 7 and 8 that
+  nothing checks against the first. It had drifted: until the evening of
+  2 August the page decided by counting credits and deaths, rules 6 and 7
+  are not expressible as counts, and Philip Glass (born 1937, credited on
+  *Dracula* (1931) for a 1999 score) held that picture open here while
+  the Vault had it closed on Carla Laemmle in 2014. Fixed by returning
+  the people instead of the arithmetic. Rule 27 in the canon records that
+  the two implementations are still only kept in step by hand.
+- **The old Vault's dates are wrong in roughly one entry in five** — 45
+  of 1924's 199 filed entries move. Deliberately not fixed; the corpus
+  supersedes them, and they are about to be deleted.
 - **30% of closers have no on-screen/behind flag**, from years passed
   before that field existed. `rebuild.js` recovers what the evidence
   supports; the rest fill in on a re-pass.
-- **1,401 pictures are `unchecked`** — TMDB did not answer. Each year's
+- **1,403 pictures are `unchecked`** — TMDB did not answer. Each year's
   `failures.jsonl` records them and they are retriable.
+- **20,114 closings carry no fame**, having no sitelinks on any wiki.
+  They sort last in every list that uses it, which is correct and worth
+  knowing before reading a "best known" list as a ranking.
 - **Nothing is scheduled.** Cron is blocked by TCC while the repository
   lives under `~/Desktop`. Every run this project has done was typed by
   hand.
 - **Nothing lints CSS.** A grouped selector was deleted once and every
-  page went full-bleed.
+  page went full-bleed. `style.css` also spent ten versions stale behind
+  `app.js` because the two `?v=` numbers in `index.html` are bumped by
+  hand.
 
 ## Backups
 
 Every finished year is a single gzipped file in
 `~/Desktop/picture-wrap-evidence/`, written to `.part` and renamed, so a
 file that exists is always a complete year. That directory is in iCloud.
-`pass/` is local and gitignored; `dist/` is build output and disposable.
+`pass/` is local and gitignored; `dist/` and `corpus/` are build output
+and disposable.
 
-The pass was killed three times on 1 August — twice by the harness reaping
-background tasks, once unexplained — and cost one partially-written year
-each time. Resumability was worth more than it looked.
+The pass was killed three times on 1 August — twice by the harness
+reaping background tasks, once unexplained — and cost one partially
+written year each time. Resumability was worth more than it looked.
 
 | | |
 |---|---|
@@ -160,8 +161,9 @@ each time. Resumability was worth more than it looked.
 
 ## Everything else
 
-`README.md` indexes the documents. `FINDINGS.md` and `SOURCES.md` are
-new. `METHOD.md` was brought current on 1 August and is the citable
-account. `VERIFICATION.md` is the plain-prose version of how a wrap is
-decided. `BACKLOG.md` holds sixteen entries, of which the Desk is still
+`README.md` indexes the documents. `METHOD.md` is the citable account.
+`VERIFICATION.md` is how a wrap is decided, and its canon is the list to
+check any change against. `FINDINGS.md` is what the archive says rather
+than how it works. `SOURCES.md` is what is accessed, collected and
+published. `BACKLOG.md` holds sixteen entries, of which the Desk is still
 the largest.

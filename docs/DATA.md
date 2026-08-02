@@ -499,3 +499,29 @@ every apparent trend in this archive is that number changing over time.
 `corpus.js` therefore offers `count()` and no bare total, and `count()`
 returns pictures *and* distinct deaths.
 
+
+**`summary.json`** — the only file the landing page needs: totals, the
+years and decades that have closings, the country counts, the three
+sorted lists behind the front page (`recent`, `bestKnown`, `longestWait`)
+and `doors`.
+
+`doors` holds the ten largest genres and the ten largest regions, each
+with its count over the whole corpus and its five best-known closings, in
+a slimmed shape — id, title, release year, wrap date. Twenty doors cost
+about 11 KB, taking the file from 19 KB to 30 KB. It is precomputed here
+rather than answered in the browser because `facts.bin` carries genre and
+country but neither titles nor fame, so a page that drew ten buttons from
+it would first fetch 3 MB.
+
+**`manifest.json`** — the only mutable file, and the only one that may
+not be cached for long. It names the current version; everything under
+`v/<version>/` is immutable and may be kept for a year.
+
+The version is a digest of the closings — every id and every wrap date —
+plus `FORMAT`, a hand-bumped integer standing for the *shape* those
+closings are written in. Without it, adding a field to `summary.json`
+leaves every closing hashing identically, the version does not move, the
+immutable URLs do not move, and a returning reader holds a year-stale
+copy of a file that changed. Bump `FORMAT` in `build-corpus.js` whenever
+a key, a surface or a packing changes; the closings themselves are
+already hashed, so a changed threshold needs nothing.

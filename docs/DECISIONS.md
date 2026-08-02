@@ -905,3 +905,70 @@ the one person who knows whether those are her feet is 107. That is the
 *"who can still tell us about this picture"* case in its purest form, and
 the answer expires. Asking is worth more than posting.
 
+
+---
+
+## Two ways in, and the second is a place rather than an order
+
+*2 August 2026.*
+
+**Decision.** The landing page offers ten genres and ten regions, each
+opening onto its five best-known closings. One facet at a time; crossings
+belong to the Vault.
+
+**Why.** A sort is a way of ordering everything, and the page already had
+three. None of them answers the question a reader actually arrives with,
+because nobody arrives liking *cinema* — they arrive liking Danish
+documentaries, or Russian horror, or Westerns, and the archive had no way
+to be told so short of 123,956 closings behind one link.
+
+The doors are sorted by fame for the same reason the *Best known* list
+exists: a door that opens onto five titles nobody recognises is a door
+nobody opens twice. **Danish** gives *Häxan*, *Ordet*, *Day of Wrath*.
+**Western** gives *Stagecoach* and *High Noon*.
+
+**Why single facets.** Genre crossed with region is a real question —
+*Danish documentaries* is a phrase people say — and the Vault is where it
+gets asked, with counts and drawers behind it. On a landing page it is a
+matrix, on a page whose whole job is five titles and a way through.
+
+**Where the work happens.** Precomputed in `build-corpus.js` and carried
+in `summary.json`, which the page already fetches: 19 KB to 30 KB for
+twenty doors. The facts table can answer this in the browser — it carries
+genre and country per row — but it is 3 MB and carries neither titles nor
+fame, so the alternative was fetching the corpus to draw ten buttons.
+
+**The count arrives with the click.** Twenty labels each trailing a
+number is a table. One label trailing a number — DANISH 5,514 — is an
+answer to the question that clicking it just asked.
+
+---
+
+## The version has to hash the shape, not only the contents
+
+*2 August 2026.*
+
+**Decision.** `FORMAT`, a hand-bumped integer, is folded into the corpus
+version digest. Bump it whenever the layout of anything published
+changes.
+
+**How it came up.** `doors` was added to `summary.json` and the version
+did not move. The digest reads the closings — every id and every wrap
+date — and every one of them hashed identically, because none of them had
+changed. Only the shape had.
+
+**Why that is a fault and not a convenience.** Everything under
+`v/<version>/` is immutable and served with a year's cache lifetime,
+which is the whole reason the corpus can be static. A version that does
+not move means the URLs do not move, which means a returning reader keeps
+last year's copy of `summary.json` and never sees the new field. The
+landing page would have been correct on every fresh visit and a year
+stale on every returning one, and nothing in the build would have said
+so.
+
+**Why hand-bumped rather than derived.** Hashing the publisher's own
+source would be automatic and would reissue 101 MB for a corrected
+comment. The failure mode of the manual version — forgetting — is the one
+this project already lives with on the `?v=` in `index.html`, and it is
+visible in the same place: a change that should have moved the version
+and didn't.

@@ -643,6 +643,18 @@ databases under no shared identifier and no matching name. The procedure
 above is designed to reduce the second and third. It does nothing about
 the first.
 
+One further caveat belongs here rather than in a footnote, because it
+affects what a reader is looking at rather than what the archive holds.
+**A person's page is not read out of the archive.** A filmography can
+reach release years the pass has not run, and the archive is a dated
+snapshot while Wikidata is live, so that page queries Wikidata directly
+and applies §8's rules in the browser at the moment of reading. It shows
+a picture as still running unless both the archive and the live query
+agree it has closed — the cautious direction, and the one that means a
+person's page can lag behind a picture's page rather than ahead of it.
+The judgement on a picture's own page, and every count published here, is
+the archive's.
+
 ## 15. The full corpus pass, and what is kept
 
 Everything above describes how a verdict is reached. This section
