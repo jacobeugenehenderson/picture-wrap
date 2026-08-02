@@ -198,6 +198,66 @@ the Vault, with a cliff at the boundary: 230 entries from 1945, two from
 
 ---
 
+## The corpus pass
+
+A different kind of run from everything below: not "what closed this
+week" but "judge every picture ever released, and write down why".
+
+    export TMDB_KEY=...
+    export PW_PASS=/path/for/working/files          # local, fast, disposable
+    export PW_PASS_ARCHIVE=~/Desktop/picture-wrap-evidence   # synced, durable
+
+    node pass.js --year 1924                 one year
+    node audit.js --year 1924                re-decide it from its own files
+    node rebuild.js --years 1890-2026        re-derive offline after a rule change
+    node enrich.js --year 1924               genre and country
+    node enrich.js --countries               the country label dictionary
+    node build-corpus.js                     pass output → dist/
+
+**A whole corpus is a shell loop over years**, and should be, because the
+unit of resumption is the year. Skip anything already archived and a
+relaunch costs nothing:
+
+    for y in $(seq 1890 2026); do
+      [[ -f "$PW_PASS_ARCHIVE/$y.jsonl.gz" ]] && continue
+      node pass.js --year $y --concurrency 5
+      node audit.js --year $y
+    done
+
+Run it detached, not as a foreground job: `nohup ... & disown`, logging to
+a file. The 1 August run was killed three times — twice by a harness
+reaping background tasks — and lost one partially-written year each time,
+because a finished year is a sealed `.gz` and the runner's only state is
+which of those exist. On a laptop add `caffeinate -ims -w <pid>`, which
+releases when the run does.
+
+**Timing.** Roughly 10 minutes a year averaged over the century, but the
+shape is counter-intuitive: the expensive years are the old small ones,
+not the huge modern ones. One living person on Wikidata short-circuits
+the TMDB test, so a 1975 year with 3,452 pictures needed 745 survivor
+tests and a 1988 year of the same size needed 413. Whole corpus: about
+twenty hours.
+
+**Order after a run.** Rebuild before building: years judged early were
+decided under earlier rules, and `rebuild.js` re-decides them from stored
+evidence with no network. Then `enrich.js --countries`, then
+`build-corpus.js`.
+
+### Deploying the corpus
+
+`dist/` is never committed. Everything under `v/<version>/` is immutable
+and `manifest.json` is the only mutable object, so **copy the tree first
+and the manifest last** — until the manifest names a version, that version
+is invisible, which makes a half-finished upload harmless.
+
+    rclone copy dist/v r2:picture-wrap/v
+    rclone copy dist/manifest.json r2:picture-wrap/
+
+Old versions can be deleted whenever nothing references them. Rollback is
+a one-file write.
+
+---
+
 ## Maintenance
 
 Two jobs the daily sweep cannot do. Both are cheap and neither is urgent,

@@ -45,7 +45,8 @@ mismatch. What was seen is what was posted, checked rather than hoped.
 **Three extractions worth doing whether or not the desk is ever built:**
 
 - `poster/publish.js` — the single publish-and-file path, called by both
-  `review.js` and the desk. `review.js` currently builds the archive entry
+  `review.js` and the desk. *(The name was briefly taken on 1 August by
+  the corpus builder and given back; that file is `build-corpus.js`.)* `review.js` currently builds the archive entry
   twice in two field lists, which is why `backfilled`, `provisional` and
   `unverified` were dropped on one path.
 - `poster/bluesky-text.js` — `LIMIT`, `measure`, `renderLinks`,
@@ -526,3 +527,116 @@ Also worth stating in any interface: the facts table holds closings only.
 The 60,000 pictures still open are not in it, so every share it computes
 has closed pictures as its denominator, which is a different question from
 a share of all cinema.
+
+---
+
+## Wiring the corpus into the site
+
+*The largest item here as of 2 August, having overtaken the Desk.*
+
+The corpus pass produced 355,717 judged pictures and 122,839 closings,
+audited, published as static shards by `build-corpus.js` and readable by
+`corpus.js`. **Nothing imports `corpus.js`.** The site still reads
+`vault/summary.json`, `vault/ids.json` and `vault/<decade>.json`, which is
+the 11,457-entry Vault built by the old queue path.
+
+Decided, so this is work rather than debate:
+
+- **The corpus replaces the Vault.** Not beside it.
+- **Decade drawers stay**, because a decade is where browsing starts — but
+  a drawer opens onto *years*, not onto a list. A closing decade is up to
+  6 MB (the 2010s hold 16,015 closings); a closing year is about 600 KB
+  and the busiest year in the corpus, 2022 with 1,980, is 773 KB.
+  `summary.json` carries `closingDecades` with per-year counts so a drawer
+  can show numbers before it fetches anything.
+- **Hosting is Cloudflare R2.** Immutable tree first, `manifest.json`
+  last, so a half-finished upload is invisible rather than broken.
+
+The three call sites:
+
+| today | becomes |
+|---|---|
+| `loadIds()` → `vault/ids.json` (1 MB of quoted Q-ids at this scale) | `corpus.has(qid)` → 434 KB binary, one fetch, binary search |
+| `loadDecade(key)` → `vault/<decade>.json` | `corpus.closed(year)`, behind a decade index |
+| `loadSummary()` | `corpus.summary` |
+
+**Two axes exist and confusing them is the first rule in FINDINGS.** The
+Vault browses `closed` — when a picture's last maker died. `year` is when
+the picture came out. Both are published.
+
+**Open:** how the ongoing sweep merges new closings into a corpus the pass
+owns. The pass is a batch job over a release year; the sweep is
+incremental and event-driven. Simplest coherent answer is that a new death
+triggers a re-pass of the affected release years, which is minutes, but
+nothing is built.
+
+---
+
+## A licence for the corpus
+
+*Open since 1 August. The last unanswered question in `SOURCES.md`.*
+
+Wikidata is CC0 and imposes nothing. Facts are not copyrightable in the
+US; a database can attract sui generis rights in the UK and EU, which
+would mean this project *holds* one rather than infringes one. The real
+constraint is contractual — TMDB's API terms, which permit non-commercial
+use with the attribution the colophon already displays, and restrict bulk
+redistribution. That is why the evidence is not published.
+
+**Recommendation: CC0 on the derived corpus**, with the citation format in
+`SOURCES.md` requested rather than required. CC BY on a database creates
+attribution stacking for reusers and buys little; ODC-BY exists if the
+credit should bind. Worth one actual read of TMDB's current terms before
+committing, since that is a contract rather than a default.
+
+---
+
+## Posts that are not closings
+
+*Raised 2 August. Blocked on the Desk, which is why the Desk matters.*
+
+The pass produced material that would make good posts and has nowhere to
+go. `queue.json` holds closings awaiting review; there is no path for a
+written piece, and `preview.js` — the only tool that renders a queue —
+is unrunnable.
+
+Candidates, all verified against the corpus, all about people who are
+already dead:
+
+- **Georges Méliès's death in 1938 closed 65% of every fantasy film
+  recorded from the 1900s.** Carry the caveat: he is the only credited
+  name on most of them, so this is partly the record showing through.
+- **Mae Questel held 30% of the decade's family films open until 1998.**
+  The clean one — 1930s cartoons carry full credit lists and she genuinely
+  outlived those casts.
+- **William Nicholas Selig's single death closed 812 pictures.**
+- **The last living links to silent cinema**, and the exact day each door
+  shut: Carla Laemmle (*A Manly Man*, 1911 → 2014), Fay McKenzie
+  (*Station Content*, 1918 → 2019), Don Marion Davis (*Down on the Farm*,
+  1920 → 2020), Baby Peggy (*Playmates*, 1921 → 2020).
+- **The Wizard of Oz is still open**, held by one person — which is a
+  better post than its closing will be, and expires.
+
+**A hand-written post for one specific closing was considered and
+rejected** on 2 August. See `DECISIONS.md`, *Everybody gets the same
+treatment*.
+
+---
+
+## Cast size and cast age, tested
+
+*Raised 1 August. The data is stored and the test has not been run.*
+
+Documentaries close earlier and faster than any other genre in every
+release cohort measured — 38% closed against 2-6% for a 1979-87 cohort.
+`FINDINGS.md` §6 asserts this is not about documentaries but about how
+many people a picture credits and how young they were, since the last
+survivor is usually whoever was youngest on set.
+
+Both variables are in the evidence: `makerCount` per picture, birth years
+per person. The test is a regression of closed-share on maker count and
+median cast age within a fixed release cohort, with genre added last to
+see whether it explains anything the first two do not. If it does not,
+§6's claim is confirmed and genre can be documented as a sort knob rather
+than a variable.
+

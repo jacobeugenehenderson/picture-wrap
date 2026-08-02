@@ -444,3 +444,58 @@ and **both are asked about life and death** — Wikidata via `P570`, TMDB via
 
 Below-the-line crew — grips, gaffers, sound, second unit — is in neither.
 "Everyone" always means everyone recorded, and the colophon says so.
+
+---
+
+## What the corpus pass stores
+
+*Added 2 August 2026. The Vault's shape is documented above and is being
+replaced by this one.*
+
+Four files per release year, under `PW_PASS`, plus one gzipped copy of
+each finished year under `PW_PASS_ARCHIVE`.
+
+**`works.jsonl`** — one line per picture.
+
+| field | |
+|---|---|
+| `id`, `title`, `year`, `releaseYears` | the picture; all release dates, not a sample |
+| `type` | Wikidata's P31 label — film, short film, silent film, television film… |
+| `genres`, `countries` | from `enrich.js`; countries are demonyms, all of them for a co-production |
+| `verdict` | `closed`, `open`, `unchecked` |
+| `reason` | `wikidata-living`, `wikidata-only`, `tested`, `tmdb-survivor`, `tmdb-no-answer` |
+| `wrapped`, `wrappedMonth`, `wrappedYear`, `dateBasis` | the closing at the resolution its source recorded: `day`, `month`, `year` or `none` |
+| `last` | who closed it — ids, name, death, source, `onScreen` |
+| `makerCount`, `tmdbCredited`, `coverage` | how much of the record this rests on |
+| `unknownCount`, `unknownNames` | the unaccounted-for, **by name** rather than as a count |
+| `checkedAt`, `rules` | when, and under which thresholds and code revision |
+
+**`evidence.jsonl`** — one line per picture, holding every person judged:
+both databases' dates kept apart, birth *and* death precision, the verdict
+for that person, and flags for `impossible` (born after release) and
+`buriedByName` (which Wikidata item matched, and on what).
+
+**`people/<year>.jsonl`** — one row per human, merged on demand by
+`rebuild.js --people`. Written per year because a single merged file was
+being read and rewritten whole by every year, which is nothing at 13,781
+people and a 240 MB rewrite by the 1970s.
+
+**`failures.jsonl`** — what did not answer, so a re-run knows what to
+retry rather than a gap being indistinguishable from a finding.
+
+### The published shape
+
+`build-corpus.js` turns all of that into immutable, versioned, static
+files: `closed/<YYYY>.json` (the Vault's own axis), `year/<YYYY>.json`
+(release year), `day/<MM-DD>.json`, `month/<YYYY-MM>.json`, `ids.bin` —
+sorted 32-bit Wikidata numbers for membership, a quarter the size of the
+JSON it replaces — and `facts.bin`, 25 bytes a picture, for questions that
+cross two columns.
+
+Two columns in the facts table exist to keep its users honest: `closer`,
+because one death closes up to 812 pictures and a count of pictures
+overstates its evidence by up to sevenfold, and `makers`, because nearly
+every apparent trend in this archive is that number changing over time.
+`corpus.js` therefore offers `count()` and no bare total, and `count()`
+returns pictures *and* distinct deaths.
+

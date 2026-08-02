@@ -1,10 +1,10 @@
 /* ==========================================================================
-   PICTURE WRAP — poster/publish.js
+   PICTURE WRAP — poster/build-corpus.js
 
    Turns the corpus into static files a browser can serve itself from.
 
-     node publish.js                     from pass/, into dist/
-     node publish.js --in pass --out dist
+     node build-corpus.js                 from pass/, into dist/
+     node build-corpus.js --in pass --out dist
 
    THE CONTRACT, WHICH IS THE WHOLE DESIGN
 
@@ -107,6 +107,15 @@
 
    Old versions can be deleted whenever nothing references them; nothing
    in the client resolves a version it was not told about.
+
+   NOT TO BE CONFUSED WITH THE publish.js THE BACKLOG WANTS
+
+   This was called publish.js for an afternoon, which collided with a name
+   already spoken for: the backlog's Desk entry reserves poster/publish.js
+   for the single publish-and-file path that review.js and the desk would
+   share. That one sends posts. This one builds files. Naming them the
+   same thing would have put "publish" on the two most different verbs in
+   the project.
 
    Nothing here decides anything. Every verdict was reached by the pass and
    this only arranges the results.

@@ -201,6 +201,37 @@ stale.
 
 ---
 
+## The third half: the corpus pass
+
+The two halves below — site and poster — answer "has this picture
+wrapped?" one picture at a time, live. The pass answers it for every
+picture ever released, offline, and writes down why.
+
+    poster/pass.js          one release year → verdicts + evidence + people + failures
+    poster/audit.js         re-decides a year from its own files, network unplugged
+    poster/rebuild.js       re-derives conclusions offline after a rule changes
+    poster/enrich.js        film-level facts: genre, country
+    poster/build-corpus.js  pass output → immutable sharded files + manifest
+    corpus.js               the browser client for those files
+
+**It shares the judgement and nothing else.** `verify.js` decides who is
+alive; the pass, the site and the poster all import it. What the pass adds
+is that it *keeps the working* — every person judged, the dates used,
+their precision, their source — which is what makes a later rule change a
+re-decision rather than a re-fetch.
+
+**Its output is not the Vault's shape and is meant to replace it.** One
+record per picture with coverage, unknowns by name, `checkedAt`, and the
+thresholds that decided it; plus a packed 25-byte-per-row facts table for
+questions that cross two columns, which per-axis shards cannot answer.
+
+**The client is deliberately ignorant.** `corpus.js` fetches a manifest,
+resolves a key to a versioned URL, and caches. It knows nothing about
+pictures, people or wraps: given the same manifest shape it reads any
+corpus, which is what lets the pattern move to another project.
+
+---
+
 ## Three speeds
 
 | | Latency | What it is |

@@ -1,7 +1,7 @@
 /* corpus.js — reading a published corpus from a browser
    ==========================================================================
 
-   The other half of poster/publish.js. Small on purpose: the whole point
+   The other half of poster/build-corpus.js. Small on purpose: the whole point
    of publishing static, versioned, self-addressing files is that the
    client needs almost no logic to read them.
 
@@ -26,7 +26,7 @@
    a change of corpus changes the URLs.
 
    It does not know anything about pictures, people or wraps. Given a
-   different publish.js writing the same manifest shape, this file works
+   different builder writing the same manifest shape, this file works
    unchanged — which is the point of keeping it separate.
    ========================================================================== */
 

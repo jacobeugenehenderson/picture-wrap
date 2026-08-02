@@ -800,3 +800,108 @@ nowhere.
 Which is the strongest argument for the whole project. The recorded world
 is smaller than the real one, and the only way it grows is if somebody
 asks while there is still somebody to ask.
+
+---
+
+## The corpus replaces the Vault
+
+*2 August 2026.*
+
+**Decision.** The archive is what the corpus pass produced — 355,717
+pictures judged across 136 release years, 122,839 of them closed. The
+11,457-entry Vault built by the queue path is superseded rather than
+merged.
+
+**Why not merge.** They disagree, and the corpus is right where they do.
+Roughly one entry in five of the old Vault carries a wrap date that moves
+under the current rules — 45 of 1924's 199 — because dates were computed
+from Wikidata's credits alone while the verdict used both databases. The
+old Vault also has no country, no genre, no coverage figure, no record of
+when it was checked or under which rules. Reconciling two archives with
+different answers costs more than rebuilding one, and leaves a reader
+unable to tell which they are reading.
+
+**What is lost.** `postedAt` and `postUrl` — which of the 37 published
+entries went to Bluesky and where. That is a small, real thing and it
+should be carried across rather than dropped.
+
+**What is inherited.** Nothing else. The corpus is derived entirely from
+the pass, which is derived entirely from Wikidata and TMDB, and every
+record in it says when it was checked and under which thresholds.
+
+---
+
+## The drawers stay
+
+*2 August 2026.*
+
+**Decision.** The Vault keeps decade drawers. A drawer opens onto years,
+and a year opens onto pictures.
+
+**Why.** Browsing starts at a decade because that is how anybody thinks
+about film. What does not survive the new scale is a drawer that opens
+onto a list: the 2010s hold 16,015 closings, about 6 MB. As year shards
+the same decade is roughly 600 KB a file, and the busiest year in the
+corpus — 2022, with 1,980 closings — is 773 KB.
+
+So the affordance is unchanged and one level deeper, which is a smaller
+ask of a reader than a new one to learn. `summary.json` carries
+`closingDecades` with per-year counts, so a drawer shows numbers before it
+fetches anything.
+
+---
+
+## Cloudflare R2, and the manifest goes last
+
+*2 August 2026.*
+
+**Decision.** The built corpus is served from Cloudflare R2. `dist/` is
+never committed.
+
+**Why R2.** Every rebuild mints a new immutable version and old ones
+linger, so zero egress fees and cheap storage matter more than they would
+for a site. Range requests work, which keeps the SQLite-over-HTTP door
+open if arbitrary querying is ever wanted. A custom domain is a
+configuration rather than a project.
+
+**Why the order matters.** Everything under `v/<version>/` is immutable,
+so a deploy is a copy and never a replacement. `manifest.json` is
+overwritten last, and until it points at a version that version is
+invisible — which makes a half-finished upload harmless rather than a
+broken site, and makes rollback a one-file write.
+
+---
+
+## Everybody gets the same treatment
+
+*2 August 2026.*
+
+**Decision.** No hand-written post for a particular closing. Every picture
+gets the sentence the archive builds from its own facts.
+
+**How it came up.** The Wizard of Oz is held open by one living person,
+and a prepared send-off was drafted with a ruby-slippers angle: *"it was
+her feet that clicked the slippers together."*
+
+**Why it was dropped, and the order matters.** The claim could not be
+sourced. It traces to an uncited sentence on Wikipedia, from there to a
+tabloid, from there to every birthday piece, and from there to social
+posts stating it as fact — while the specialist Oz literature attributes
+the physical business to Judy Garland's *double* and declines to say who
+is in that shot. She has never been found saying it herself. A project
+whose method is *only a recorded fact counts* cannot lead its most
+quotable post with a circular citation.
+
+**And then the better reason.** Once the angle was gone, so was the case
+for a special post at all. The moment an archive hand-writes one entry it
+has favourites, and the reason for this favourite turned out to be an
+error. Uniform treatment is also what makes the eventual post credible:
+an archive that has been quietly posting closings for a year reads as
+doing its job, where the same post as a debut reads as having waited for
+somebody to die.
+
+**What survives the decision.** She is alive, she gives interviews, and
+the one person who knows whether those are her feet is 107. That is the
+*"who can still tell us about this picture"* case in its purest form, and
+the answer expires. Asking is worth more than posting.
+
