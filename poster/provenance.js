@@ -176,6 +176,12 @@ for (let i = 0; i < people.length; i += SLICE) {
 
 let agreed = 0, differed = 0, unmatched = 0;
 const conflicts = [];
+/* Every disagreement, not the first forty. 1,207 of them is a reading
+   task rather than a console message, and each one is a date this
+   archive currently publishes with no record that anything ever
+   contradicted it. Deduplicated per person: one row is one dispute,
+   however many pictures it dates. */
+const disputes = new Map();
 
 for (const year of present) {
   const file = await readYear(year);
@@ -189,10 +195,17 @@ for (const year of present) {
 
       if (hit.died !== person.tmdb.died) {
         differed++;
-        if (conflicts.length < 40) {
+        if (conflicts.length < 20) {
           conflicts.push(`${person.name}: TMDB ${person.tmdb.died}, ` +
             `Wikidata ${hit.died} (${hit.wikidataId})`);
         }
+        const row = disputes.get(keyOf(person)) || {
+          name: person.name, born: person.tmdb.born,
+          tmdb: person.tmdb.died, wikidata: hit.died,
+          wikidataId: hit.wikidataId, pictures: 0,
+        };
+        row.pictures++;
+        disputes.set(keyOf(person), row);
         /* Recorded on the person so the disagreement survives this run,
            and deliberately not acted on. */
         person.disputedBy = { wikidataId: hit.wikidataId, died: hit.died };
@@ -248,6 +261,15 @@ console.log(`${unmatched.toLocaleString('en')} with no single Wikidata candidate
 if (conflicts.length) {
   console.log(`\nDisagreements (first ${conflicts.length}):`);
   for (const c of conflicts) console.log(`  ${c}`);
+}
+
+if (disputes.size) {
+  const path = join(OUT, 'provenance-disputes.tsv');
+  const rows = [...disputes.values()].sort((a, b) => b.pictures - a.pictures);
+  await writeFile(path, 'name\tborn\ttmdb\twikidata\twikidataId\tpictures\n' +
+    rows.map(r => [r.name, r.born, r.tmdb, r.wikidata, r.wikidataId, r.pictures].join('\t'))
+      .join('\n') + '\n');
+  console.log(`\n${disputes.size.toLocaleString('en')} disputed people written to ${path}`);
 }
 
 console.log(dryRun

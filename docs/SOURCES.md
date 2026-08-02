@@ -199,12 +199,14 @@ Marked open because they are decisions, not oversights.
    on 2 August 2026 and forbid commercial use, derivatives, AI training
    and caching beyond six months, none of which we can grant and CC0
    purports to. See `BACKLOG.md`, *A licence for the corpus*.
-2. **A quarter of the corpus cites TMDB where Wikidata held the same
-   fact.** 27,058 of 98,925 closings are dated by a death only TMDB
-   recorded, because the pass stops asking once TMDB answers *dead*. §2
-   of `METHOD.md` says Wikidata is the source and TMDB the check; for
-   those closings that is backwards. Until it is fixed, the licence
-   question is harder than it needs to be.
+2. **Answered on 2 August.** A quarter of the corpus cited TMDB where
+   Wikidata held the same fact, because the pass stops asking once TMDB
+   answers *dead*. `poster/provenance.js` asked: 19,614 closings are now
+   corroborated by Wikidata recording the identical date, and TMDB-only
+   dates fell from about 27% of closings to about 8%. No verdict or wrap
+   date moved, and all 137 years still audit clean. What it exposed —
+   1,207 closings where the two sources disagree, 216 of them on the
+   year — is open and recorded in `BACKLOG.md`.
 3. **How long the person table keeps someone we have decided is dead.**
    Indefinitely today, because that is what makes the next pass cheap.
    TMDB's six-month caching limit bears directly on this, and periodic

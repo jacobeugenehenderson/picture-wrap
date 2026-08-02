@@ -614,11 +614,20 @@ to say so is the *checked?* column.
 
 ---
 
-## A quarter of the corpus cites TMDB where Wikidata had the same fact
+## A quarter of the corpus cited TMDB where Wikidata had the same fact — RUN
 
-*Raised 2 August, out of reading TMDB's terms. The largest of the three
-things that reading turned up, and the one that is about the archive
-rather than about paperwork.*
+*Raised and run 2 August, out of reading TMDB's terms. The largest of the
+three things that reading turned up, and the one that is about the
+archive rather than about paperwork.*
+
+**Done.** `poster/provenance.js` ran over all 137 years in 52 seconds.
+19,614 closings are corroborated — Wikidata records the identical death
+date — taking TMDB-only dates from about 27% of published closings to
+about 8%. `audit.js` was then run over every year: 137 audited, 0
+failures, every verdict and wrap date still reproduces.
+
+What remains open is the 1,207 disputed closings below, and propagating
+the new `wikidataId`s into `works.jsonl`.
 
 **27,058 of 98,925 published closings — 27% — are dated by a death only
 TMDB recorded**, with no Wikidata equivalent in the evidence. That
@@ -663,13 +672,37 @@ That moves TMDB-only dates from about 27% of published closings to about
 8%, which is the difference between the licence question needing an
 argument and not.
 
-**The 1,207 disagreements are the unplanned find.** Most are transposed
-digits — Harold French 1997-10-10 against 1997-10-19, Genevieve Tobin
-1995-07-21 against 1995-07-31, Florence Lawrence 1938-12-28 against
-1938-12-27 — and a handful are years apart, which is either a real
-conflict or a same-name-same-birth-year collision. Either way the archive
-currently publishes one of the two and has never had cause to look. They
-want reading before anything acts on them.
+**The 1,207 disagreements are the unplanned find, and they are the
+reason this was worth doing even if the licence question vanished.**
+472 distinct people, written to `pass/provenance-disputes.tsv`, worst
+first by how many closings each dates.
+
+| | |
+|---|---|
+| 1 January on one side — a year-only value, not a contradiction | 153 people |
+| ...of which agree on the year, so are precision and nothing more | 135 |
+| genuine day-level disagreements | 319 people |
+| ...of which disagree on the **year** | 43 people, 216 closings |
+
+**The 43 are almost all one digit.** Same day, same month, one character
+different in the year:
+
+| | TMDB | Wikidata | closings |
+|---|---|---|---|
+| Antonio Moreno | 19**8**7-02-15 | 19**6**7-02-15 | 20 |
+| Mary Stuart | 2**0**22-02-28 | 2**0**02-02-28 | 12 |
+| Zena Keefe | 197**7**-11-17 | 197**6**-11-17 | 40 |
+| Alice Day | 199**9**-05-25 | 199**5**-05-25 | 11 |
+| Tanis Chandler | 2**0**16-05-07 | 2**0**06-05-07 | 8 |
+
+Antonio Moreno died in 1967 and Mary Stuart in 2002. **Wikidata is right
+and this archive currently publishes the typo** — on 216 closings, and
+Zena Keefe alone dates 40 of them.
+
+Nothing has acted on these, deliberately: a name-and-birth-year match is
+the weakest evidence in the project and it is not allowed to date a wrap.
+Correcting them means reading the file. Where Wikidata carries a
+reference, that is a repair; where it does not, it is a second opinion.
 
 **Still to do after a real run:** the corroborated closers gain a
 `wikidataId` in the evidence but `works.jsonl` is untouched, so the
