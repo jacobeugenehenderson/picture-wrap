@@ -542,9 +542,12 @@ const topLabels = (labelsOf, howMany) => {
 
    Fourteen regions rather than twenty-eight, which is where the same
    threshold would land. Doubling them takes summary.json from 175 KB to
-   285 KB and adds nothing anyone asks for by name: the corpus files
-   pre-1991 Russian cinema as Soviet, so `Russian` is 381 closings and out
-   of reach at any cut this side of 400. */
+   285 KB for labels nobody reaches for.
+
+   Note while reading these counts that `Soviet` (2,515) and `Russian`
+   (381) are different labels rather than two spellings of one, because
+   the demonym belongs to whichever state still uses it. The same holds
+   for British Raj and India. */
 const doorGenres = topLabels(e => e.genres || [], 23).filter(([l]) => l !== 'fiction film');
 const doorRegions = topLabels(e => e.countries || [], 14);
 

@@ -1030,12 +1030,16 @@ most of the archive — the same objection rule 24 makes to a genre that
 only repeats the work's type.
 
 Fourteen regions, not the twenty-eight the same threshold would give.
-Doubling them takes `summary.json` from 175 KB to 285 KB and adds nothing
-anybody asks for by name. In particular it does *not* add Russian: this
-corpus files pre-1991 Russian cinema as **Soviet** (2,515 closings), so
-`Russian` is 381 and out of reach at any cut this side of 400. The phrase
-that motivated the whole feature is the one the data cannot serve, and
-the honest form of it here is *Soviet*.
+Doubling them takes `summary.json` from 175 KB to 285 KB for labels
+nobody reaches for.
+
+Worth recording from the check that settled it: **this corpus files
+pre-1991 Russian cinema as Soviet.** `Soviet` is 2,515 closings and
+`Russian` is 381, so the two are not alternative spellings of one thing
+and no cut of this list will put "Russian" beside "German" and "French".
+The demonym rule (rule 25) is working as written — a demonym belongs to
+whichever state still uses it — and this is what that looks like on a
+corpus spanning 1888 to 2026.
 
 ---
 
