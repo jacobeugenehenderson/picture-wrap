@@ -161,7 +161,13 @@ const row = w => ({
      pictures whose last maker was in front of the camera, or behind it.
      null where neither database said which. */
   last: w.last
-    ? { name: w.last.name, died: w.last.died, onScreen: w.last.onScreen ?? null }
+    ? {
+        name: w.last.name, died: w.last.died,
+        onScreen: w.last.onScreen ?? null,
+        /* So a closing can link to the person, and so two pictures closed
+           by the same death group together without matching on a name. */
+        id: w.last.wikidataId ?? null,
+      }
     : null,
   countries: w.countries?.length ? w.countries : undefined,
   type: w.type,
@@ -407,8 +413,17 @@ const recent = [...byDay.values()].flat()
   .sort((a, b) => (b.wrapped || '').localeCompare(a.wrapped || ''))
   .slice(0, 5);
 
+/* Counts over the whole corpus, not a filtered view, so a filter row does
+   not rearrange itself as somebody clicks through it. */
+const countryCounts = {};
+for (const e of everyClosing) {
+  for (const c of e.countries || []) countryCounts[c] = (countryCounts[c] || 0) + 1;
+}
+const countries = Object.entries(countryCounts).sort((a, b) => b[1] - a[1]);
+
 await put(join(base, 'summary.json'), JSON.stringify({
   closed, open, unchecked,
+  countries,
   years: [...byYear.keys()].sort((a, b) => a - b),
   decades,
   closingDecades,

@@ -62,3 +62,4 @@ pass/
 # whenever the corpus changes, and content-versioned so it never needs
 # invalidating. Nothing here belongs in the history.
 dist/
+corpus/

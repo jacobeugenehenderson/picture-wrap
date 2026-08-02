@@ -22,12 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear } from './verify.js?v=43';
+import { survivors, beyondLiving, earliestLivingBirthYear } from './verify.js?v=45';
+import { openCorpus } from './corpus.js?v=45';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js?v=43';
+} from './shared.js?v=45';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -1052,13 +1053,23 @@ async function viewPerson(id) {
      name. Whichever of them still says "running" wins, because the claim
      we must not make is the one that says everybody is gone.
 
-     The cost is honest and worth naming: the Vault only reaches where the
-     backfill has run, so a picture that closed outside those years stays
-     above the bar until somebody asks about its years. That reads as
-     "we don't know", which is true, rather than "someone is alive", which
-     we would be inventing. */
-  const vault = await loadIds();
-  const closed = f => wikidataClosed(f) && vault.has(qid(f.film));
+     The cost is honest and worth naming: the corpus only reaches where the
+     pass has run, so a picture judged outside it stays above the bar until
+     somebody asks about its year. That reads as "we don't know", which is
+     true, rather than "someone is alive", which we would be inventing.
+
+     Membership used to be a Set built from a megabyte of quoted ids. It is
+     now a binary search over sorted 32-bit integers — one fetch for the
+     page, whatever the length of the filmography — so the answers are
+     resolved together before anything is drawn. */
+  const c = await corpus();
+  const inCorpus = new Set();
+  if (c) {
+    await Promise.all(films.map(async f => {
+      if (await c.has(qid(f.film))) inCorpus.add(qid(f.film));
+    }));
+  }
+  const closed = f => wikidataClosed(f) && inCorpus.has(qid(f.film));
 
   /* Newest first, both sides — which makes this bar mean what the bar
      means everywhere else. Running films newest-first put the OLDEST
@@ -1202,9 +1213,7 @@ document.addEventListener('click', async e => {
 
    Nothing here loads a decade the reader hasn't asked for. */
 let summaryCache = null;
-let idsCache = null;
 let suppressedCache = null;
-const decadeCache = new Map();
 
 async function loadJSON(path, fallback) {
   try {
@@ -1236,22 +1245,40 @@ async function loadSuppressed() {
   return suppressedCache;
 }
 
+/* The corpus, which replaced the Vault.
+
+   Three files used to be fetched from `vault/` — a summary, every closed
+   id as quoted JSON, and a decade at a time. At 123,956 closings the
+   second is a megabyte of quoted strings on every person page and the
+   third is six megabytes for the 2010s. Neither survives the scale.
+
+   `corpus.js` is the client for what `build-corpus.js` writes: one
+   manifest, then immutable versioned files addressed by a key the page
+   already holds. Membership arrives as sorted 32-bit integers and is
+   answered by binary search; a drawer asks for one year rather than a
+   decade.
+
+   CORPUS_BASE is the one thing deployment changes. Locally it is a
+   directory beside the site; in production it is the R2 bucket. */
+const CORPUS_BASE = 'corpus/';
+
+let corpusPromise = null;
+function corpus() {
+  corpusPromise ??= openCorpus(CORPUS_BASE).catch(err => {
+    /* A corpus that will not open must not look like an empty one: an
+       empty archive is a claim, and a failed fetch is not. */
+    console.error('corpus unavailable:', err);
+    return null;
+  });
+  return corpusPromise;
+}
+
 async function loadSummary() {
-  summaryCache ??= await loadJSON('vault/summary.json',
-    { total: 0, decades: [], countries: [], recent: [] });
+  const c = await corpus();
+  summaryCache ??= c
+    ? { ...c.summary, total: c.summary.closed }
+    : { total: 0, decades: [], countries: [], recent: [], closingDecades: {} };
   return summaryCache;
-}
-
-async function loadIds() {
-  idsCache ??= new Set(await loadJSON('vault/ids.json', []));
-  return idsCache;
-}
-
-async function loadDecade(key) {
-  if (!decadeCache.has(key)) {
-    decadeCache.set(key, await loadJSON(`vault/${encodeURIComponent(key)}.json`, []));
-  }
-  return decadeCache.get(key);
 }
 
 /* Which country's pictures to show. The Vault runs to 2,135 titles and
@@ -1306,7 +1333,13 @@ function renderArchive(summary) {
       ${kinds.map(([k, n]) => chip(k, k, n)).join('')}
     </div>`;
 
-  const sections = summary.decades.map(([label, n]) => `
+  /* Closing decades, newest first — the axis the Vault has always
+     browsed. `decades` in the corpus summary is by RELEASE year and is a
+     different question. */
+  const sections = Object.entries(summary.closingDecades ?? {})
+    .sort((a, b) => Number(b[0]) - Number(a[0]))
+    .map(([decade, d]) => [`${decade}s`, d.total])
+    .map(([label, n]) => `
     <details class="decade" data-decade="${esc(label)}">
       <summary>
         <span class="decade-label">${esc(label)}</span>
@@ -1325,61 +1358,103 @@ function renderArchive(summary) {
   `);
 }
 
-/* Fill a drawer the first time it is opened, and re-fill it when the
-   country filter changes under it. The fetch happens once per decade per
-   page load; the render happens whenever the filter moves. */
-async function fillDecade(details) {
+/* Fill a drawer the first time it is opened.
+
+   It used to fetch the decade and group it into years in memory. At this
+   scale a decade is six megabytes and a year is six hundred kilobytes, so
+   the drawer now renders its years from counts the summary already holds
+   — no request at all — and a year fetches itself when opened.
+
+   Which means the shape of the whole archive is visible for the price of
+   the summary, and nothing is downloaded on behalf of somebody who came
+   to look at one year of it. */
+function fillDecade(details) {
   const key = details.dataset.decade;
   const body = details.querySelector('.decade-body');
-  if (!body) return;
+  if (!body || body.dataset.filled === key) return;
 
-  const films = await loadDecade(key);
-  const shown = films.filter(f =>
-    vaultFilter === 'all' || (f.country || 'Other') === vaultFilter);
+  const decade = summaryCache?.closingDecades?.[String(Number(key.replace(/s$/, '')))];
+  const years = Object.entries(decade?.years ?? {}).sort((a, b) => b[0].localeCompare(a[0]));
 
-  if (!shown.length) {
+  if (!years.length) {
     body.innerHTML = `<p class="state">Nothing from the ${esc(key)} here.</p>`;
     return;
   }
 
-  /* Two levels of folding. A decade holds hundreds of closings — the 1990s
-     alone has over a thousand, which is not a list, it's a filing cabinet
-     — so years nest inside. */
-  const years = new Map();
-  for (const f of shown) {
-    const y = year(f.wrapped) || 'Undated';
-    if (!years.has(y)) years.set(y, []);
-    years.get(y).push(f);
-  }
-
-  body.innerHTML = [...years.entries()].map(([y, yearFilms], yi) => `
-    <details class="yr" ${yi === 0 ? 'open' : ''}>
+  body.dataset.filled = key;
+  body.innerHTML = years.map(([y, n]) => `
+    <details class="yr" data-year="${esc(y)}">
       <summary>
         <span class="yr-label">${esc(y)}</span>
-        <span class="yr-count">${yearFilms.length}</span>
+        <span class="yr-count">${n}</span>
       </summary>
-      <ul class="roster archive">
-        ${groupByClosing(yearFilms).map(archiveRow).join('')}
-      </ul>
+      <div class="yr-body"><p class="state">Opening&hellip;</p></div>
     </details>`).join('');
+}
+
+/* One year of closings, newest first, grouped by the death that caused
+   them. Re-rendered rather than re-fetched when the country filter moves. */
+async function fillYear(details) {
+  const y = details.dataset.year;
+  const body = details.querySelector('.yr-body');
+  if (!body) return;
+
+  const c = await corpus();
+  if (!c) {
+    body.innerHTML = `<p class="state">The archive didn&rsquo;t answer. Try again in a moment.</p>`;
+    return;
+  }
+
+  const films = await c.closed(y);
+  const shown = films.filter(f =>
+    vaultFilter === 'all' || (f.countries || []).includes(vaultFilter));
+
+  if (!shown.length) {
+    body.innerHTML = `<p class="state">Nothing from ${esc(y)} here.</p>`;
+    return;
+  }
+
+  body.innerHTML = `
+    <ul class="roster archive">
+      ${groupByClosing(shown).map(archiveRow).join('')}
+    </ul>`;
 }
 
 /* `toggle` doesn't bubble, so it has to be caught on the way down. */
 document.addEventListener('toggle', e => {
   const details = e.target;
-  if (details.matches?.('details.decade') && details.open) fillDecade(details);
+  if (!details.open) return;
+  if (details.matches?.('details.decade')) fillDecade(details);
+  if (details.matches?.('details.yr')) fillYear(details);
 }, true);
 
 /* One death can take several pictures over the line at once — Mary
    Carlisle's closed four. Those belong together: the event is the person,
    and the films are what it happened to. */
 function groupByClosing(films) {
+  /* Not a string key, because the identifier is not always there. Léonce
+     Corne closed two pictures on 31 December 1977 and the archive holds a
+     Wikidata id for one of them and not the other — older records lost it
+     — so keying on `id || name` made him two people on the same day.
+
+     Same name, same date, and no CONTRADICTING pair of ids: an id is used
+     to tell two people apart, never to tell one person apart from
+     himself. */
+  const same = (a, b) =>
+    a.name === b.name
+    && (a.died || '').slice(0, 10) === (b.died || '').slice(0, 10)
+    && !(a.id && b.id && a.id !== b.id);
+
   const groups = [];
   for (const f of films) {
-    const key = `${f.last.id}|${(f.last.died || '').slice(0, 10)}`;
     const open = groups[groups.length - 1];
-    if (open && open.key === key) open.films.push(f);
-    else groups.push({ key, last: f.last, films: [f] });
+    if (open && same(open.last, f.last)) {
+      open.films.push(f);
+      /* Keep whichever record knows the id, so the group can link. */
+      if (!open.last.id && f.last.id) open.last = f.last;
+    } else {
+      groups.push({ last: f.last, films: [f] });
+    }
   }
   return groups;
 }
@@ -1392,7 +1467,7 @@ function archiveRow(group) {
     <li class="closing">
       <p class="closing-who">
         <span class="closing-name">${esc(last.name)}</span>
-        ${last.character ? `<span class="closing-role">${esc(last.character)}</span>` : ''}
+
         <span class="closing-date">${esc(longDate(last.died))}</span>
       </p>
       <ul class="closing-films">
@@ -1402,7 +1477,7 @@ function archiveRow(group) {
               <span class="who-name">${esc(f.title)}</span>
               ${[
                 f.type ? `<span class="closing-kind">${esc(sentence(
-                  [f.country, f.type].filter(Boolean).join(' ')))}</span>` : '',
+                  [(f.countries || [])[0], f.type].filter(Boolean).join(' ')))}</span>` : '',
                 f.stars?.length
                   ? `<span class="closing-stars">with ${esc(f.stars.join(', '))}</span>`
                   : '',
