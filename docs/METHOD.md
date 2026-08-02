@@ -664,6 +664,24 @@ The pass now walks one release year at a time and writes four things:
 - **a failure ledger**, so that a lookup which did not answer is recorded
   as such and can be retried rather than being silently absent.
 
+**The guarantee has a boundary, and it was overstated.** Re-deciding from
+stored evidence is sound only for pictures the survivor test actually ran
+on. The pass short-circuits — the moment Wikidata shows a living person it
+returns *open* without asking TMDB, which is what makes a corpus of this
+size affordable — and for those pictures the stored evidence is a partial
+population by construction.
+
+So a rule that makes *alive* stricter does not turn them closed. It turns
+them **untested**. On 2 August the born-after-release rule reached
+Wikidata's own credits and left 965 pictures in that state, held open by
+people who could not have worked on them; `rebuild.js` could not repair
+them and `retest.js` exists for exactly this.
+
+The record now names who a short-circuit rested on, in `heldOpenBy`, so
+the next time a rule tightens the affected set is a query rather than an
+inference. The audit reports this class separately from a genuine failure
+to reproduce, because calling both a failure is how a real one gets lost.
+
 **The test of whether that is sufficient is mechanical, not editorial.**
 Every year is re-decided from its own files with the network unplugged;
 every verdict and every date must reproduce. The same files are then

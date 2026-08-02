@@ -14,6 +14,18 @@ and all four were wrong in the same way.
 
 ---
 
+## A note on where the evidence is complete
+
+Everything below is re-derivable from stored evidence *for pictures the
+survivor test ran on*. The pass stops early when Wikidata already shows a
+living person, so those pictures hold a partial population and a later
+rule change makes them untested rather than re-decidable. 965 were found
+in that state on 2 August and re-tested. `heldOpenBy` on each record now
+names who the pass stopped on, which turns the next occurrence into a
+query.
+
+---
+
 ## 0. Five rules for any graphic built from this data
 
 1. **Hold the release cohort fixed.** Anything plotted against closing

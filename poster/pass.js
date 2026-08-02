@@ -39,8 +39,10 @@ import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 
 import { sparql, qid, sleep, HERE } from './lib.js';
-import { WORK_CLASSES, IN_LIST, VALUES, CREDITS, LANGS } from '../shared.js';
-import { survivors, statusOf, fromWikidata, datesAWrap, wrapDate, impossible } from '../verify.js';
+import { WORK_CLASSES, IN_LIST, LANGS } from '../shared.js';
+/* The judgement itself lives in judge.js, shared with retest.js. A second
+   copy of it is the mistake this project has made three times. */
+import { creditsQuery, judge } from './judge.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -85,23 +87,6 @@ const RULES = {
   })(),
 };
 
-const ROLE = new Map(CREDITS.map(([prop, label]) => [prop.replace('wdt:', ''), label]));
-
-/* People who asked not to be named, honoured here as well as on the site.
-
-   A suppression that covered only the pages would be theatre: the name
-   would sit in the evidence, in the person table, and in any copy handed
-   to a researcher. It takes the name and never the vote — the person is
-   still judged, still holds their picture open, and is still counted.
-   What goes is only the identity. */
-const withheld = new Set(
-  JSON.parse(await readFile(join(HERE, '..', 'vault', 'suppressed.json'), 'utf8')
-    .catch(() => '[]')));
-
-const anonymise = person => (person.wikidataId && withheld.has(person.wikidataId)
-  ? { ...person, name: null, tmdbId: null, suppressed: true }
-  : person);
-
 /* --- what happened in this year ---------------------------------------- */
 
 /* Every moving picture released in the year with at least one credited
@@ -126,32 +111,6 @@ SELECT ?film ?filmLabel ?typeLabel (MAX(?y) AS ?year)
   SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
 } GROUP BY ?film ?filmLabel ?typeLabel`;
 
-/* Everyone Wikidata puts on these pictures, with the dates and — this is
-   the part the counting queries could never give — the people themselves.
-
-   Birth comes through the full statement path because that is the only
-   way to reach its precision, and precision is what separates a date from
-   a year somebody typed.
-
-   Batched: one query per twenty pictures rather than one per picture. */
-const creditsQuery = films => `
-SELECT ?film ?p ?pLabel ?prop ?dob ?prec ?dod ?deathPrec ?tmdb WHERE {
-  VALUES ?film { ${films.map(f => `wd:${f}`).join(' ')} }
-  VALUES ?prop { ${VALUES} }
-  ?film ?prop ?p .
-  OPTIONAL {
-    ?p p:P569/psv:P569 ?birth .
-    ?birth wikibase:timeValue ?dob ; wikibase:timePrecision ?prec .
-  }
-  OPTIONAL { ?p wdt:P570 ?dod }
-  OPTIONAL {
-    ?p p:P570/psv:P570 ?death .
-    ?death wikibase:timePrecision ?deathPrec .
-  }
-  OPTIONAL { ?p wdt:P4985 ?tmdb }
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
-}`;
-
 /* --- reaching TMDB ----------------------------------------------------- */
 
 const tmdbGet = async path => {
@@ -168,123 +127,20 @@ const tmdbGet = async path => {
   return null;
 };
 
-/* --- judging one picture ------------------------------------------------ */
+/* People who asked not to be named, honoured here as well as on the site.
 
-/* Wikidata's own credits, judged by the same file that judges everyone
-   else. This is the half the site used to do with `!p.dod` and no rule at
-   all. */
-function judgeRecorded(rows, releaseYear) {
-  const people = new Map();
-  for (const r of rows) {
-    const id = qid(r.p);
-    if (!people.has(id)) {
-      people.set(id, {
-        wikidataId: id,
-        name: r.pLabel || id,
-        tmdbId: r.tmdb || null,
-        roles: [],
-        wd: fromWikidata(r.dob, r.prec, r.dod, r.deathPrec),
-        tmdb: null,
-      });
-    }
-    const role = ROLE.get(String(r.prop).split('/').pop());
-    const person = people.get(id);
-    if (role && !person.roles.includes(role)) person.roles.push(role);
-  }
+   A suppression that covered only the pages would be theatre: the name
+   would sit in the evidence, in the person table, and in any copy handed
+   to a researcher. It takes the name and never the vote — the person is
+   still judged, still holds their picture open, and is still counted.
+   What goes is only the identity. */
+const withheld = new Set(
+  JSON.parse(await readFile(join(HERE, '..', 'vault', 'suppressed.json'), 'utf8')
+    .catch(() => '[]')));
 
-  /* Nobody worked on a picture before they were born, and Wikidata's own
-     credits were never asked. The rule has existed since the backfill and
-     was applied only to the people TMDB names — so Under Western Skies
-     (1910) is dated 3 June 2024 by William Russell, born 1924, who is the
-     Doctor Who actor and not the William Russell born 1884 who is also in
-     its cast list. Every one of the longest release-to-wrap gaps in the
-     corpus is this same collision.
-
-     They stay in the evidence, flagged rather than deleted: the record
-     should show that we saw this person and set them aside, not silently
-     lose them. They do not vote and they cannot date a wrap. */
-  return [...people.values()].map(p => ({
-    ...p,
-    source: 'wikidata',
-    status: statusOf(p, releaseYear),
-    datesAWrap: datesAWrap(p),
-    impossible: impossible(p, releaseYear),
-  }));
-}
-
-async function judge(work, creditRows) {
-  const releaseYear = Number(work.year) || YEAR;
-  const recorded = judgeRecorded(creditRows, releaseYear);
-
-  const living = recorded.filter(p => p.status === 'alive' && !p.impossible);
-  const tmdbId = work.tv || work.tmdb || null;
-  const media = work.tv ? 'tv' : 'movie';
-
-  /* Someone Wikidata records as living settles it, and no second opinion
-     can overturn a person who is simply here. Skipping the TMDB call in
-     that case is not an optimisation of the answer, it is the answer. */
-  if (living.length) {
-    return {
-      verdict: 'open', reason: 'wikidata-living', tested: false,
-      recorded, resolved: [], unknownCount: null, tmdbCredited: null,
-      wrapped: null, wrappedYear: null, dateBasis: null, last: null, ok: true,
-    };
-  }
-
-  if (!tmdbId) {
-    const dated = wrapDate(recorded, releaseYear);
-    return {
-      verdict: 'closed', reason: 'wikidata-only', tested: false, unverified: true,
-      recorded, resolved: [], unknownCount: null, tmdbCredited: null,
-      ...dated, ok: true,
-    };
-  }
-
-  const found = await survivors({
-    film: work.id, tmdbId, media, year: releaseYear,
-    sparql, tmdb: tmdbGet, detail: true,
-  });
-
-  if (!found.ok) {
-    return {
-      verdict: 'unchecked', reason: 'tmdb-no-answer', tested: true,
-      recorded, resolved: [], unknownCount: null, tmdbCredited: null,
-      wrapped: null, wrappedYear: null, dateBasis: null, last: null, ok: false,
-    };
-  }
-
-  /* Everyone TMDB named that Wikidata had not attached to this picture,
-     each with the verdict verify.js reached and the dates it used. */
-  const resolved = (found.working || []).map(w => ({
-    wikidataId: w.wikidataId ? qid(w.wikidataId) : null,
-    tmdbId: w.tmdbId,
-    name: w.name,
-    roles: w.role ? [w.role] : [],
-    onScreen: w.onScreen,
-    wd: w.wikidata,
-    tmdb: w.tmdb,
-    source: 'tmdb',
-    status: w.status,
-    buriedByName: w.buriedByName,
-    datesAWrap: w.datesAWrap,
-  }));
-
-  const alive = found.alive.length > 0;
-  const dated = alive
-    ? { wrapped: null, wrappedYear: null, dateBasis: null, last: null }
-    : wrapDate([...recorded, ...resolved], releaseYear);
-
-  return {
-    verdict: alive ? 'open' : 'closed',
-    reason: alive ? 'tmdb-survivor' : 'tested',
-    tested: true,
-    recorded, resolved,
-    unknownCount: found.unknown,
-    tmdbCredited: found.tmdbCredited ?? null,
-    ...dated,
-    ok: true,
-  };
-}
+const anonymise = person => (person.wikidataId && withheld.has(person.wikidataId)
+  ? { ...person, name: null, tmdbId: null, suppressed: true }
+  : person);
 
 /* --- go ---------------------------------------------------------------- */
 
@@ -354,7 +210,9 @@ for (let i = 0; i < works.length; i += CONCURRENCY) {
   const chunk = works.slice(i, i + CONCURRENCY);
 
   const results = await Promise.all(chunk.map(async work => {
-    try { return { work, ...(await judge(work, credits.get(work.id) || [])) }; }
+    try {
+      return { work, ...(await judge(work, credits.get(work.id) || [], { sparql, tmdb: tmdbGet })) };
+    }
     catch (err) { return { work, verdict: 'unchecked', reason: 'threw', ok: false,
                            error: String(err.message), recorded: [], resolved: [] }; }
   }));
@@ -368,6 +226,7 @@ for (let i = 0; i < works.length; i += CONCURRENCY) {
       tmdbId: r.work.tv || r.work.tmdb || null, media: r.work.tv ? 'tv' : 'movie',
       verdict: r.verdict, reason: r.reason, tested: r.tested ?? false,
       unverified: r.unverified ?? false,
+      heldOpenBy: r.heldOpenBy ?? null,
       wrapped: r.wrapped ?? null, wrappedYear: r.wrappedYear ?? null,
       dateBasis: r.dateBasis ?? null,
       /* Through the same filter as everyone else. The last of a picture's

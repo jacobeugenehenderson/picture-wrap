@@ -91,7 +91,7 @@ function decide(work, judged, ceiling) {
 
 /* --- 1 and 2 ----------------------------------------------------------- */
 
-let checked = 0, verdictMismatch = 0, dateMismatch = 0, missing = 0;
+let checked = 0, verdictMismatch = 0, dateMismatch = 0, missing = 0, stale = 0;
 const examples = [];
 
 for (const work of works) {
@@ -103,9 +103,31 @@ for (const work of works) {
   const again = decide(work, record.judged, CEILING ? Number(CEILING) : null);
 
   if (again.verdict !== work.verdict) {
-    verdictMismatch++;
-    if (examples.length < 6) {
-      examples.push(`   ${work.title}: ${work.verdict} → ${again.verdict}`);
+    /* Two very different things look identical here, and calling both a
+       failure is how a real one gets lost in the noise.
+
+       A picture the pass called OPEN without testing was short-circuited:
+       the expensive TMDB question is skipped the moment Wikidata shows a
+       survivor, so its evidence is a partial population BY CONSTRUCTION.
+       If the rule that produced that survivor has since tightened, the
+       stored verdict is stale and the picture is untested — not closed,
+       and not evidence of anything missing from the record. It needs the
+       network, which is what retest.js is for.
+
+       Anything else is the real failure: a verdict that cannot be
+       reproduced from evidence that should have been sufficient. */
+    const shortCircuited = work.verdict === 'open' && !work.tested
+      && record.judged.some(p => p.status === 'alive')
+      && !record.judged.some(p => p.status === 'alive'
+        && !(p.impossible ?? impossible(p, Number(work.year) || YEAR)));
+
+    if (shortCircuited) {
+      stale++;
+    } else {
+      verdictMismatch++;
+      if (examples.length < 6) {
+        examples.push(`   ${work.title}: ${work.verdict} → ${again.verdict}`);
+      }
     }
   } else if (!CEILING && (again.wrapped ?? null) !== (work.wrapped ?? null)) {
     dateMismatch++;
@@ -165,6 +187,10 @@ if (CEILING) {
   console.log(mark(dateMismatch === 0, 'every wrap date reproduces', `${dateMismatch} wrap dates do not reproduce`));
   console.log(mark(missing === 0, 'every picture has an evidence line', `${missing} pictures have no evidence`));
   if (examples.length) console.log(examples.join('\n'));
+  if (stale) {
+    console.log(`   note  ${stale} short-circuited verdicts predate a rule change ` +
+      `and need re-testing — run retest.js`);
+  }
 
   console.log('\n3. INTEGRITY');
   console.log(mark(imprecise === 0, 'every wrap date rests on a death recorded to the day', `${imprecise} wrap dates rest on a year, not a day`));

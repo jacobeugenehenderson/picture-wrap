@@ -108,6 +108,23 @@ The Desk is still the largest thing not built on the *posting* side, and
 `preview.js` remains unrunnable: it renders 3,329 queue items with
 per-item API calls and an 80ms sleep.
 
+## The one limit worth knowing about the evidence
+
+`rebuild.js` re-decides a year offline, and that is sound **only where the
+pass gathered the full population**. It short-circuits on a living
+Wikidata credit and never asks TMDB, so a rule that later makes *alive*
+stricter leaves those pictures untested rather than closed.
+
+That happened on 2 August: the born-after-release rule reached Wikidata's
+own credits and 965 pictures across 69 years were left open by people who
+could not have been on them. `retest.js` repaired them with the network,
+using the same `judge.js` the pass uses. Records now carry `heldOpenBy`,
+so the next time is a query rather than an audit failure to interpret.
+
+The audit distinguishes the two: *does not reproduce* means the record
+kept too little, and is a defect; *predates a rule change* means the
+verdict is stale and needs the network.
+
 ## Known and unfixed
 
 - **The old Vault's dates are wrong in roughly one entry in five** — 45 of
