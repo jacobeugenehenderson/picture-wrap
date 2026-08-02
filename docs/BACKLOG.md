@@ -641,10 +641,40 @@ returns a George Spence who died in 1850, so this needs the existing
 strict rule (name plus exact birth year, exactly one candidate) and not a
 bulk overwrite.
 
-**The fix:** before recording a TMDB-only death, ask Wikidata under the
-rule already written. No edits to anybody else's database, no new
-judgement — the verdict does not move, only the source and possibly the
-precision of the date.
+**The fix is written**: `poster/provenance.js`, and it is a
+*corroboration* pass rather than a repair. `verify.js` documents the
+name-and-birth-year rule as "good enough to stop claiming somebody is
+alive, and not good enough to put a day on the headline claim", and that
+does not get relaxed because a different caller finds it convenient. So
+where the two sources agree the date is left exactly as it was and the
+record simply stops saying the fact is TMDB's alone; where they disagree
+nothing moves and the conflict is written down for a human.
+
+**Dry run, 137 years, 38 seconds** (9,881 distinct people, WDQS answers a
+batch of sixty in 0.2s):
+
+| | |
+|---|---|
+| Wikidata records the identical date | **19,614 closings** |
+| the two sources disagree | 1,207 |
+| no single Wikidata candidate | 6,547 |
+
+That moves TMDB-only dates from about 27% of published closings to about
+8%, which is the difference between the licence question needing an
+argument and not.
+
+**The 1,207 disagreements are the unplanned find.** Most are transposed
+digits — Harold French 1997-10-10 against 1997-10-19, Genevieve Tobin
+1995-07-21 against 1995-07-31, Florence Lawrence 1938-12-28 against
+1938-12-27 — and a handful are years apart, which is either a real
+conflict or a same-name-same-birth-year collision. Either way the archive
+currently publishes one of the two and has never had cause to look. They
+want reading before anything acts on them.
+
+**Still to do after a real run:** the corroborated closers gain a
+`wikidataId` in the evidence but `works.jsonl` is untouched, so the
+published `last.id` stays null and 19,614 closings still cannot link to
+the person who closed them. A `rebuild.js` pass would propagate it.
 
 **What it is not.** Writing these dates *into* Wikidata and reading them
 back as CC0 was considered and is licence laundering; it would also

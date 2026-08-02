@@ -381,7 +381,7 @@ export function statusOf(person, releaseYear) {
    'alive', so losing it costs a closing, never a claim. */
 const NAME_BATCH = 60;
 
-async function deathsByName(people, sparql) {
+export async function deathsByName(people, sparql) {
   /* A map, not a set: which Wikidata item matched and what death it
      carried, so the burial can be checked later instead of taken on
      trust. It was a bare set of ids, which recorded THAT we had decided
