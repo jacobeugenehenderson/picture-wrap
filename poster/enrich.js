@@ -54,6 +54,10 @@ const value = (flag, fallback) => {
 
 const OUT = value('--out', process.env.PW_PASS || 'pass');
 const dictionaryOnly = args.includes('--countries');
+/* Genre and country are already stored for every year; only sitelinks are
+   new. Re-asking for all three costs a minute a year against ten seconds,
+   so a facet that is already present should not be fetched again. */
+const fameOnly = args.includes('--fame');
 const single = Number(value('--year', 0));
 const range = value('--years', null);
 
@@ -236,12 +240,19 @@ SELECT ?film ?value WHERE {
    It is a proxy and should be read as one. It measures how much has been
    written about a picture, which correlates with fame and also with being
    European, English-language and old enough for somebody to have got
-   round to it. */
-const fameQuery = (year, from, to) => `
+   round to it.
+
+   Asked by ID, unlike genre and country.
+
+   Those two ask "everything released in year Y" and intersect locally,
+   which is cheap because the property itself is selective — only a
+   fraction of items carry P136. Sitelinks are on nearly every item, so
+   the same shape returned 4,928 rows for a year holding five pictures and
+   took minutes rather than seconds. We know exactly which films we want.
+   Asking about those is bounded, and turned five hours into ten minutes. */
+const fameQuery = films => `
 SELECT ?film ?value WHERE {
-  ?film wdt:P577 ?rd .
-  FILTER(YEAR(?rd) = ${year})
-  ${months(from, to)}
+  VALUES ?film { ${films.map(f => `wd:${f}`).join(' ')} }
   ?film wikibase:sitelinks ?value .
 }`;
 
@@ -320,15 +331,20 @@ for (const year of years) {
     works = (await readFile(path, 'utf8')).trim().split('\n').filter(Boolean).map(l => JSON.parse(l));
   } catch { console.log(`${year} — no pass output, skipping`); continue; }
 
-  let genreRows, countryRows;
-  try { genreRows = await facet(genreQuery, year); }
-  catch (err) { console.log(`${year} — genre query failed (${err.message}), skipping`); continue; }
-  try { countryRows = await facet(countryQuery, year); }
-  catch (err) { console.log(`${year} — country query failed (${err.message})`); countryRows = []; }
+  let genreRows = [], countryRows = [];
+  if (!fameOnly) {
+    try { genreRows = await facet(genreQuery, year); }
+    catch (err) { console.log(`${year} — genre query failed (${err.message}), skipping`); continue; }
+    try { countryRows = await facet(countryQuery, year); }
+    catch (err) { console.log(`${year} — country query failed (${err.message})`); countryRows = []; }
+  }
 
-  let fameRows;
-  try { fameRows = await facet(fameQuery, year); }
-  catch (err) { console.log(`${year} — sitelink query failed (${err.message})`); fameRows = []; }
+  const fameRows = [];
+  const ids = works.map(w => w.id);
+  for (let i = 0; i < ids.length; i += 200) {
+    try { fameRows.push(...await sparql(fameQuery(ids.slice(i, i + 200)))); }
+    catch (err) { console.log(`${year} — sitelinks ${i}+ failed (${err.message})`); }
+  }
 
   const genres = collect(genreRows);
   const countries = collect(countryRows, countryName);
@@ -352,15 +368,15 @@ for (const year of years) {
 
   let touched = 0, deduped = 0, placed = 0;
   const out = works.map(w => {
-    const c = countries.get(w.id) || w.countries || [];
+    const c = (fameOnly ? w.countries : countries.get(w.id)) || w.countries || [];
     if (c.length) placed++;
 
-    const g = (genres.get(w.id) || []).filter(label => {
+    const g = (fameOnly ? (w.genres || []) : (genres.get(w.id) || [])).filter(label => {
       if (w.type && same(label, w.type)) { deduped++; return false; }
       return true;
     });
     const f = fame.get(w.id) ?? w.fame ?? 0;
-    if (!genres.has(w.id)) return { ...w, genres: w.genres ?? [], countries: c, fame: f };
+    if (!fameOnly && !genres.has(w.id)) return { ...w, genres: w.genres ?? [], countries: c, fame: f };
     touched++;
     return { ...w, genres: g, countries: c, fame: f };
   });
