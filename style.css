@@ -1109,14 +1109,42 @@ main,
 /* One line: who made it, and the way in. It was two paragraphs of sources
    and a caveat, which is a lot of hedging to put under every page — those
    live on the About page now, where somebody has gone looking for them. */
+/* The page closes the way it opened.
+
+   A full-width gold rule here was considered and refused: the gold bar
+   is the only element on this site that means something — the line
+   between the makers still living and the rest — and on a film page a
+   sharp gold line under the content sits close enough to a real bar to
+   blunt it. The masthead rule and the hairline under the search field
+   get away with being gold because they are frame rather than content,
+   above everything, before any claim has been made.
+
+   So this is the masthead's mark repeated, not a divider: the same 54px,
+   a pixel thinner and set back to just over half, because a page should
+   open louder than it closes. It brackets the whole document, and it
+   cannot be mistaken for a bar because a bar spans the measure and this
+   deliberately does not. */
 .colophon {
+  position: relative;
   margin-top: 4rem;
-  padding-top: 1.4rem;
-  border-top: 1px solid var(--rule);
+  padding-top: 1.6rem;
   font-size: var(--size-small);
   line-height: 1.6;
   text-align: center;
   color: var(--ink-faint);
+}
+
+.colophon::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 54px;
+  height: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg,
+    var(--gold-dark), var(--gold-light), var(--gold-dark));
+  opacity: 0.55;
 }
 
 .colophon p { margin: 0; }

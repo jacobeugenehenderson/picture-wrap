@@ -1050,6 +1050,22 @@ What is deliberately *not* changed is the count. Fewer doors would fix
 the same problem by taking away the genres that made the row worth
 having.
 
+**The page closes with the mark it opened with.** A sharp gold rule at
+the footer was proposed and refused. The gold bar is the only element on
+this site that means something, and every gold thing that is not that bar
+spends a little of its signal. The masthead rule and the search hairline
+get away with it by being frame — above everything, before any claim has
+been made. A full-width gold line under the content does not: on Carla
+Laemmle's page it would sit eight rows below a real bar, at the bottom of
+a filmography, and a reader would be right to ask what it divided.
+
+So the footer carries the masthead's 54px mark instead, a pixel thinner
+and at just over half opacity, because a page should open louder than it
+closes. It brackets the document and cannot be read as a bar, because a
+bar spans the measure and this deliberately does not. The full-width
+hairline it replaces is gone; four rems of space separate the colophon
+better than a line did.
+
 **And a hairline of the bar under the search field.** The gold bar is
 this site's one idea, and the page most people see was showing 54px of
 it above the wordmark and nothing else. The field now carries the same
