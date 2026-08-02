@@ -659,6 +659,36 @@ await put(join(base, 'summary.json'), JSON.stringify({
   recent,
 }));
 
+/* The cache contract, written where the host can read it.
+
+   Everything under v/<version>/ is immutable and may be kept for a year;
+   manifest.json is the one file that changes and must not be. That has
+   been true since this script was written and has lived only in a
+   comment, which means every deploy has had to remember it by hand.
+
+   Cloudflare Pages reads `_headers` from the root of the deployed
+   directory, so the contract now ships with the files it governs.
+
+   The CORS header is what lets picture-wrap.com fetch a corpus served
+   from another origin at all. Star rather than a named origin because
+   this is public, CC0-shaped, read-only data — and because a corpus that
+   can only be read by one website is not much of an archive.
+
+   The "immutable tree first, manifest last" ordering the header block
+   above describes is for hosts that overwrite objects one at a time. A
+   Pages deploy is atomic, so there is no half-finished state to be
+   invisible — the requirement is met by the host rather than by the
+   order. */
+await put(join(OUT, '_headers'), `/*
+  Access-Control-Allow-Origin: *
+
+/v/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/manifest.json
+  Cache-Control: public, max-age=300, must-revalidate
+`);
+
 /* The only mutable file, and the only one that may not be cached for long.
    Everything it points at can be kept for a year. */
 await put(join(OUT, 'manifest.json'), JSON.stringify({
