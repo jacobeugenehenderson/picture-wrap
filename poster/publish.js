@@ -27,14 +27,27 @@
    is what separates "a forty megabyte dataset" from "a forty megabyte
    download", and it matters more than any of the file sizes.
 
-     year/<year>.json    the closings of one release year
+     closed/<YYYY>.json  every closing of one calendar year — the Vault
+     year/<year>.json    the closings of one RELEASE year
      day/<MM-DD>.json    every closing that ever happened on one date
      month/<YYYY-MM>.json  closings known only to a month
-     wrapped/<YYYY>.json   closings known only to a year
      ids.bin             which pictures are closed at all
      summary.json        totals, enough to draw a landing page
      facts.bin           every closing as one packed row, for crossing
      facts.json          the dictionaries those rows index into
+
+   TWO YEAR AXES, AND THEY ARE NOT THE SAME AXIS
+
+   `closed/` is by the year a picture closed and `year/` is by the year it
+   was released. The Vault browses the first — it has always been "newest
+   closing first" — and questions about cinema ask the second. Holding
+   both is the whole reason any comparison in FINDINGS.md is honest, since
+   plotting one while meaning the other is the first rule in that file.
+
+   A closing decade is too large to hand over whole: the 2010s hold 16,015
+   closings, about 6 MB. As year shards the same decade is 600 KB a file
+   and the busiest year in the corpus — 2022, with 1,980 — is 773 KB. So a
+   drawer opens onto years and a year opens onto pictures.
 
    THE RESIDUES, WHICH ARE NOT AN AFTERTHOUGHT
 
@@ -81,6 +94,19 @@
    trend in this archive is that number changing over time rather than
    anything about cinema, and a cross-tab that does not carry it will
    rediscover the same artefact in a new costume.
+
+   DEPLOYING IT
+
+   Everything under v/<version>/ is immutable, so a deploy is a copy and
+   never a replacement. Only manifest.json is overwritten, and it is
+   written last — until it points at a version, that version is invisible,
+   which makes a half-finished upload harmless.
+
+     rclone copy dist/v r2:picture-wrap/v        # the immutable tree
+     rclone copy dist/manifest.json r2:picture-wrap/   # last, and only then
+
+   Old versions can be deleted whenever nothing references them; nothing
+   in the client resolves a version it was not told about.
 
    Nothing here decides anything. Every verdict was reached by the pass and
    this only arranges the results.
@@ -137,9 +163,9 @@ const row = w => ({
 });
 
 const byYear = new Map();
+const byClosingYear = new Map();
 const byDay = new Map();
 const byMonth = new Map();
-const byWrapYear = new Map();
 const ids = [];
 let closed = 0, open = 0, unchecked = 0;
 
@@ -156,11 +182,23 @@ for (const year of years) {
     if (!byYear.has(year)) byYear.set(year, []);
     byYear.get(year).push(entry);
 
-    /* Each picture placed once, at the finest resolution it has. A
-       month-precise closing is not also listed under its year: the note
-       at the foot of July 1948 and the note at the foot of 1948 would
-       otherwise say the same picture twice, and a reader counting them
-       would be counting it twice. */
+    /* The Vault's own axis. A closing with no year at all — nobody's
+       death was recorded, so the picture is closed by arithmetic — has no
+       place on it, and is reachable by release year like everything
+       else. */
+    if (w.wrappedYear) {
+      if (!byClosingYear.has(w.wrappedYear)) byClosingYear.set(w.wrappedYear, []);
+      byClosingYear.get(w.wrappedYear).push(entry);
+    }
+
+    /* The calendar's own axes. A day file spans every year, which is what
+       makes "on this day" possible, so it cannot be derived from a
+       closing year. The month file is the residue for a given month —
+       pictures known to have closed in it but not on any day of it.
+
+       Anything known only to a year needs no file of its own: it is in
+       `closed/<YYYY>.json` already, carrying its dateBasis, and a view
+       wanting the residue filters for it there. */
     if (w.dateBasis === 'day') {
       const md = w.wrapped.slice(5);
       if (!byDay.has(md)) byDay.set(md, []);
@@ -168,9 +206,6 @@ for (const year of years) {
     } else if (w.dateBasis === 'month') {
       if (!byMonth.has(w.wrappedMonth)) byMonth.set(w.wrappedMonth, []);
       byMonth.get(w.wrappedMonth).push(entry);
-    } else if (w.dateBasis === 'year') {
-      if (!byWrapYear.has(w.wrappedYear)) byWrapYear.set(w.wrappedYear, []);
-      byWrapYear.get(w.wrappedYear).push(entry);
     }
 
     const n = Number(w.id.slice(1));
@@ -188,8 +223,8 @@ const newestFirst = (a, b) =>
   (b.wrapped || b.wrappedYear || '0000').localeCompare(a.wrapped || a.wrappedYear || '0000')
   || a.title.localeCompare(b.title);
 
-for (const list of [...byYear.values(), ...byDay.values(),
-                    ...byMonth.values(), ...byWrapYear.values()]) list.sort(newestFirst);
+for (const list of [...byYear.values(), ...byClosingYear.values(),
+                    ...byDay.values(), ...byMonth.values()]) list.sort(newestFirst);
 
 /* --- version ----------------------------------------------------------- */
 
@@ -209,9 +244,9 @@ await rm(OUT, { recursive: true, force: true });
 await mkdir(join(base, 'year'), { recursive: true });
 await mkdir(join(base, 'day'), { recursive: true });
 await mkdir(join(base, 'month'), { recursive: true });
-await mkdir(join(base, 'wrapped'), { recursive: true });
+await mkdir(join(base, 'closed'), { recursive: true });
 
-const written = { year: 0, day: 0, month: 0, wrapped: 0, bytes: 0 };
+const written = { year: 0, closed: 0, day: 0, month: 0, bytes: 0 };
 const put = async (path, body) => {
   await writeFile(path, body);
   written.bytes += body.length;
@@ -232,9 +267,9 @@ for (const [ym, list] of byMonth) {
   written.month++;
 }
 
-for (const [y, list] of byWrapYear) {
-  await put(join(base, 'wrapped', `${y}.json`), JSON.stringify(list));
-  written.wrapped++;
+for (const [y, list] of byClosingYear) {
+  await put(join(base, 'closed', `${y}.json`), JSON.stringify(list));
+  written.closed++;
 }
 
 /* Little-endian by contract, because every platform a browser runs on is,
@@ -343,10 +378,20 @@ await put(join(base, 'facts.json'), JSON.stringify({
   closers: closers.map(c => closerNames.get(c) ?? c),
 }));
 
+/* Release decades, and closing decades broken down by year — the second
+   is what a drawer needs in order to open onto anything. */
 const decades = {};
 for (const [year, list] of byYear) {
   const d = Math.floor(year / 10) * 10;
   decades[d] = (decades[d] || 0) + list.length;
+}
+
+const closingDecades = {};
+for (const [y, list] of byClosingYear) {
+  const d = Math.floor(Number(y) / 10) * 10;
+  closingDecades[d] ??= { total: 0, years: {} };
+  closingDecades[d].total += list.length;
+  closingDecades[d].years[y] = list.length;
 }
 
 const recent = [...byDay.values()].flat()
@@ -357,6 +402,9 @@ await put(join(base, 'summary.json'), JSON.stringify({
   closed, open, unchecked,
   years: [...byYear.keys()].sort((a, b) => a - b),
   decades,
+  closingDecades,
+  /* Closings with no year at all: real, closed, and off every timeline. */
+  unplaceable: closed - [...byClosingYear.values()].reduce((n, l) => n + l.length, 0),
   recent,
 }));
 
@@ -371,7 +419,7 @@ await put(join(OUT, 'manifest.json'), JSON.stringify({
     year: 'year/{year}.json',
     day: 'day/{MM-DD}.json',
     month: 'month/{YYYY-MM}.json',
-    wrapped: 'wrapped/{YYYY}.json',
+    closed: 'closed/{YYYY}.json',
     ids: 'ids.bin',
     summary: 'summary.json',
     facts: 'facts.bin',
@@ -399,15 +447,10 @@ await put(join(OUT, 'manifest.json'), JSON.stringify({
   /* Published so a client can say what it is showing and what it is not.
      A calendar that silently omits 11.9% of the archive is worse than one
      that says which part it cannot place. */
-  resolution: {
-    day: [...byDay.values()].reduce((n, l) => n + l.length, 0),
-    month: [...byMonth.values()].reduce((n, l) => n + l.length, 0),
-    year: [...byWrapYear.values()].reduce((n, l) => n + l.length, 0),
-    none: closed
-      - [...byDay.values()].reduce((n, l) => n + l.length, 0)
-      - [...byMonth.values()].reduce((n, l) => n + l.length, 0)
-      - [...byWrapYear.values()].reduce((n, l) => n + l.length, 0),
-  },
+  resolution: everyClosing.reduce((tally, e) => {
+    tally[e.dateBasis ?? 'none'] = (tally[e.dateBasis ?? 'none'] || 0) + 1;
+    return tally;
+  }, { day: 0, month: 0, year: 0, none: 0 }),
   /* Stated rather than assumed, so a client never has to guess how to
      read the binary table. */
   idsFormat: { type: 'uint32', endian: 'little', sorted: true, count: ids.length },
@@ -420,8 +463,8 @@ const yearBytes = [...byYear.values()].map(l => JSON.stringify(l).length).sort((
 console.log(`\npublished ${closed} closings, version ${version}\n`);
 console.log(`  ${written.year} year files   median ${kb(yearBytes[yearBytes.length >> 1])}, largest ${kb(yearBytes.at(-1))}`);
 console.log(`  ${written.day} day files    median ${kb(dayBytes[dayBytes.length >> 1])}, largest ${kb(dayBytes.at(-1))}`);
+console.log(`  ${written.closed} closing years — the Vault's own axis`);
 console.log(`  ${written.month} month files  known only to a month`);
-console.log(`  ${written.wrapped} year files    known only to a year`);
 console.log(`  ids.bin           ${kb(table.byteLength)} for ${ids.length} pictures`);
 console.log(`  facts.bin         ${kb(facts.length)} — ${everyClosing.length} rows of ${ROW} bytes`);
 console.log(`  facts.json        ${types.length} types, ${genreList.length} genres, ${countryList.length} countries, ${closers.length} closers`);

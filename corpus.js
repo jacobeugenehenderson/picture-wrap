@@ -9,9 +9,13 @@
 
      const corpus = await openCorpus('/');
      await corpus.has('Q18153746');    // is this picture closed?
-     await corpus.year(1924);          // that year's closings, newest first
+     await corpus.closed(1974);        // everything that closed in 1974
+     await corpus.year(1924);          // everything RELEASED in 1924
      await corpus.day('10-05');        // every closing on 5 October, ever
      corpus.summary;                   // totals, decades, recent
+
+   `closed` and `year` are two different axes and confusing them is the
+   first mistake FINDINGS.md warns about. The Vault browses `closed`.
 
    WHAT IT DOES AND DOES NOT DO
 
@@ -188,7 +192,7 @@ export async function openCorpus(root = '/') {
        an approximation, and `resolution` says how many of each exist so a
        view can state what it is not showing. */
     month: ym => json(manifest.surfaces.month.replace('{YYYY-MM}', ym)),
-    wrapped: y => json(manifest.surfaces.wrapped.replace('{YYYY}', String(y))),
+    closed: y => json(manifest.surfaces.closed.replace('{YYYY}', String(y))),
     resolution: manifest.resolution,
 
     /* Every closing at once, packed, for questions the shards cannot
