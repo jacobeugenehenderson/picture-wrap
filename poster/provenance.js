@@ -52,7 +52,10 @@
    See BACKLOG.md.
    ========================================================================== */
 
-import { readFile, writeFile, rename } from 'node:fs/promises';
+import { readFile, writeFile, rename, mkdir } from 'node:fs/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { createGzip } from 'node:zlib';
+import { pipeline } from 'node:stream/promises';
 import { join } from 'node:path';
 
 import { sparql, sleep } from './lib.js';
@@ -65,6 +68,7 @@ const value = (flag, fallback) => {
 };
 
 const OUT = value('--out', process.env.PW_PASS || 'pass');
+const ARCHIVE = value('--archive', process.env.PW_PASS_ARCHIVE || null);
 const dryRun = args.includes('--dry-run');
 /* Closers are what the corpus publishes — a picture's page names the last
    maker and nobody else. Everyone else's dates sit in the evidence, which
@@ -211,6 +215,27 @@ for (const year of present) {
     const path = join(file.dir, 'evidence.jsonl');
     await writeFile(`${path}.part`, file.evidence.map(e => JSON.stringify(e)).join('\n') + '\n');
     await rename(`${path}.part`, path);
+
+    /* The Desktop copy has to follow. A year rewritten here and not there
+       leaves the durable artefact silently disagreeing with the working
+       one, and the backup is only worth what its agreement is worth.
+       Written to .part and renamed, so a file that exists is a whole
+       year. Same shape as retest.js, which had the same obligation. */
+    if (ARCHIVE) {
+      await mkdir(ARCHIVE, { recursive: true });
+      const target = join(ARCHIVE, `${year}.jsonl.gz`);
+      const bundle = ['works.jsonl', 'evidence.jsonl', 'failures.jsonl']
+        .map(f => join(file.dir, f));
+      await pipeline(createReadStream(bundle[0]), createGzip(),
+        createWriteStream(`${target}.part`));
+      for (const extra of bundle.slice(1)) {
+        try {
+          await pipeline(createReadStream(extra), createGzip(),
+            createWriteStream(`${target}.part`, { flags: 'a' }));
+        } catch { /* failures.jsonl may not exist */ }
+      }
+      await rename(`${target}.part`, target);
+    }
   }
   if (touched) console.log(`${year}  ${touched} people re-sourced`);
 }
