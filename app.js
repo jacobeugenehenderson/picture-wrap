@@ -22,13 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear } from './verify.js?v=48';
-import { openCorpus } from './corpus.js?v=48';
+import { survivors, beyondLiving, earliestLivingBirthYear } from './verify.js?v=49';
+import { openCorpus } from './corpus.js?v=49';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js?v=48';
+} from './shared.js?v=49';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -969,34 +969,49 @@ SELECT (SAMPLE(?b) AS ?dob) (SAMPLE(?d) AS ?dod)
 }`;
 
 /* Every credit type counts, on both sides: films this person worked on in
-   any capacity, and everyone else credited on those films. Counts here are
-   never shown — they only decide which side of the bar a film falls on,
-   and MAX(death date) gives the film its wrap date.
+   any capacity, and everyone else credited on those films. Nothing this
+   returns is shown — it decides which side of the bar a film falls on,
+   and what date is written beneath it.
 
-   ?aged is the third count: credits with no recorded death whose own
-   birth date puts them past any human life. Without it this page holds a
-   film open on a man born in 1850 while the film's own page — which asks
-   verify.js — has it closed.
+   It used to return that as arithmetic: a count of credits, a count of
+   deaths, a count of the too-old, and MAX(death) for the date. Each of
+   this project's rules then had to be expressible as another COUNT
+   column, and two of them are not. So the query returns the people
+   instead — one `person#birthyear#death` per credit — and every rule is
+   applied once, in JavaScript, on the same facts verify.js is given.
 
-   The other half of that arithmetic, a picture older than anyone has ever
-   been, is done in JavaScript below on the ?year this query already
-   returns. As a UNION branch here it cost 65 seconds against 0.2, which
-   is a query that never answers rather than a page that reads right. */
+   The rules this page was missing, both of which made it contradict the
+   film pages it links to:
+
+   Born after the picture was released. Philip Glass, born 1937, is
+   credited on Dracula (1931) for a score he wrote in 1999. He held it
+   open here while the Vault had it closed on Carla Laemmle in 2014 —
+   and would have held it open forever, being alive.
+
+   A death before the release cannot be the wrap. MAX(death) took it
+   anyway: source authors and pre-existing composers date a picture to
+   before it existed.
+
+   Born before anyone now living was born stays, and is now a Set of
+   people rather than a count of statements, so somebody with two
+   recorded birth dates is one exclusion rather than two.
+
+   The cost is a string per credit instead of four integers per film. It
+   is paid once per page and it is the only shape in which the answers
+   agree with the rest of the site. */
 const filmographyQuery = id => `
 SELECT ?film ?filmLabel (SAMPLE(?y) AS ?year) (COUNT(DISTINCT ?c) AS ?credited)
-       (COUNT(DISTINCT ?cd) AS ?dead) (COUNT(DISTINCT ?old) AS ?aged)
-       (MAX(?dv) AS ?wrapped)
+       (GROUP_CONCAT(DISTINCT ?who; separator="|") AS ?people)
        (GROUP_CONCAT(DISTINCT ?mine; separator="|") AS ?roles) WHERE {
   VALUES ?mine { ${VALUES} }
   ?film ?mine wd:${id} .
   ?film ?any ?c .
   FILTER(?any IN (${IN_LIST}))
-  OPTIONAL { ?c wdt:P570 ?dv . BIND(?c AS ?cd) }
-  OPTIONAL {
-    ?c wdt:P569 ?bv . FILTER(YEAR(?bv) < ${earliestLivingBirthYear()})
-    FILTER NOT EXISTS { ?c wdt:P570 ?dz }
-    BIND(?c AS ?old)
-  }
+  OPTIONAL { ?c wdt:P569 ?bv }
+  OPTIONAL { ?c wdt:P570 ?dv }
+  BIND(CONCAT(STR(?c), "#",
+              COALESCE(STR(YEAR(?bv)), ""), "#",
+              COALESCE(SUBSTR(STR(?dv), 1, 10), "")) AS ?who)
   OPTIONAL { ?film wdt:P577 ?rd . BIND(YEAR(?rd) AS ?y) }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en,fr,de,it,es,pt,nl,sv,da,no,fi,is,pl,cs,sk,hu,ro,bg,sr,hr,sl,uk,ru,el,tr,he,ar,fa,hi,bn,ta,te,ml,kn,mr,ur,th,vi,id,ms,ja,ko,zh,ca,eu,gl,et,lv,lt,ga,cy,sq,mk,ka,hy,az,kk,uz,af,sw,yi,la". }
 } GROUP BY ?film ?filmLabel`;
@@ -1057,13 +1072,58 @@ async function viewPerson(id) {
     return;
   }
 
+  /* The credits folded to people before anything is decided about them,
+     because a person with two recorded birth dates arrives as two rows
+     and has to count once. Then each person is classified exactly once,
+     in the order verify.js classifies them:
+
+     Born after the picture was released — excluded outright, alive or
+     dead. This is the one that matters most: alive, they veto the wrap
+     forever and nothing explains why.
+
+     Otherwise a recorded death makes them dead, whatever their age. Born
+     before anyone now living was born only decides the people no record
+     says anything about; with a death date on file the age test has
+     nothing left to settle.
+
+     Otherwise, past any human life — dead, and not datable.
+
+     The wrap is the latest death that is not older than the picture. An
+     earlier one belongs to a source author or a composer whose music
+     predates the film: they are dead, and they are not what closed it. */
+  const readPeople = f => {
+    const released = Number(String(f.year || '').slice(0, 4));
+    const born = new Map(), died = new Map();
+
+    for (const record of String(f.people || '').split('|')) {
+      const [who, b, d] = record.split('#');
+      if (!who) continue;
+      if (b && Number(b)) born.set(who, Math.min(born.get(who) ?? Infinity, Number(b)));
+      if (d) died.set(who, d > (died.get(who) || '') ? d : died.get(who));
+    }
+
+    let excluded = 0;
+    const dates = [];
+    for (const who of new Set([...born.keys(), ...died.keys()])) {
+      const b = born.get(who), d = died.get(who);
+      if (b && released && b > released) { excluded++; continue; }
+      if (d) { dates.push(d); continue; }
+      if (b && b < earliestLivingBirthYear()) excluded++;
+    }
+
+    const datable = dates.filter(d => !released || Number(d.slice(0, 4)) >= released).sort();
+    return { excluded, dead: dates.length, wrapped: datable[datable.length - 1] || '' };
+  };
+
+  for (const f of films) f.people_ = readPeople(f);
+
   /* Recorded deaths plus the people no record can make living again —
      and, for a picture older than any human life, everybody, since
      nobody on it can have been born after it. */
   const wikidataClosed = f =>
     Number(f.credited) > 0 &&
     (beyondLiving(null, f.year) ||
-      Number(f.dead) + Number(f.aged || 0) === Number(f.credited));
+      f.people_.dead + f.people_.excluded === Number(f.credited));
 
   /* Below the bar means verified, and the Vault is what verification
      produces. A filmography can hold sixty closed-looking pictures, and
@@ -1140,7 +1200,8 @@ function filmRow(f, wrapped) {
         <span class="who-name">${esc(f.filmLabel || qid)}</span>
         ${roles.length ? `<span class="who-role">${esc(roles.join(' &middot; ').replace(/&middot;/g, '·'))}</span>` : ''}
       </span>
-      <span class="when">${wrapped ? esc(longDate(f.wrapped)) : esc(f.year || '')}</span>
+      <span class="when">${wrapped && f.people_?.wrapped
+        ? esc(longDate(f.people_.wrapped)) : esc(f.year || '')}</span>
     </li>`;
 }
 
@@ -1699,6 +1760,7 @@ async function viewLanding() {
   const lists = {
     recent: { label: 'Recently wrapped', films: summary.recent ?? [] },
     known: { label: 'Best known', films: (summary.bestKnown ?? []).slice(0, 5) },
+    wait: { label: 'Longest wait', films: (summary.longestWait ?? []).slice(0, 5) },
   };
 
   const available = Object.entries(lists).filter(([, l]) => l.films.length);
@@ -1728,7 +1790,7 @@ async function viewLanding() {
       <div class="landing-picks">${picks}</div>
       <p class="landing-more">
         <a href="#/archive">The Vault${summary.total
-          ? ` &middot; <span class="landing-vault-count">${summary.total.toLocaleString('en')}</span>`
+          ? ` &middot; <span class="landing-vault-count">${summary.total.toLocaleString('en')}</span> pictures`
           : ''}</a>
       </p>
     </section>`);
