@@ -122,17 +122,18 @@ Hash routing has one significant cost: link previews. See
 | Kind lookup | 1 (cached per id) | ~0.16s |
 | Film page | 3 parallel + label + TMDB credits | ~0.8s |
 | Person page | 2 parallel + label + `ids.bin` | ~1–3s |
-| Landing | 1 fetch of `manifest.json` + `summary.json` | ~83 KB |
+| Landing | 1 fetch of `manifest.json` + `summary.json` | 175 KB, 64 KB gzipped |
 | Vault, closed | the same two, already cached | 0 |
 | Vault, one decade opened | nothing — the counts are in the summary | 0 |
 | Vault, one year opened | + `closed/<YYYY>.json` | ~220 KB median |
 
 The landing's doors cost nothing beyond the summary the page already
-fetches, crossings included: all 117 combinations of ten genres and ten
-regions are precomputed in `build-corpus.js`, because the facts table
-that could answer them in the browser is 3 MB and carries neither titles
-nor fame. They are two thirds of that 83 KB, and they are the reason it
-is 83 KB rather than 30.
+fetches, crossings included: all 330 combinations of 22 genres and 14
+regions, each ranked three ways, are precomputed in `build-corpus.js`,
+because the facts table that could answer them in the browser is 3 MB and
+carries neither titles nor fame. They are seven eighths of that 175 KB.
+It is the largest deliberate trade on the site, and it buys every
+crossing and every ordering of one for a single immutable fetch.
 
 The person page fetches `ids.bin` — 484 KB, sorted 32-bit Wikidata
 numbers — once, and answers membership for a whole filmography by binary

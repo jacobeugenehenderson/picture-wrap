@@ -263,8 +263,9 @@ for (const list of [...byYear.values(), ...byClosingYear.values(),
      1  the shape as first published
      2  summary.json gains `doors`
      3  the doors cross, and carry `picks`
+     4  every crossing ranked three ways, over one film table
 */
-const FORMAT = 3;
+const FORMAT = 4;
 
 const digest = createHash('sha256');
 digest.update(`format:${FORMAT}\n`);
@@ -523,8 +524,29 @@ const topLabels = (labelsOf, howMany) => {
   return [...counts].sort((a, b) => b[1] - a[1]).slice(0, howMany);
 };
 
-const doorGenres = topLabels(e => e.genres || [], 10);
-const doorRegions = topLabels(e => e.countries || [], 10);
+/* How far down each list the doors go, and the answer is "past the point
+   where a reader stops recognising them, not before".
+
+   Ten of each was the first guess and it was wrong in a way the counts
+   make obvious: the ten largest genres are silent, drama, documentary,
+   comedy, crime, Western, musical, romance, adventure and war, and that
+   list has no horror in it. Horror is sixteenth with 934 closings,
+   thriller twentieth with 645, film noir 556, science fiction 543 —
+   every genre somebody would actually name sits just below the cut,
+   because size and recognisability are not the same axis. Twenty-three
+   reaches all of them.
+
+   `fiction film` is dropped, being a mode rather than a genre and true of
+   most of the archive — the same objection rule 24 makes to a genre that
+   only repeats the work's type.
+
+   Fourteen regions rather than twenty-eight, which is where the same
+   threshold would land. Doubling them takes summary.json from 175 KB to
+   285 KB and adds nothing anyone asks for by name: the corpus files
+   pre-1991 Russian cinema as Soviet, so `Russian` is 381 closings and out
+   of reach at any cut this side of 400. */
+const doorGenres = topLabels(e => e.genres || [], 23).filter(([l]) => l !== 'fiction film');
+const doorRegions = topLabels(e => e.countries || [], 14);
 
 /* Bucketed once rather than filtered a hundred times: 124k closings
    against 120 combinations is 15 million comparisons the naive way, and
@@ -536,13 +558,57 @@ for (const e of everyClosing) {
   regionOf.set(e, new Set(e.countries || []));
 }
 
-const bestFive = list => bestOfEach(
-  list.slice().sort((a, b) => (b.fame || 0) - (a.fame || 0))).slice(0, 5).map(slim);
+/* Each combination is ranked three ways, because a sort and a door are
+   different questions and answering only one of them made the landing
+   page pretend otherwise. A door says *which* pictures; a sort says
+   *which five of them*, and "the longest wait among French silents" is a
+   better question than either half.
+
+   The three are the same three the whole archive offers, so the row of
+   sorts keeps meaning what it means when nothing is filtered. */
+const ORDERS = {
+  known: list => list.slice().sort((a, b) => (b.fame || 0) - (a.fame || 0)),
+  recent: list => list.slice().sort((a, b) =>
+    ((b.wrapped || b.wrappedMonth || b.wrappedYear || '') + '')
+      .localeCompare((a.wrapped || a.wrappedMonth || a.wrappedYear || '') + '')),
+  wait: list => list
+    .filter(e => e.year && (e.wrapped || e.wrappedYear))
+    .map(e => [e, Number(String(e.wrapped || e.wrappedYear).slice(0, 4)) - Number(e.year)])
+    .filter(([, w]) => w > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([e]) => e),
+};
+
+/* One table of films, and the lists are indices into it.
+
+   Three orderings of 117 combinations is 1,755 slots, and they overlap
+   heavily — Casablanca is the best-known American picture, the
+   best-known drama, and the best-known American drama. Written out in
+   full that is 150 KB of repeated titles; written once and pointed at,
+   it is a third of that. Compact arrays rather than objects for the same
+   reason: at this count the key names cost more than the values. */
+const filmTable = [];
+const filmIndex = new Map();
+const intern = e => {
+  if (!filmIndex.has(e.id)) {
+    filmIndex.set(e.id, filmTable.length);
+    const s = slim(e);
+    filmTable.push([s.id, s.title, s.year ?? '', s.wrapped ?? s.wrappedYear ?? '']);
+  }
+  return filmIndex.get(e.id);
+};
 
 /* Keyed `<genre>||<region>`, either side empty for a single facet, so the
    page looks up one string whether the reader has chosen one door or two. */
 const picks = {};
-const record = (key, list) => { if (list.length) picks[key] = { count: list.length, films: bestFive(list) }; };
+const record = (key, list) => {
+  if (!list.length) return;
+  const entry = { count: list.length };
+  for (const [name, order] of Object.entries(ORDERS)) {
+    entry[name] = bestOfEach(order(list)).slice(0, 5).map(intern);
+  }
+  picks[key] = entry;
+};
 
 for (const [label] of doorGenres) record(`${label}||`, genreBuckets.get(label));
 for (const [label] of doorRegions) {
@@ -557,6 +623,8 @@ for (const [g] of doorGenres) {
 const doors = {
   genre: doorGenres.map(([label, count]) => ({ label, count })),
   region: doorRegions.map(([label, count]) => ({ label, count })),
+  /* [id, title, releaseYear, wrapped] — wrapped is a date, a year, or ''. */
+  films: filmTable,
   picks,
 };
 
@@ -642,5 +710,5 @@ console.log(`  ${written.month} month files  known only to a month`);
 console.log(`  ids.bin           ${kb(table.byteLength)} for ${ids.length} pictures`);
 console.log(`  facts.bin         ${kb(facts.length)} — ${everyClosing.length} rows of ${ROW} bytes`);
 console.log(`  facts.json        ${types.length} types, ${genreList.length} genres, ${countryList.length} countries, ${closers.length} closers`);
-console.log(`  doors             ${doors.genre.length} genres x ${doors.region.length} regions, ${Object.keys(doors.picks).length} combinations with anything in them`);
+console.log(`  doors             ${doors.genre.length} genres x ${doors.region.length} regions, ${Object.keys(doors.picks).length} combinations, 3 orderings each, over ${filmTable.length} distinct films`);
 console.log(`  total             ${(written.bytes / 1048576).toFixed(1)} MB in ${OUT}/\n`);

@@ -992,11 +992,50 @@ drawer holding four French silents is worse than no number: it is a
 confident answer to the question the reader is actually asking. So they
 are not shown, and the drawer says what it holds when it is opened.
 
-**Sorts and doors clear each other.** A sort is a statement about the
-whole archive and cannot be one about a tenth of it, so choosing one
-closes every door; the doors are lists of five that are already chosen,
-so while one is open no sort is marked current. The three sorts stay
-clickable throughout, because they are also the way out.
+**Sorts and doors compose.** They were briefly made to clear each other,
+on the reasoning that a sort is a statement about the whole archive. That
+was the same mistake as the single-facet doors, one level up: a sort says
+*how to order* and a door says *what to order*, and the interesting
+question needs both. *Longest wait* over the whole archive gives A Manly
+Man, 103 years; crossed with *horror* it gives Black Moon, Condemned to
+Live and Mad Love, all 1930s pictures that waited ninety.
+
+So every combination is ranked all three ways. A door toggles off when
+pressed again; a sort does not, because one of the three is always in
+force and turning the current one off would leave the page with no order
+at all.
+
+The line above the pictures says *five of 934* rather than *five best
+known of 934*, because which five is now the sort's business and the sort
+is named directly above it.
+
+**Three orderings did not cost three times the bytes.** The five lists
+overlap heavily — Casablanca is the best-known American picture, the
+best-known drama and the best-known American drama — so the films are
+written once into one table and the lists are indices into it. 330
+combinations, 990 lists, 2,234 distinct films.
+
+### How far down the lists the doors go
+
+Ten of each was the first guess, and the counts make its failure plain:
+the ten largest genres are silent, drama, documentary, comedy, crime,
+Western, musical, romance, adventure and war, and **that list has no
+horror in it**. Horror is sixteenth with 934 closings, thriller twentieth
+with 645, film noir 556, science fiction 543 — every genre somebody
+actually names sits just below a cut made on size, because size and
+recognisability are not the same axis. Twenty-three reaches all of them.
+
+`fiction film` is dropped, being a mode rather than a genre and true of
+most of the archive — the same objection rule 24 makes to a genre that
+only repeats the work's type.
+
+Fourteen regions, not the twenty-eight the same threshold would give.
+Doubling them takes `summary.json` from 175 KB to 285 KB and adds nothing
+anybody asks for by name. In particular it does *not* add Russian: this
+corpus files pre-1991 Russian cinema as **Soviet** (2,515 closings), so
+`Russian` is 381 and out of reach at any cut this side of 400. The phrase
+that motivated the whole feature is the one the data cannot serve, and
+the honest form of it here is *Soviet*.
 
 ---
 

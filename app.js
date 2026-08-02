@@ -1811,12 +1811,14 @@ function viewAbout() {
 /* Which way in the reader is looking. Sticky for the session, because
    somebody who chose "best known" once is telling you something.
 
-   Two states, not one. `landingSort` orders the whole archive and is what
-   the page opens on; `landingDoors` names a part of it, and while any
-   part is named the sort has nothing to order — the doors are lists of
-   five, already chosen. Picking a sort clears the doors and picking a
-   door suspends the sort, which is why they are separate variables and
-   the sort survives to be returned to. */
+   Two states, and they compose. `landingSort` says how to order;
+   `landingDoors` says what to order. Neither clears the other, because
+   they answer different questions — "the longest wait among French
+   silents" needs both, and it is a better question than either half.
+
+   A door toggles off when pressed again; a sort does not, because one of
+   the three is always in force and turning the current one off would
+   leave the page with no order at all. */
 let landingSort = 'recent';
 const landingDoors = { genre: null, region: null };
 
@@ -1844,12 +1846,12 @@ async function viewLanding() {
      nobody likes "cinema", they like Danish documentaries, or Soviet war
      pictures, or Westerns.
 
-     They stack, because that is how those phrases are built. "Russian
-     horror" is two words, and a picker that made you choose one of them
-     would be asking you to hold the other in your head while you
-     scrolled. Every combination that has anything in it is precomputed —
-     117 of the 120 — so a crossing costs the same lookup as a single
-     door, out of the same one summary.json the page already fetches. */
+     They stack, because that is how those phrases are built. "Danish
+     documentaries" is two words, and a picker that made you choose one of
+     them would be asking you to hold the other in your head while you
+     scrolled. Every combination that has anything in it is precomputed,
+     each ranked all three ways, out of the same one summary.json the page
+     already fetches. */
   const doors = summary.doors ?? {};
   const combinations = doors.picks ?? {};
   const facetKey = (genre, region) => `${genre ?? ''}||${region ?? ''}`;
@@ -1860,21 +1862,38 @@ async function viewLanding() {
 
   const sorts = ['recent', 'known', 'wait'].filter(k => lists[k].films.length);
   const chosen = lists[landingSort]?.films.length ? landingSort : sorts[0];
-  const films = open ? open.films : chosen ? lists[chosen].films : [];
+
+  /* The sort and the door are separate questions and the page now lets
+     them be asked together: the door says which pictures, the sort says
+     which five of them. Every crossing is ranked all three ways, so
+     "the longest wait among French silents" is a lookup.
+
+     Falling back to best-known where an ordering is empty — "longest
+     wait" drops anything without both a release and a wrap year, and a
+     small crossing can have none — because five titles under the wrong
+     heading is a smaller wrong than none under the right one. */
+  const table = doors.films ?? [];
+  const fromTable = i => {
+    const [id, title, year, wrapped] = table[i] ?? [];
+    return { id, title, year, wrapped: /-/.test(wrapped || '') ? wrapped : '', wrappedYear: wrapped };
+  };
+
+  const films = open
+    ? (open[chosen]?.length ? open[chosen] : open.known ?? []).map(fromTable)
+    : chosen ? lists[chosen].films : [];
 
   const picks = films.length
     ? films.map(f => `<button data-go="${esc(path(f.title, f.id))}">${esc(f.title)}` +
         `<span class="pick-year">${esc(year(f.wrapped) || f.wrappedYear || f.year)}</span></button>`).join('')
     : PICKS.map(p => `<button data-go="${esc(path(p.name, p.id))}">${esc(p.name)}</button>`).join('');
 
-  /* A switch, not a filter: three words, and only when there are three.
-     None of them is current while a door is open, because none of them is
-     what you are looking at — and all three stay clickable, because they
-     are also the way back out. */
+  /* A switch, not a filter: three words, and one of them is always on —
+     including while a door is open, because the sort is still what
+     ordered the five you are looking at. */
   const switcher = sorts.length > 1
     ? `<p class="landing-label">${sorts.map(key =>
         `<button class="landing-sort" data-sort="${key}"${
-          !open && key === chosen ? ' aria-current="true"' : ''}>${esc(lists[key].label)}</button>`).join('')}</p>`
+          key === chosen ? ' aria-current="true"' : ''}>${esc(lists[key].label)}</button>`).join('')}</p>`
     : films.length ? `<p class="landing-label">${esc(lists[chosen].label)}</p>` : '';
 
   /* Wikidata's genre labels all end in "film" — drama film, war film,
@@ -1889,10 +1908,12 @@ async function viewLanding() {
      which the doors themselves no longer do — with two of them lit, a
      number on each would read as two answers to a question with one.
 
-     And it says *five best known of* that count, because the count is
-     the larger number by three orders of magnitude and a reader is
-     entitled to assume a list is the thing it is counting. French silent
-     is 2,687 pictures and five buttons.
+     And it says *five of* that count, because the count is the larger
+     number by three orders of magnitude and a reader is entitled to
+     assume a list is the thing it is counting. French silent is 2,687
+     pictures and five buttons. Which five is the sort's business, and the
+     sort is named directly above — saying it twice would make the line
+     longer to no end.
 
      Which makes the line the obvious way to the other 2,682, so it is a
      link: the Vault, with the same two facets already on. Nothing else on
@@ -1908,7 +1929,7 @@ async function viewLanding() {
   const standing = open
     ? `<p class="landing-standing"><a href="${esc(vaultPath(landingDoors))}">${
         esc(standingName)}${open.count > films.length
-          ? `<span class="standing-of">${films.length === 5 ? 'five' : films.length} best known of</span>`
+          ? `<span class="standing-of">${films.length === 5 ? 'five' : films.length} of</span>`
           : ''}<span class="door-count">${open.count.toLocaleString('en')}</span></a></p>`
     : '';
 
@@ -1975,7 +1996,6 @@ document.addEventListener('click', e => {
   const sort = e.target.closest('[data-sort]');
   if (sort) {
     landingSort = sort.dataset.sort;
-    landingDoors.genre = landingDoors.region = null;
     viewLanding();
     return;
   }

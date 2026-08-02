@@ -505,17 +505,24 @@ years and decades that have closings, the country counts, the three
 sorted lists behind the front page (`recent`, `bestKnown`, `longestWait`)
 and `doors`.
 
-`doors` holds the ten largest genres and the ten largest regions with
-their counts, and `doors.picks` holds every combination that has anything
-in it — each single facet and each crossing — keyed `<genre>||<region>`
-with either side empty for a single door. Each entry carries its count
-and its five best-known closings in a slimmed shape: id, title, release
-year, wrap date.
+`doors` holds 22 genres and 14 regions with their counts, and
+`doors.picks` holds every combination that has anything in it — each
+single facet and each crossing — keyed `<genre>||<region>` with either
+side empty for a single door. Each entry carries its count and three
+ranked lists of five: `known`, `recent` and `wait`, matching the three
+sorts the landing offers, so a sort and a door compose.
 
-That is 117 of the 120 possible combinations, about 66 KB, taking the
-file from 19 KB to 82 KB. Crossings with nothing in them are absent
-rather than empty, which is what lets the landing page dim a door instead
-of opening it onto nothing.
+Those lists are **indices into `doors.films`**, a table of
+`[id, title, releaseYear, wrapped]` — `wrapped` being a date, a year, or
+empty. The lists overlap heavily, since the best-known American picture
+is also the best-known drama and the best-known American drama, so
+writing the films once and pointing at them costs a third of writing them
+out: 330 combinations and 990 lists over 2,234 distinct films.
+
+That is about 155 KB, taking the file from 19 KB to 175 KB, or 64 KB over
+the wire. Crossings with nothing in them are absent rather than empty,
+which is what lets both the landing and the Vault dim a door instead of
+opening it onto nothing.
 
 It is precomputed here rather than answered in the browser because
 `facts.bin` carries genre and country but neither titles nor fame, so a
