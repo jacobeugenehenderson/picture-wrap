@@ -92,7 +92,7 @@ things done by hand: `picture-wrap-preview`, `picture-wrap-review`,
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Daily running, backfill, deployment, failure modes |
 | [docs/BACKLOG.md](docs/BACKLOG.md) | Deferred work, with enough context to pick it up cold |
 | [docs/FORTIFYING.md](docs/FORTIFYING.md) | Making the Vault citable: errata, provenance, and the re-check loop |
-| [docs/VERIFICATION.md](docs/VERIFICATION.md) | How a wrap is decided, in plain prose, no code |
+| [docs/VERIFICATION.md](docs/VERIFICATION.md) | **The canon** — every logic rule in force, where it lives, and whether the audit checks it — then the same in plain prose |
 | [docs/METHOD.md](docs/METHOD.md) | The same procedure written for citation — the source text for the site's "Methods and sources" |
 | [docs/SOURCES.md](docs/SOURCES.md) | What is read, what is kept, how it is treated — privacy, licensing and citation |
 | [docs/FINDINGS.md](docs/FINDINGS.md) | What the corpus says, what it only appears to say, and the rules for plotting it |

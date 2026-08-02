@@ -341,6 +341,10 @@ stops nothing.
 
 ## 8. The classification rule
 
+*Every rule in force is enumerated in `VERIFICATION.md` under **The
+canon**, with the file it lives in and whether the audit checks it. This
+section explains the reasoning; that table is the list.*
+
 Applied to the two records held apart rather than merged, because whether
 two sources independently agree is itself evidence.
 

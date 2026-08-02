@@ -3,8 +3,83 @@
 Plain prose, start to finish. No code. It is written to be held against
 the code and found wrong, so every claim here is meant to be checkable.
 
-Last audited against the code on 28 July 2026. The audit found nine
-errors in the previous version of this file; they are corrected below.
+Last audited against the code on 2 August 2026. The audit of 28 July found
+nine errors in the previous version of this file; the corpus pass of 1-2
+August added six rules and corrected three. **The canon below is the
+authoritative list**; the prose after it explains each one.
+
+---
+
+## The canon
+
+Every rule currently in force, what it decides, where it lives, and — the
+column that matters — **whether anything checks it**.
+
+A rule nobody checks is a rule that has already drifted from the code
+once, in this project, three times. The audit reproduces every verdict
+from stored evidence, so rules marked *reproduced* are verified against
+123,956 closings on every run. The rest are asserted, and are listed as
+asserted rather than quietly implied to be safe.
+
+| # | rule | lives in | checked? |
+|---|---|---|---|
+| **What a person is** | | | |
+| 1 | **Dead** — a death date from either database, a death Wikidata asserts without dating, or an age past 122 | `verify.js` `statusOf` | reproduced |
+| 2 | **Living** — a creditable birth date, no death anywhere, age within 112 | `verify.js` `statusOf` | reproduced |
+| 3 | **Unrecorded** — anything else, including any age between 112 and 122, and any failed lookup | `verify.js` `statusOf` | reproduced |
+| 4 | A birth date is creditable if **precise to the day**, or if **both databases give one and agree on the year** | `verify.js` `statusOf` | reproduced |
+| 5 | Where the databases disagree on birth year, the **later** year is used — the reading most likely to keep a person alive | `verify.js` | asserted |
+| **Arithmetic, not judgement** | | | |
+| 6 | Nobody worked on a picture **released before they were born**; such credits vote on nothing and date nothing | `verify.js` `impossible` | reproduced |
+| 7 | A picture **cannot close before it was released**; an earlier death cannot date it | `verify.js` `wrapDate` | integrity check |
+| 8 | Past 122 a person is dead whether or not a death was recorded — including via the release year, when no birth date exists | `verify.js` `beyondLiving` | reproduced |
+| **Dates** | | | |
+| 9 | The **last** death decides the wrap, at whatever precision it carries | `verify.js` `wrapDate` | reproduced |
+| 10 | Only a **day-precise** death may print as a date or name a person; a month gives a month, a year gives a year, anything coarser gives no position at all | `verify.js` `resolutionOf` | integrity check |
+| 11 | Birth precision and death precision are **read separately**; neither answers for the other | `verify.js` `fromWikidata` | integrity check |
+| 12 | Dates from both databases pass the **same parser**; a value that is not a date is not a date | `verify.js` `day` | asserted |
+| **Identity** | | | |
+| 13 | If **two or more Wikidata items claim one TMDB id**, none of them is used; the person falls to TMDB's own dates | `verify.js` `survivors` | asserted |
+| 14 | A person may be buried by **name and exact birth year together**, and only when exactly one candidate matches and carries a death | `verify.js` `deathsByName` | recorded per person |
+| 15 | Names carrying quotes, backslashes or control characters never reach a query | `verify.js` `deathsByName` | asserted |
+| **What closes a picture** | | | |
+| 16 | **One living person vetoes.** Not a majority, not a threshold | `judge.js` | reproduced |
+| 17 | **Unrecorded people never veto**, and are counted and published by name | `judge.js` | integrity check |
+| 18 | A test that **did not run** is not a finding of nobody | `verify.js` `ok` | asserted |
+| 19 | The pass **short-circuits** on a living Wikidata credit and records who in `heldOpenBy`; a later rule making *living* stricter leaves those pictures **untested**, not closed | `judge.js`, `retest.js` | detected by audit |
+| **What is in the archive at all** | | | |
+| 20 | A maker is anyone credited under one of **ten credit properties** | `shared.js` `CREDITS` | asserted |
+| 21 | A picture is one of **twelve work classes**, not `film` alone | `shared.js` `WORK_CLASSES` | asserted |
+| 22 | Release year is the **latest** `P577` when a picture has several — the permissive reading | `pass.js` `worksQuery` | asserted |
+| 23 | **No minimum cast.** The floor governs the announcement queue only, never what is recorded | `lib.js` `MIN_CAST` | asserted |
+| **Labels** | | | |
+| 24 | A genre label that merely repeats the work's type is dropped | `enrich.js` | asserted |
+| 25 | A demonym belongs to whichever state **still uses it**; only a label every matching state has abandoned gets a dissolution footnote | `enrich.js` | asserted |
+| **People** | | | |
+| 26 | Withholding a name takes **the name and never the vote** | `pass.js`, `app.js` | asserted |
+
+### What the audit actually does
+
+Three questions per year, and the first is the one that makes this list
+circular rather than decorative:
+
+1. **Reproduction.** Re-decide every verdict and every wrap date from that
+   year's own evidence, with the network unplugged. Any rule marked
+   *reproduced* above is exercised 123,956 times per run, because a
+   verdict that cannot be re-derived from the evidence means either the
+   rule changed or the evidence is insufficient — and rule 19 is why those
+   two are reported separately.
+2. **Replay.** Re-decide under a different age threshold, from the files
+   alone. If that needs the network, the evidence is incomplete.
+3. **Integrity.** Every wrap date is day-precise, belongs to a named
+   person in the evidence, and does not precede the release; unknown
+   counts match the unknowns listed.
+
+**Asserted means only that a human wrote it down.** Rules 5, 12, 13, 15,
+18 and 20-26 are not checked by anything, and the honest reading of that
+column is that those are where the next drift will be found — which is
+how rule 6 was found on 1 August, having been applied to half the people
+it named for as long as it had existed.
 
 ---
 

@@ -6,7 +6,11 @@
      node audit.js --year 1924
      node audit.js --year 1924 --ceiling 115     re-decide under another rule
 
-   Three questions, all pass or fail, none of them opinion.
+   Three questions, all pass or fail, none of them opinion. Which rules
+   each one exercises is tabulated in docs/VERIFICATION.md under "The
+   canon" — the column marked *asserted* there is the list of rules
+   nothing here can catch, and is the honest measure of this file's
+   reach.
 
      1. REPRODUCTION.  Re-decide every verdict from the stored evidence
         alone. No network, no Wikidata, no TMDB. Every verdict must match
