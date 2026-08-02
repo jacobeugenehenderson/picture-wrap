@@ -1170,7 +1170,13 @@ main,
    below everything else on the page: it is a legal obligation rather
    than something a reader came for, and it should read as the small
    print it is without being illegible. */
-.colophon-tmdb {
+/* `.colophon .colophon-tmdb` rather than `.colophon-tmdb`, because
+   `.colophon p { margin: 0 }` above is class-plus-element and outranks a
+   bare class however late it appears. It was silently eating the `auto`,
+   so this block sat against the left edge of the measure while its text
+   centred inside itself — centred text in an off-centre box, which reads
+   as a mistake without looking like one. */
+.colophon .colophon-tmdb {
   max-width: 30rem;
   margin: 0.7rem auto 0;
   font-size: var(--size-tiny);
