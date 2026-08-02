@@ -245,8 +245,28 @@ for (const list of [...byYear.values(), ...byClosingYear.values(),
 /* --- version ----------------------------------------------------------- */
 
 /* Content, not clock. Same corpus, same version, same URLs — so a rebuild
-   that changes nothing republishes nothing and invalidates nothing. */
+   that changes nothing republishes nothing and invalidates nothing.
+
+   FORMAT is the other half of "content", and it was missing. The digest
+   below reads the closings; it cannot see the shape they are written in.
+   Add a field to summary.json and every closing hashes identically, the
+   version does not move, and a reader holding last year's copy of an
+   immutable URL never sees the new field — the landing page silently
+   keeps the old one for a year.
+
+   So: bump FORMAT whenever the layout of anything written here changes —
+   a new key, a renamed surface, a different packing. Not when a comment
+   or a threshold changes; those alter the closings, and the closings are
+   already hashed. Same discipline as the ?v= on index.html, and the same
+   failure if it is forgotten.
+
+     1  the shape as first published
+     2  summary.json gains `doors`
+*/
+const FORMAT = 2;
+
 const digest = createHash('sha256');
+digest.update(`format:${FORMAT}\n`);
 for (const year of [...byYear.keys()].sort((a, b) => a - b)) {
   digest.update(String(year));
   for (const e of byYear.get(year)) digest.update(`${e.id}:${e.wrapped ?? e.wrappedYear ?? ''}`);
@@ -426,10 +446,83 @@ const recent = [...byDay.values()].flat()
    something. Sitelinks are the proxy, and they are a proxy: they measure
    how much has been written, which is not the same as importance and
    leans European, English-language and old. */
-const bestKnown = everyClosing
+/* One picture per title.
+
+   Wikidata holds duplicate items for some films — Casablanca is there
+   twice, dated 1942 and 1943, both closed, both with 107 sitelinks — and
+   a list of five that shows the same title twice reads as broken rather
+   than as a faithful report of the source. Deduplication here is
+   cosmetic; the duplicates are still in the corpus, still counted, and
+   still findable, because merging them is a claim about identity that
+   belongs upstream. */
+const bestOfEach = list => {
+  const seen = new Set();
+  return list.filter(e => {
+    const key = e.title.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const bestKnown = bestOfEach(everyClosing
   .filter(e => e.fame)
-  .sort((a, b) => b.fame - a.fame)
-  .slice(0, 12);
+  .sort((a, b) => b.fame - a.fame)).slice(0, 12);
+
+/* The third way in, and the one that tells the story fastest: pictures
+   that took longest to run out of people. A Manly Man waited 103 years,
+   and the reason is a child on set who lived to 104 — which is the whole
+   mechanism of this archive in one row. */
+const longestWait = bestOfEach(everyClosing
+  .filter(e => e.wrapped && e.year)
+  .map(e => ({ ...e, wait: Number(e.wrapped.slice(0, 4)) - Number(e.year) }))
+  .filter(e => e.wait > 0)
+  .sort((a, b) => b.wait - a.wait)).slice(0, 12);
+
+/* The doors.
+
+   A reader who likes pictures does not arrive wanting "the archive". They
+   arrive as somebody who likes Russian horror, or Danish documentaries,
+   or Westerns, and the fastest way to make an archive of 123,956 closings
+   legible is to let them say so in one click.
+
+   One facet at a time, and only the largest labels. Crossing genre with
+   country is a real question and the Vault is where it gets asked, with
+   its counts and its drawers; here it would be a combinatorial picker on
+   a page that is meant to be five titles and a way through.
+
+   Sorted by fame for the same reason the "Best known" list exists: a
+   door that opens onto five titles nobody recognises is a door nobody
+   opens twice. The count travels with the label because "Danish · 5,514"
+   tells a reader something the five titles cannot.
+
+   Computed here, once, rather than in the browser: the facts table can
+   answer this — it carries genre and country per row — but it is 3 MB
+   and carries neither titles nor fame, so the landing page would fetch
+   the whole corpus to draw ten buttons. */
+const slim = e => ({
+  id: e.id, title: e.title, year: e.year,
+  wrapped: e.wrapped || undefined,
+  wrappedYear: e.wrappedYear || undefined,
+});
+
+const doorsOnto = (labelsOf, howMany) => {
+  const counts = new Map();
+  for (const e of everyClosing) {
+    for (const label of new Set(labelsOf(e))) counts.set(label, (counts.get(label) || 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1]).slice(0, howMany).map(([label, count]) => ({
+    label, count,
+    films: bestOfEach(everyClosing
+      .filter(e => e.fame && labelsOf(e).includes(label))
+      .sort((a, b) => b.fame - a.fame)).slice(0, 5).map(slim),
+  }));
+};
+
+const doors = {
+  genre: doorsOnto(e => e.genres || [], 10),
+  region: doorsOnto(e => e.countries || [], 10),
+};
 
 /* Counts over the whole corpus, not a filtered view, so a filter row does
    not rearrange itself as somebody clicks through it. */
@@ -446,6 +539,8 @@ await put(join(base, 'summary.json'), JSON.stringify({
   decades,
   closingDecades,
   bestKnown,
+  longestWait,
+  doors,
   /* Closings with no year at all: real, closed, and off every timeline. */
   unplaceable: closed - [...byClosingYear.values()].reduce((n, l) => n + l.length, 0),
   recent,
@@ -511,4 +606,6 @@ console.log(`  ${written.month} month files  known only to a month`);
 console.log(`  ids.bin           ${kb(table.byteLength)} for ${ids.length} pictures`);
 console.log(`  facts.bin         ${kb(facts.length)} — ${everyClosing.length} rows of ${ROW} bytes`);
 console.log(`  facts.json        ${types.length} types, ${genreList.length} genres, ${countryList.length} countries, ${closers.length} closers`);
+console.log(`  doors             ${doors.genre.map(d => d.label).join(', ')}`);
+console.log(`                    ${doors.region.map(d => d.label).join(', ')}`);
 console.log(`  total             ${(written.bytes / 1048576).toFixed(1)} MB in ${OUT}/\n`);

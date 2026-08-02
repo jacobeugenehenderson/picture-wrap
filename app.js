@@ -1752,7 +1752,7 @@ async function viewLanding() {
   setTitle('');
   const summary = await loadSummary();
 
-  /* Two ways in, and the second exists because the first is honest but
+  /* Three ways in, and the second exists because the first is honest but
      unwelcoming: closings are obscure by the arithmetic of the thing —
      the famous pictures close last — so "recently wrapped" shows five
      titles a first-time reader has never heard of. Sorting by how widely
@@ -1763,8 +1763,31 @@ async function viewLanding() {
     wait: { label: 'Longest wait', films: (summary.longestWait ?? []).slice(0, 5) },
   };
 
-  const available = Object.entries(lists).filter(([, l]) => l.films.length);
-  const chosen = lists[landingSort]?.films.length ? landingSort : available[0]?.[0];
+  /* And the doors, which are a different kind of thing and belong on the
+     front page anyway.
+
+     A sort is a way of ordering everything. A door is a way of naming the
+     part of it you already care about, and readers arrive holding one:
+     nobody likes "cinema", they like Danish documentaries, or Soviet war
+     pictures, or Westerns. Ten genres and ten regions, each opening onto
+     its five best-known closings, is the shortest path from a stranger to
+     something they recognise.
+
+     One facet at a time. Crossing genre with region is a real question
+     and the Vault is where it gets asked, with counts and drawers behind
+     it; here it would be a matrix on a page that is meant to be five
+     titles and a way through. Precomputed in build-corpus.js, so all of
+     this costs the same one summary.json the page already fetches. */
+  const doors = summary.doors ?? {};
+  for (const [kind, entries] of Object.entries(doors)) {
+    for (const door of entries) {
+      lists[`${kind}:${door.label}`] =
+        { label: door.label, films: door.films ?? [], count: door.count };
+    }
+  }
+
+  const sorts = ['recent', 'known', 'wait'].filter(k => lists[k].films.length);
+  const chosen = lists[landingSort]?.films.length ? landingSort : sorts[0];
   const films = chosen ? lists[chosen].films : [];
 
   const picks = films.length
@@ -1772,22 +1795,49 @@ async function viewLanding() {
         `<span class="pick-year">${esc(year(f.wrapped) || f.wrappedYear || f.year)}</span></button>`).join('')
     : PICKS.map(p => `<button data-go="${esc(path(p.name, p.id))}">${esc(p.name)}</button>`).join('');
 
-  /* A switch, not a filter: two words, and only when there are two. */
-  const switcher = available.length > 1
-    ? `<p class="landing-label">${available.map(([key, l]) =>
+  /* A switch, not a filter: three words, and only when there are three. */
+  const switcher = sorts.length > 1
+    ? `<p class="landing-label">${sorts.map(key =>
         `<button class="landing-sort" data-sort="${key}"${
-          key === chosen ? ' aria-current="true"' : ''}>${esc(l.label)}</button>`).join('')}</p>`
+          key === chosen ? ' aria-current="true"' : ''}>${esc(lists[key].label)}</button>`).join('')}</p>`
     : films.length ? `<p class="landing-label">${esc(lists[chosen].label)}</p>` : '';
+
+  /* Wikidata's genre labels all end in "film" — drama film, war film,
+     Western film — which is correct in a database and unreadable in a
+     row, where it prints the same word nine times. Trimmed for display
+     only; the label the data is keyed on is untouched, and anything that
+     is not an X film ("cinematic fairy tale") keeps its whole name. */
+  const doorName = label => sentence(label.replace(/ films?$/i, ''));
+
+  /* The count appears on the door only once it is open. Twenty labels
+     each trailing a number is a table; one label trailing a number is an
+     answer to the question clicking it just asked. */
+  const doorRow = kind => {
+    const entries = doors[kind] ?? [];
+    if (!entries.length) return '';
+    return `<p class="landing-doors">${entries.map(d => {
+      const key = `${kind}:${d.label}`;
+      return `<button class="landing-door" data-sort="${esc(key)}"${
+        key === chosen ? ' aria-current="true"' : ''}>${esc(doorName(d.label))}${
+        key === chosen ? `<span class="door-count">${d.count.toLocaleString('en')}</span>` : ''
+      }</button>`;
+    }).join('')}</p>`;
+  };
 
   /* The way through sits below the pictures — you should meet a few
      closings before you're offered all of them. It stays the small line
      it always was; only the number is given weight, because the number is
      where every hour of computation went and it should not read as a
-     footnote to five titles. */
+     footnote to five titles.
+
+     The doors sit between the two: you are shown five, then offered ways
+     to re-aim at five more, and only then handed the whole archive. */
   show(`
     <section class="landing">
       ${switcher}
       <div class="landing-picks">${picks}</div>
+      ${doorRow('genre')}
+      ${doorRow('region')}
       <p class="landing-more">
         <a href="#/archive">The Vault${summary.total
           ? ` &middot; <span class="landing-vault-count">${summary.total.toLocaleString('en')}</span> pictures`
@@ -1803,7 +1853,12 @@ async function viewLanding() {
 document.addEventListener('click', e => {
   const sort = e.target.closest('[data-sort]');
   if (sort) {
-    landingSort = sort.dataset.sort;
+    /* A door you are already standing in closes. The sorts do not toggle
+       — one of the three is always on, and turning the current one off
+       would leave the page showing nothing — but a door is a departure
+       from that, and the way back has to be the thing you just pressed. */
+    const key = sort.dataset.sort;
+    landingSort = key === landingSort && key.includes(':') ? 'recent' : key;
     viewLanding();
     return;
   }
