@@ -262,8 +262,9 @@ for (const list of [...byYear.values(), ...byClosingYear.values(),
 
      1  the shape as first published
      2  summary.json gains `doors`
+     3  the doors cross, and carry `picks`
 */
-const FORMAT = 2;
+const FORMAT = 3;
 
 const digest = createHash('sha256');
 digest.update(`format:${FORMAT}\n`);
@@ -486,15 +487,23 @@ const longestWait = bestOfEach(everyClosing
    or Westerns, and the fastest way to make an archive of 123,956 closings
    legible is to let them say so in one click.
 
-   One facet at a time, and only the largest labels. Crossing genre with
-   country is a real question and the Vault is where it gets asked, with
-   its counts and its drawers; here it would be a combinatorial picker on
-   a page that is meant to be five titles and a way through.
+   Ten genres and ten regions, and **they cross**. "Russian horror" and
+   "Danish documentaries" are two words each because that is how anybody
+   says them; a picker that made you choose one word would be asking the
+   reader to hold the other in their head while they scrolled.
+
+   So every combination is precomputed: ten genres, ten regions, and the
+   crossings between them that have anything in them. That is at most 120
+   lists of five, about 55 KB, and it is the difference between a toy and
+   a thing somebody uses. Crossings with nothing in them are not written,
+   which is also what lets the page dim a door that leads nowhere rather
+   than letting it be clicked into an empty room.
 
    Sorted by fame for the same reason the "Best known" list exists: a
    door that opens onto five titles nobody recognises is a door nobody
-   opens twice. The count travels with the label because "Danish · 5,514"
-   tells a reader something the five titles cannot.
+   opens twice. Not filtered by it, though — a thin crossing is exactly
+   where every picture is obscure, and showing five obscure Danish
+   Westerns beats showing none.
 
    Computed here, once, rather than in the browser: the facts table can
    answer this — it carries genre and country per row — but it is 3 MB
@@ -506,22 +515,49 @@ const slim = e => ({
   wrappedYear: e.wrappedYear || undefined,
 });
 
-const doorsOnto = (labelsOf, howMany) => {
+const topLabels = (labelsOf, howMany) => {
   const counts = new Map();
   for (const e of everyClosing) {
     for (const label of new Set(labelsOf(e))) counts.set(label, (counts.get(label) || 0) + 1);
   }
-  return [...counts].sort((a, b) => b[1] - a[1]).slice(0, howMany).map(([label, count]) => ({
-    label, count,
-    films: bestOfEach(everyClosing
-      .filter(e => e.fame && labelsOf(e).includes(label))
-      .sort((a, b) => b.fame - a.fame)).slice(0, 5).map(slim),
-  }));
+  return [...counts].sort((a, b) => b[1] - a[1]).slice(0, howMany);
 };
 
+const doorGenres = topLabels(e => e.genres || [], 10);
+const doorRegions = topLabels(e => e.countries || [], 10);
+
+/* Bucketed once rather than filtered a hundred times: 124k closings
+   against 120 combinations is 15 million comparisons the naive way, and
+   two passes this way. */
+const genreBuckets = new Map(doorGenres.map(([label]) => [label, []]));
+const regionOf = new Map();
+for (const e of everyClosing) {
+  for (const g of new Set(e.genres || [])) genreBuckets.get(g)?.push(e);
+  regionOf.set(e, new Set(e.countries || []));
+}
+
+const bestFive = list => bestOfEach(
+  list.slice().sort((a, b) => (b.fame || 0) - (a.fame || 0))).slice(0, 5).map(slim);
+
+/* Keyed `<genre>||<region>`, either side empty for a single facet, so the
+   page looks up one string whether the reader has chosen one door or two. */
+const picks = {};
+const record = (key, list) => { if (list.length) picks[key] = { count: list.length, films: bestFive(list) }; };
+
+for (const [label] of doorGenres) record(`${label}||`, genreBuckets.get(label));
+for (const [label] of doorRegions) {
+  record(`||${label}`, everyClosing.filter(e => regionOf.get(e).has(label)));
+}
+for (const [g] of doorGenres) {
+  for (const [r] of doorRegions) {
+    record(`${g}||${r}`, genreBuckets.get(g).filter(e => regionOf.get(e).has(r)));
+  }
+}
+
 const doors = {
-  genre: doorsOnto(e => e.genres || [], 10),
-  region: doorsOnto(e => e.countries || [], 10),
+  genre: doorGenres.map(([label, count]) => ({ label, count })),
+  region: doorRegions.map(([label, count]) => ({ label, count })),
+  picks,
 };
 
 /* Counts over the whole corpus, not a filtered view, so a filter row does
@@ -606,6 +642,5 @@ console.log(`  ${written.month} month files  known only to a month`);
 console.log(`  ids.bin           ${kb(table.byteLength)} for ${ids.length} pictures`);
 console.log(`  facts.bin         ${kb(facts.length)} — ${everyClosing.length} rows of ${ROW} bytes`);
 console.log(`  facts.json        ${types.length} types, ${genreList.length} genres, ${countryList.length} countries, ${closers.length} closers`);
-console.log(`  doors             ${doors.genre.map(d => d.label).join(', ')}`);
-console.log(`                    ${doors.region.map(d => d.label).join(', ')}`);
+console.log(`  doors             ${doors.genre.length} genres x ${doors.region.length} regions, ${Object.keys(doors.picks).length} combinations with anything in them`);
 console.log(`  total             ${(written.bytes / 1048576).toFixed(1)} MB in ${OUT}/\n`);

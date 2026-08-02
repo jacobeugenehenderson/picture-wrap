@@ -910,11 +910,10 @@ the answer expires. Asking is worth more than posting.
 
 ## Two ways in, and the second is a place rather than an order
 
-*2 August 2026.*
+*2 August 2026. Revised the same evening — see the end.*
 
 **Decision.** The landing page offers ten genres and ten regions, each
-opening onto its five best-known closings. One facet at a time; crossings
-belong to the Vault.
+opening onto its five best-known closings, **and they stack**.
 
 **Why.** A sort is a way of ordering everything, and the page already had
 three. None of them answers the question a reader actually arrives with,
@@ -927,20 +926,51 @@ exists: a door that opens onto five titles nobody recognises is a door
 nobody opens twice. **Danish** gives *Häxan*, *Ordet*, *Day of Wrath*.
 **Western** gives *Stagecoach* and *High Noon*.
 
-**Why single facets.** Genre crossed with region is a real question —
-*Danish documentaries* is a phrase people say — and the Vault is where it
-gets asked, with counts and drawers behind it. On a landing page it is a
-matrix, on a page whose whole job is five titles and a way through.
-
 **Where the work happens.** Precomputed in `build-corpus.js` and carried
-in `summary.json`, which the page already fetches: 19 KB to 30 KB for
-twenty doors. The facts table can answer this in the browser — it carries
-genre and country per row — but it is 3 MB and carries neither titles nor
-fame, so the alternative was fetching the corpus to draw ten buttons.
+in `summary.json`, which the page already fetches. The facts table can
+answer this in the browser — it carries genre and country per row — but
+it is 3 MB and carries neither titles nor fame, so the alternative was
+fetching the corpus to draw twenty buttons.
 
 **The count arrives with the click.** Twenty labels each trailing a
-number is a table. One label trailing a number — DANISH 5,514 — is an
-answer to the question that clicking it just asked.
+number is a table. One line naming what is open — AMERICAN COMEDY 4,811 —
+is an answer to the question that clicking it just asked.
+
+### The revision: they stack
+
+This was first built one facet at a time, on the argument that crossing
+genre with region is the Vault's job and would be a matrix on a page
+meant to be five titles and a way through. That was wrong, and the
+counter-argument is in the phrases themselves: **"Russian horror" and
+"Danish documentaries" are two words each.** Nobody holds one of those
+words in their head while they scroll for the other. Asking a reader to
+choose between *Danish* and *documentary* is asking them to un-say the
+thing they came in saying.
+
+So every combination is precomputed — ten genres, ten regions, and the
+117 of 120 crossings that have anything in them. About 55 KB, taking
+`summary.json` from 30 KB to 82 KB, and a crossing then costs the same
+lookup as a single door.
+
+**What the crossings turn out to be worth** settles the argument better
+than the reasoning did. *Canadian comedy* is 27 pictures and opens with
+*The Railrodder* and *The Romance of Transportation in Canada*. *Canadian
+Western* is exactly one, *Wolf Dog*, released 1958 and closed in 2011.
+Neither is reachable in a single-facet archive, and both are the kind of
+thing somebody tells another person about.
+
+**Crossings with nothing in them are not written**, which is what lets
+the page dim a door rather than let it be clicked into an empty room. The
+dead doors stay visible rather than disappearing: a row that reshuffles
+on every click stops being a place, and the gaps are themselves
+informative — with *Western* chosen, Danish, Indian and Soviet go quiet,
+and that is a fact about the corpus.
+
+**Sorts and doors clear each other.** A sort is a statement about the
+whole archive and cannot be one about a tenth of it, so choosing one
+closes every door; the doors are lists of five that are already chosen,
+so while one is open no sort is marked current. The three sorts stay
+clickable throughout, because they are also the way out.
 
 ---
 

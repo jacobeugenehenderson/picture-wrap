@@ -95,7 +95,7 @@ Hash-based, so no server rewrites are needed:
 
 | | |
 |---|---|
-| `#` | landing — three sorts and twenty doors over the corpus, or `PICKS` if it is empty |
+| `#` | landing — three sorts, and twenty doors that cross, or `PICKS` if the corpus is empty |
 | `#/mildred-pierce/Q979726` | the roster and the bar |
 | `#/ann-blyth/Q255378` | filmography, split by whether each picture has closed |
 | `#/archive` | the Vault, closings grouped by decade then year |
@@ -121,15 +121,17 @@ Hash routing has one significant cost: link previews. See
 | Kind lookup | 1 (cached per id) | ~0.16s |
 | Film page | 3 parallel + label + TMDB credits | ~0.8s |
 | Person page | 2 parallel + label + `ids.bin` | ~1–3s |
-| Landing | 1 fetch of `manifest.json` + `summary.json` | ~31 KB |
+| Landing | 1 fetch of `manifest.json` + `summary.json` | ~83 KB |
 | Vault, closed | the same two, already cached | 0 |
 | Vault, one decade opened | nothing — the counts are in the summary | 0 |
 | Vault, one year opened | + `closed/<YYYY>.json` | ~220 KB median |
 
 The landing's doors cost nothing beyond the summary the page already
-fetches: they are precomputed in `build-corpus.js`, because the facts
-table that could answer them in the browser is 3 MB and carries neither
-titles nor fame.
+fetches, crossings included: all 117 combinations of ten genres and ten
+regions are precomputed in `build-corpus.js`, because the facts table
+that could answer them in the browser is 3 MB and carries neither titles
+nor fame. They are two thirds of that 83 KB, and they are the reason it
+is 83 KB rather than 30.
 
 The person page fetches `ids.bin` — 484 KB, sorted 32-bit Wikidata
 numbers — once, and answers membership for a whole filmography by binary

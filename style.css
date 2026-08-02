@@ -1272,13 +1272,30 @@ body.viewing { overflow: hidden; }
 .landing-door:hover { color: var(--ink-soft); }
 .landing-door[aria-current="true"] { color: var(--ink); }
 
-/* The count arrives only with the click that asked for it. Tabular, in
-   the display face, so an open door reads as an answer — DANISH 5,514 —
+/* A crossing with nothing in it. Shown, so the row stays a place you can
+   learn — no Australian Westerns is a fact — and not offered. */
+.landing-door[disabled] {
+  color: var(--rule);
+  cursor: default;
+}
+
+/* What is currently open, named in the order the phrase is said:
+   AMERICAN COMEDY 4,811. It sits between the sorts and the pictures,
+   which is where the answer to "what am I looking at" belongs. */
+.landing-standing {
+  margin-bottom: 1rem;
+  font-size: var(--size-tiny);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* Tabular, in the display face, so an open door reads as an answer
    rather than as a label that grew. */
 .door-count {
-  margin-left: 0.45rem;
+  margin-left: 0.5rem;
   font-family: var(--font-display);
-  font-size: 0.85rem;
+  font-size: 1rem;
   letter-spacing: 0.02em;
   text-transform: none;
   color: var(--gold);

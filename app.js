@@ -1744,8 +1744,16 @@ function viewAbout() {
    recent closings — so the page keeps itself current. PICKS is only the
    fallback for an empty archive. */
 /* Which way in the reader is looking. Sticky for the session, because
-   somebody who chose "best known" once is telling you something. */
+   somebody who chose "best known" once is telling you something.
+
+   Two states, not one. `landingSort` orders the whole archive and is what
+   the page opens on; `landingDoors` names a part of it, and while any
+   part is named the sort has nothing to order — the doors are lists of
+   five, already chosen. Picking a sort clears the doors and picking a
+   door suspends the sort, which is why they are separate variables and
+   the sort survives to be returned to. */
 let landingSort = 'recent';
+const landingDoors = { genre: null, region: null };
 
 async function viewLanding() {
   /* The front door carries no qualifier — the site's own name is what's up. */
@@ -1769,37 +1777,39 @@ async function viewLanding() {
      A sort is a way of ordering everything. A door is a way of naming the
      part of it you already care about, and readers arrive holding one:
      nobody likes "cinema", they like Danish documentaries, or Soviet war
-     pictures, or Westerns. Ten genres and ten regions, each opening onto
-     its five best-known closings, is the shortest path from a stranger to
-     something they recognise.
+     pictures, or Westerns.
 
-     One facet at a time. Crossing genre with region is a real question
-     and the Vault is where it gets asked, with counts and drawers behind
-     it; here it would be a matrix on a page that is meant to be five
-     titles and a way through. Precomputed in build-corpus.js, so all of
-     this costs the same one summary.json the page already fetches. */
+     They stack, because that is how those phrases are built. "Russian
+     horror" is two words, and a picker that made you choose one of them
+     would be asking you to hold the other in your head while you
+     scrolled. Every combination that has anything in it is precomputed —
+     117 of the 120 — so a crossing costs the same lookup as a single
+     door, out of the same one summary.json the page already fetches. */
   const doors = summary.doors ?? {};
-  for (const [kind, entries] of Object.entries(doors)) {
-    for (const door of entries) {
-      lists[`${kind}:${door.label}`] =
-        { label: door.label, films: door.films ?? [], count: door.count };
-    }
-  }
+  const combinations = doors.picks ?? {};
+  const facetKey = (genre, region) => `${genre ?? ''}||${region ?? ''}`;
+
+  const open = landingDoors.genre || landingDoors.region
+    ? combinations[facetKey(landingDoors.genre, landingDoors.region)]
+    : null;
 
   const sorts = ['recent', 'known', 'wait'].filter(k => lists[k].films.length);
   const chosen = lists[landingSort]?.films.length ? landingSort : sorts[0];
-  const films = chosen ? lists[chosen].films : [];
+  const films = open ? open.films : chosen ? lists[chosen].films : [];
 
   const picks = films.length
     ? films.map(f => `<button data-go="${esc(path(f.title, f.id))}">${esc(f.title)}` +
         `<span class="pick-year">${esc(year(f.wrapped) || f.wrappedYear || f.year)}</span></button>`).join('')
     : PICKS.map(p => `<button data-go="${esc(path(p.name, p.id))}">${esc(p.name)}</button>`).join('');
 
-  /* A switch, not a filter: three words, and only when there are three. */
+  /* A switch, not a filter: three words, and only when there are three.
+     None of them is current while a door is open, because none of them is
+     what you are looking at — and all three stay clickable, because they
+     are also the way back out. */
   const switcher = sorts.length > 1
     ? `<p class="landing-label">${sorts.map(key =>
         `<button class="landing-sort" data-sort="${key}"${
-          key === chosen ? ' aria-current="true"' : ''}>${esc(lists[key].label)}</button>`).join('')}</p>`
+          !open && key === chosen ? ' aria-current="true"' : ''}>${esc(lists[key].label)}</button>`).join('')}</p>`
     : films.length ? `<p class="landing-label">${esc(lists[chosen].label)}</p>` : '';
 
   /* Wikidata's genre labels all end in "film" — drama film, war film,
@@ -1809,18 +1819,37 @@ async function viewLanding() {
      is not an X film ("cinematic fairy tale") keeps its whole name. */
   const doorName = label => sentence(label.replace(/ films?$/i, ''));
 
-  /* The count appears on the door only once it is open. Twenty labels
-     each trailing a number is a table; one label trailing a number is an
-     answer to the question clicking it just asked. */
+  /* One line naming what is open, in the order the phrase is said:
+     "American comedy", not "comedy, American". It carries the count,
+     which the doors themselves no longer do — with two of them lit, a
+     number on each would read as two answers to a question with one. */
+  const standing = open
+    ? `<p class="landing-standing">${esc([
+        landingDoors.region,
+        landingDoors.genre && (landingDoors.region
+          ? doorName(landingDoors.genre).toLowerCase()
+          : doorName(landingDoors.genre)),
+      ].filter(Boolean).join(' '))}<span class="door-count">${
+        open.count.toLocaleString('en')}</span></p>`
+    : '';
+
+  /* A door that leads nowhere is shown and not offered. With a region
+     chosen, the genres that have nothing in that region go quiet rather
+     than disappearing — a row that reshuffles itself on every click
+     stops being a place, and the gaps are informative: no Australian
+     Westerns is a fact about the corpus. */
   const doorRow = kind => {
     const entries = doors[kind] ?? [];
     if (!entries.length) return '';
+    const other = kind === 'genre' ? 'region' : 'genre';
     return `<p class="landing-doors">${entries.map(d => {
-      const key = `${kind}:${d.label}`;
-      return `<button class="landing-door" data-sort="${esc(key)}"${
-        key === chosen ? ' aria-current="true"' : ''}>${esc(doorName(d.label))}${
-        key === chosen ? `<span class="door-count">${d.count.toLocaleString('en')}</span>` : ''
-      }</button>`;
+      const mine = landingDoors[kind] === d.label;
+      const paired = landingDoors[other];
+      const reachable = mine || !paired || combinations[
+        kind === 'genre' ? facetKey(d.label, paired) : facetKey(paired, d.label)];
+      return `<button class="landing-door" data-door="${esc(kind)}" data-label="${esc(d.label)}"${
+        mine ? ' aria-current="true"' : ''}${reachable ? '' : ' disabled'
+        }>${esc(doorName(d.label))}</button>`;
     }).join('')}</p>`;
   };
 
@@ -1835,6 +1864,7 @@ async function viewLanding() {
   show(`
     <section class="landing">
       ${switcher}
+      ${standing}
       <div class="landing-picks">${picks}</div>
       ${doorRow('genre')}
       ${doorRow('region')}
@@ -1851,14 +1881,22 @@ async function viewLanding() {
 
 /* One delegated handler for every navigable thing on the page. */
 document.addEventListener('click', e => {
+  /* A door you are already standing in closes, which is the only way to
+     take one facet off without taking both. Choosing a sort clears them
+     all, because a sort is a statement about the whole archive and it
+     cannot be one about a tenth of it. */
+  const door = e.target.closest('[data-door]');
+  if (door) {
+    const { door: kind, label } = door.dataset;
+    landingDoors[kind] = landingDoors[kind] === label ? null : label;
+    viewLanding();
+    return;
+  }
+
   const sort = e.target.closest('[data-sort]');
   if (sort) {
-    /* A door you are already standing in closes. The sorts do not toggle
-       — one of the three is always on, and turning the current one off
-       would leave the page showing nothing — but a door is a departure
-       from that, and the way back has to be the thing you just pressed. */
-    const key = sort.dataset.sort;
-    landingSort = key === landingSort && key.includes(':') ? 'recent' : key;
+    landingSort = sort.dataset.sort;
+    landingDoors.genre = landingDoors.region = null;
     viewLanding();
     return;
   }

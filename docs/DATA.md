@@ -505,13 +505,21 @@ years and decades that have closings, the country counts, the three
 sorted lists behind the front page (`recent`, `bestKnown`, `longestWait`)
 and `doors`.
 
-`doors` holds the ten largest genres and the ten largest regions, each
-with its count over the whole corpus and its five best-known closings, in
-a slimmed shape — id, title, release year, wrap date. Twenty doors cost
-about 11 KB, taking the file from 19 KB to 30 KB. It is precomputed here
-rather than answered in the browser because `facts.bin` carries genre and
-country but neither titles nor fame, so a page that drew ten buttons from
-it would first fetch 3 MB.
+`doors` holds the ten largest genres and the ten largest regions with
+their counts, and `doors.picks` holds every combination that has anything
+in it — each single facet and each crossing — keyed `<genre>||<region>`
+with either side empty for a single door. Each entry carries its count
+and its five best-known closings in a slimmed shape: id, title, release
+year, wrap date.
+
+That is 117 of the 120 possible combinations, about 66 KB, taking the
+file from 19 KB to 82 KB. Crossings with nothing in them are absent
+rather than empty, which is what lets the landing page dim a door instead
+of opening it onto nothing.
+
+It is precomputed here rather than answered in the browser because
+`facts.bin` carries genre and country but neither titles nor fame, so a
+page that drew twenty buttons from it would first fetch 3 MB.
 
 **`manifest.json`** — the only mutable file, and the only one that may
 not be cached for long. It names the current version; everything under
@@ -524,4 +532,4 @@ leaves every closing hashing identically, the version does not move, the
 immutable URLs do not move, and a returning reader holds a year-stale
 copy of a file that changed. Bump `FORMAT` in `build-corpus.js` whenever
 a key, a surface or a packing changes; the closings themselves are
-already hashed, so a changed threshold needs nothing.
+already hashed, so a changed threshold needs nothing. It stands at 3.
