@@ -1342,9 +1342,23 @@ async function loadSuppressed() {
    answered by binary search; a drawer asks for one year rather than a
    decade.
 
-   CORPUS_BASE is the one thing deployment changes. Locally it is a
-   directory beside the site; in production it is the R2 bucket. */
-const CORPUS_BASE = 'corpus/';
+   CORPUS_BASE is the one thing deployment changes, and the manifest
+   indirection is why it can be one line: everything else is addressed
+   relative to whatever this points at.
+
+   It pointed at `corpus/` — a gitignored directory that exists only on
+   the machine that built it — from the day the site was wired to the
+   corpus until 2 August. The live site was serving 404s and drawing an
+   empty Vault the whole time, which nothing reported because a corpus
+   that will not open is caught and degrades quietly. If this is ever
+   moved back to a relative path, check that the path is committed.
+
+   Cloudflare Pages rather than R2. The corpus is 803 immutable static
+   files; Pages bulk-uploads them, deploys atomically — so there is no
+   half-finished state for the "manifest last" ordering to hide — and
+   reads the `_headers` build-corpus.js writes, which is where the CORS
+   header and the two cache policies now live. */
+const CORPUS_BASE = 'https://picture-wrap-corpus.pages.dev/';
 
 let corpusPromise = null;
 function corpus() {
