@@ -1149,6 +1149,37 @@ main,
 
 .colophon p { margin: 0; }
 
+/* A closing whose date two sources disagree about. Quiet, because the
+   date is still the archive's best answer and 1,417 of 123,956 closings
+   carry this — it is a footnote, not an alarm. Set beside the date it
+   qualifies rather than under it, so it cannot be read as a second date. */
+.closing-disputed {
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.32rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-quiet);
+  cursor: help;
+  vertical-align: 0.1em;
+}
+
+/* The TMDB notice, in their wording because the terms specify it. Set
+   below everything else on the page: it is a legal obligation rather
+   than something a reader came for, and it should read as the small
+   print it is without being illegible. */
+.colophon-tmdb {
+  max-width: 30rem;
+  margin: 0.7rem auto 0;
+  font-size: var(--size-tiny);
+  line-height: 1.5;
+  color: var(--ink-quiet);
+}
+
+.colophon-tmdb a { color: inherit; border-bottom: 1px solid var(--rule); }
+
 .colophon .dot { margin: 0 0.55rem; }
 
 .colophon a {

@@ -1139,3 +1139,52 @@ comment. The failure mode of the manual version — forgetting — is the one
 this project already lives with on the `?v=` in `index.html`, and it is
 visible in the same place: a change that should have moved the version
 and didn't.
+
+
+---
+
+## Publish the disagreement, do not settle it
+
+*2 August 2026.*
+
+**Decision.** Where TMDB and Wikidata give different dates for the same
+death, the archive keeps the date it computed from, and marks the
+closing `disputed` with what the other source says. It does not choose.
+
+**How it came up.** `provenance.js` asked Wikidata whether it already
+held the deaths we had taken from TMDB. 19,614 times it held the
+identical date. 889 times it held a different one.
+
+**Why not just take Wikidata's.** Because the identification is a name
+and a birth year, and `verify.js` has said since it was written that
+this is "good enough to stop claiming somebody is alive, and not good
+enough to put a day on the headline claim". A rule does not get relaxed
+because a different caller finds it convenient. Overwriting 889 dates on
+that evidence would be the strongest claim in the project resting on its
+weakest join.
+
+**Why not stay silent.** Because we now know. Publishing a date you have
+no reason to doubt is ordinary; publishing one you have been told is
+contradicted, without saying so, is something else. 1,061 closings carry
+the mark — 0.86% — and it costs a reader nothing to be told.
+
+This is the same instinct as the rest of the archive: a closing with no
+day-precise death is placed nowhere rather than on 1 January, and a
+person whose dates cannot be established is listed with a dash rather
+than guessed at. The disagreements are the same shape and now get the
+same treatment.
+
+**What is a disagreement, and what only looks like one.** 318 of the
+original 1,207 had 1 January on one side with the years matching. That
+is one source recording only a year — Wikidata says so with an explicit
+precision, and TMDB has no precision at all, so 1 January is the only
+signal there is. Those are corroborations with a note, not disputes.
+Marking them would have put a warning on 318 closings where nothing is
+in doubt, and the distinction between *we disagree* and *we know less*
+is one this project draws everywhere else.
+
+**What it exposed.** Of the disagreements that remain, the ones on the
+year are almost all a single digit with the day and month identical —
+Antonio Moreno 1987 against 1967, Mary Stuart 2022 against 2002, Zena
+Keefe 1977 against 1976. Moreno died in 1967 and Stuart in 2002. The
+archive is publishing the typo, and now says so while it does.

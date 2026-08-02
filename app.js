@@ -1617,7 +1617,17 @@ function archiveRow(group) {
       <p class="closing-who">
         <span class="closing-name">${esc(last.name)}</span>
 
-        <span class="closing-date">${esc(longDate(last.died))}</span>
+        <span class="closing-date">${esc(longDate(last.died))}${
+          /* Both databases record this death and they disagree. The date
+             shown is the one the archive computed from; the mark says a
+             second source says otherwise, and what it says. Publishing
+             the disagreement is the same instinct as publishing an
+             undated closing rather than inventing a day for it. */
+          films.find(f => f.disputed)
+            ? `<span class="closing-disputed" title="Sources disagree: ${
+                esc(films.find(f => f.disputed).disputed.wikidata || 'unknown')
+              } on Wikidata">disputed</span>`
+            : ''}</span>
       </p>
       <ul class="closing-films">
         ${films.map(f => `
@@ -1713,14 +1723,16 @@ function viewAbout() {
         <a href="https://www.wikidata.org" rel="noopener">Wikidata</a>,
         which is published under CC0<span id="about-tmdb" hidden>, checked
         against <a href="https://www.themoviedb.org" rel="noopener">TMDB</a>,
-        whose cast lists are frequently fuller</span>. Portraits come from
+        whose cast lists are frequently fuller. About one closing date in
+        thirteen rests on a death only TMDB records; the rest are
+        Wikidata&rsquo;s, most of them corroborated by both</span>. Portraits come from
         <a href="https://commons.wikimedia.org" rel="noopener">Wikimedia
         Commons</a> under the licence of each file. All are edited by
         volunteers and none is complete.
       </p>
       <p id="about-tmdb-2" hidden>
-        This product uses the TMDB API but is not endorsed or certified by
-        TMDB.
+        This website uses TMDB and the TMDB APIs but is not endorsed,
+        certified, or otherwise approved by TMDB.
       </p>
 
       <h3>5. Scope</h3>
@@ -2183,16 +2195,27 @@ async function route() {
   }
 }
 
-/* TMDB's terms require attribution wherever their data appears. The line
-   is in the markup but hidden, and only revealed if a key is actually set
-   — otherwise the site would be crediting a source it never called. */
-/* TMDB's terms require attribution wherever their data appears, and it
-   would be false to credit a source we never call — so both mentions stay
-   hidden until a key is actually set. The About paragraph is written into
-   the page by viewAbout, hence the check on each render rather than once. */
+/* TMDB's terms require attribution wherever their data appears.
+
+   This used to be conditional: both mentions stayed hidden until a TMDB
+   key was set, because crediting a source we never called would be
+   false. That was right when every page was computed live from the two
+   databases and the browser either called TMDB or it did not.
+
+   It stopped being right when the corpus landed. 27% of published
+   closings were dated from TMDB, and even after provenance.js
+   corroborated 19,614 of them against Wikidata, about 8% still rest on
+   a date only TMDB recorded. Those dates are in the files this page
+   fetches, on every page load, whether or not a key exists — so the
+   credit is owed unconditionally, and the condition was hiding it on
+   the live site, which has no key.
+
+   `tmdb-credit` was also a dead id: nothing in the markup ever had it,
+   so that line had been reaching for an element that did not exist.
+
+   Still outstanding: the terms also require the TMDB logo, which is a
+   brand asset this repository does not hold. See BACKLOG.md. */
 function revealTmdb() {
-  if (!TMDB_KEY) return;
-  document.getElementById('tmdb-credit')?.removeAttribute('hidden');
   document.getElementById('about-tmdb')?.removeAttribute('hidden');
   document.getElementById('about-tmdb-2')?.removeAttribute('hidden');
 }

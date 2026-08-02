@@ -672,10 +672,17 @@ That moves TMDB-only dates from about 27% of published closings to about
 8%, which is the difference between the licence question needing an
 argument and not.
 
-**The 1,207 disagreements are the unplanned find, and they are the
-reason this was worth doing even if the licence question vanished.**
-472 distinct people, written to `pass/provenance-disputes.tsv`, worst
-first by how many closings each dates.
+**The disagreements are the unplanned find, and they are the reason this
+was worth doing even if the licence question vanished.** After separating
+precision from contradiction — 318 had 1 January on one side with the
+years agreeing, which is one source knowing less rather than the two
+disagreeing — **337 people across 889 closings genuinely conflict.** They
+are in `pass/provenance-disputes.tsv`, worst first by how many closings
+each dates, and **1,061 closings now carry a `disputed` mark in the
+corpus and on the Vault's rows** (a flagged closer flags every picture
+they date). 0.86% of the archive.
+
+The figures below are from the first run, before that separation:
 
 | | |
 |---|---|
@@ -720,10 +727,22 @@ stop the join failing for everybody.
 
 ---
 
-## The TMDB credit is conditioned on the wrong thing
+## The TMDB credit is conditioned on the wrong thing — FIXED, except the logo
 
-*Raised 2 August. Small, and a compliance defect rather than a
+*Raised and fixed 2 August. Small, and a compliance defect rather than a
 preference.*
+
+**Done.** The notice is now unconditional, in the colophon on every page,
+in TMDB's own wording. `revealTmdb()` no longer gates on a key, and the
+About paragraph says what TMDB's role actually is: about one closing date
+in thirteen rests on a death only TMDB records.
+
+**Still outstanding: the logo.** The terms require it and this repository
+does not hold the asset. It is a two-minute download from TMDB's
+logos-and-attribution page, deliberately not done here because
+downloading and committing somebody's brand asset is the owner's call.
+
+The original defect, for the record:
 
 `revealTmdb()` unhides the TMDB credit and the required disclaimer only
 when a `TMDB_KEY` is present in the browser. The comment explains why —

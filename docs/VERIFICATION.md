@@ -59,6 +59,9 @@ asserted rather than quietly implied to be safe.
 | 26 | Withholding a name takes **the name and never the vote** | `pass.js`, `app.js` | asserted |
 | **Where the rules are applied** | | | |
 | 27 | A **person page asks Wikidata directly** and must apply rules 6, 7 and 8 itself; the audit does not reach it | `app.js` `readPeople` | asserted |
+| **Disagreement** | | | |
+| 28 | Where two sources give **different dates** for one death, neither is preferred: the published date stands and the disagreement is published beside it | `provenance.js` | asserted |
+| 29 | Agreement on the **year** where one source records only a year is **not** a disagreement — it is one source knowing less | `provenance.js` | asserted |
 
 ### What the audit actually does
 
@@ -78,7 +81,7 @@ circular rather than decorative:
    counts match the unknowns listed.
 
 **Asserted means only that a human wrote it down.** Rules 5, 12, 13, 15,
-18 and 20-27 are not checked by anything, and the honest reading of that
+18 and 20-29 are not checked by anything, and the honest reading of that
 column is that those are where the next drift will be found — which is
 how rule 6 was found on 1 August, having been applied to half the people
 it named for as long as it had existed.

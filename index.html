@@ -28,7 +28,7 @@
        cache these hard; without a new URL, returning visitors keep the old
        version until they hard-refresh. The number is arbitrary — any change
        works — but keeping them in step makes it one edit to remember. -->
-  <link rel="stylesheet" href="style.css?v=62">
+  <link rel="stylesheet" href="style.css?v=65">
 </head>
 <body>
 
@@ -77,11 +77,22 @@
       <span class="dot">&middot;</span>
       <a id="colophon-link" href="#/about">Methods and sources</a>
     </p>
+    <!-- Required by TMDB's API terms, in their wording, and unconditional.
+         It used to be revealed only when a TMDB key was set, on the
+         reasoning that crediting a source we never called would be false.
+         That was right when every page was computed live. The corpus now
+         ships dates TMDB supplied whether or not this browser ever calls
+         them, so the credit is owed on every page load. -->
+    <p class="colophon-tmdb">
+      This website uses TMDB and the TMDB APIs but is not endorsed,
+      certified, or otherwise approved by
+      <a href="https://www.themoviedb.org" rel="noopener">TMDB</a>.
+    </p>
   </footer>
 
   <!-- type="module" so app.js can import shared.js, which the poster imports
        too. Native ES modules in both runtimes; still no build step. -->
-  <script type="module" src="app.js?v=62"></script>
+  <script type="module" src="app.js?v=65"></script>
   <script src="embed-height.js"></script>
 </body>
 </html>

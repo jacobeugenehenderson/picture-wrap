@@ -170,6 +170,11 @@ const row = w => ({
         id: w.last.wikidataId ?? null,
       }
     : null,
+  /* Two databases, one date, and they do not agree. The date published
+     is unchanged — nothing here adjudicates — but a reader is told, the
+     same way an undated closing and an unnamed maker are already told.
+     See provenance.js. */
+  disputed: w.disputed || undefined,
   countries: w.countries?.length ? w.countries : undefined,
   type: w.type,
   genres: w.genres?.length ? w.genres : undefined,
@@ -264,8 +269,9 @@ for (const list of [...byYear.values(), ...byClosingYear.values(),
      2  summary.json gains `doors`
      3  the doors cross, and carry `picks`
      4  every crossing ranked three ways, over one film table
+     5  a closing can carry `disputed`
 */
-const FORMAT = 4;
+const FORMAT = 5;
 
 const digest = createHash('sha256');
 digest.update(`format:${FORMAT}\n`);

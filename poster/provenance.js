@@ -113,7 +113,7 @@ const readYear = async year => {
     for (const w of works) {
       if (w.verdict === 'closed' && w.last?.name) closerOf.set(w.id, w.last.name);
     }
-    return { dir, closerOf, evidence: await lines(join(dir, 'evidence.jsonl')) };
+    return { dir, works, closerOf, evidence: await lines(join(dir, 'evidence.jsonl')) };
   } catch { return null; }
 };
 
@@ -174,7 +174,7 @@ for (let i = 0; i < people.length; i += SLICE) {
 
 /* ---- pass three: compare, and change only where they agree ----------- */
 
-let agreed = 0, differed = 0, unmatched = 0;
+let agreed = 0, differed = 0, unmatched = 0, imprecise = 0;
 const conflicts = [];
 /* Every disagreement, not the first forty. 1,207 of them is a reading
    task rather than a console message, and each one is a date this
@@ -187,14 +187,41 @@ for (const year of present) {
   const file = await readYear(year);
   if (!file) continue;
   let touched = 0;
+  /* Names whose date two sources disagree about, so the closings they
+     date can be marked. Per year, because a name is only a key within
+     the population the year already judged. */
+  const disputedClosers = new Set();
 
   {
     for (const person of wanted(file)) {
       const hit = found.get(keyOf(person));
       if (!hit || !hit.died) { unmatched++; continue; }
 
+      /* One side ending 1 January and the years agreeing is not two
+         sources contradicting each other — it is one of them recording
+         only a year. Wikidata says so explicitly with a precision;
+         TMDB has no precision at all, so 1 January is the only signal
+         there is. Calling that a dispute would put a warning on 135
+         closings where nothing is actually in doubt, and this archive's
+         whole habit is to distinguish "we disagree" from "we know less". */
+      const yearOnly = d => /-01-01$/.test(d);
+      const sameYear = hit.died.slice(0, 4) === person.tmdb.died.slice(0, 4);
+      if (hit.died !== person.tmdb.died && sameYear &&
+          (yearOnly(hit.died) || yearOnly(person.tmdb.died))) {
+        imprecise++;
+        person.corroboratedBy = {
+          source: 'wikidata', died: hit.died, matchedOn: hit.matchedOn,
+          note: 'agrees on the year; one source records only the year',
+        };
+        person.wikidataId = hit.wikidataId;
+        person.source = 'both';
+        touched++;
+        continue;
+      }
+
       if (hit.died !== person.tmdb.died) {
         differed++;
+        disputedClosers.add(person.name);
         if (conflicts.length < 20) {
           conflicts.push(`${person.name}: TMDB ${person.tmdb.died}, ` +
             `Wikidata ${hit.died} (${hit.wikidataId})`);
@@ -224,7 +251,37 @@ for (const year of present) {
     }
   }
 
+  /* The disagreement is a fact about the closing, not only about the
+     person, so it travels to works.jsonl and from there into the corpus
+     and onto the page. Nothing is corrected — the date stays exactly
+     what it was — but a reader is told that the two databases do not
+     agree about it, which is the same thing this archive already does
+     with an undated closing and an unknown name.
+
+     A picture whose dispute has since been resolved loses the flag, so
+     a re-run after somebody edits Wikidata cleans up after itself. */
+  let flagged = 0;
+  for (const w of file.works) {
+    const wasDisputed = !!w.disputed;
+    const isDisputed = w.verdict === 'closed' && w.last?.name &&
+      disputedClosers.has(w.last.name);
+    if (isDisputed) {
+      const hit = found.get(`${w.last.name}|${(w.last.born || '').slice(0, 4)}`) ||
+        [...disputes.values()].find(d => d.name === w.last.name);
+      w.disputed = { died: w.last.died, wikidata: hit?.wikidata ?? hit?.died ?? null };
+      flagged++;
+    } else if (wasDisputed) {
+      delete w.disputed;
+    }
+    if (isDisputed !== wasDisputed) touched++;
+  }
+  if (flagged) console.log(`${year}  ${flagged} closings flagged: the two sources disagree on the date`);
+
   if (touched && !dryRun) {
+    await writeFile(join(file.dir, 'works.jsonl.part'),
+      file.works.map(w => JSON.stringify(w)).join('\n') + '\n');
+    await rename(join(file.dir, 'works.jsonl.part'), join(file.dir, 'works.jsonl'));
+
     const path = join(file.dir, 'evidence.jsonl');
     await writeFile(`${path}.part`, file.evidence.map(e => JSON.stringify(e)).join('\n') + '\n');
     await rename(`${path}.part`, path);
@@ -255,6 +312,8 @@ for (const year of present) {
 
 console.log(`\n${agreed.toLocaleString('en')} deaths Wikidata records identically` +
   ` — no longer TMDB's alone`);
+console.log(`${imprecise.toLocaleString('en')} where they agree on the year and one records only a year` +
+  ` — corroborated, not disputed`);
 console.log(`${differed.toLocaleString('en')} where the two sources disagree — left alone, flagged`);
 console.log(`${unmatched.toLocaleString('en')} with no single Wikidata candidate — left alone`);
 
