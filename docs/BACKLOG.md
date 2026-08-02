@@ -614,22 +614,122 @@ to say so is the *checked?* column.
 
 ---
 
+## A quarter of the corpus cites TMDB where Wikidata had the same fact
+
+*Raised 2 August, out of reading TMDB's terms. The largest of the three
+things that reading turned up, and the one that is about the archive
+rather than about paperwork.*
+
+**27,058 of 98,925 published closings — 27% — are dated by a death only
+TMDB recorded**, with no Wikidata equivalent in the evidence. That
+includes Auguste Lumière dating *Workers Leaving the Lumière Factory*.
+`METHOD.md` §2 says Wikidata is the source and TMDB the check. For a
+quarter of the archive that is backwards.
+
+**It is not a broken join.** All 27,058 are people never matched to a
+Wikidata item, and 26,787 of them have a TMDB birth date, so the
+name-and-birth-year rule could have fired. It never got the chance:
+`deathsByName` exists to find a death for somebody TMDB calls living, and
+once TMDB answers *dead* the person is settled and nothing asks further.
+Efficient for the verdict, wrong for the citation — **the same shape as
+the short-circuit in rule 19**, a memo whose dependency is not recorded.
+
+**The dates are mostly there.** Of the 60 closers that date the most
+pictures, 55 have a Wikidata item carrying a death date — Lumière is
+Q4272245, d. 1954-04-10, the same date. But a label match alone also
+returns a George Spence who died in 1850, so this needs the existing
+strict rule (name plus exact birth year, exactly one candidate) and not a
+bulk overwrite.
+
+**The fix:** before recording a TMDB-only death, ask Wikidata under the
+rule already written. No edits to anybody else's database, no new
+judgement — the verdict does not move, only the source and possibly the
+precision of the date.
+
+**What it is not.** Writing these dates *into* Wikidata and reading them
+back as CC0 was considered and is licence laundering; it would also
+manufacture a second apparent source for a single fact. Wikidata would
+not want them regardless, TMDB being user-edited and not a reliable
+source for a death on its own. The one clean contribution upstream is the
+**identifier link** — P4985, TMDB person ID — which is a checkable claim
+about who is who rather than an import of anyone's facts, and which would
+stop the join failing for everybody.
+
+---
+
+## The TMDB credit is conditioned on the wrong thing
+
+*Raised 2 August. Small, and a compliance defect rather than a
+preference.*
+
+`revealTmdb()` unhides the TMDB credit and the required disclaimer only
+when a `TMDB_KEY` is present in the browser. The comment explains why —
+*"it would be false to credit a source we never call"* — and that was
+right when every page was computed live.
+
+It is now stale. The corpus ships TMDB-derived dates whether or not a
+visitor's browser ever calls TMDB, so on the live site the credit is
+hidden while TMDB data is being served. TMDB's terms require the notice
+*and the TMDB logo*, which appears nowhere.
+
+Fix: unhide both unconditionally, and add the logo. The live-call
+condition should govern nothing, because the data is present either way.
+
+---
+
 ## A licence for the corpus
 
-*Open since 1 August. The last unanswered question in `SOURCES.md`.*
+*Open since 1 August. The `SOURCES.md` §6 question. The terms were read
+on 2 August; what they say is below.*
 
 Wikidata is CC0 and imposes nothing. Facts are not copyrightable in the
 US; a database can attract sui generis rights in the UK and EU, which
 would mean this project *holds* one rather than infringes one. The real
-constraint is contractual — TMDB's API terms, which permit non-commercial
-use with the attribution the colophon already displays, and restrict bulk
-redistribution. That is why the evidence is not published.
+constraint is contractual — TMDB's API terms.
 
-**Recommendation: CC0 on the derived corpus**, with the citation format in
-`SOURCES.md` requested rather than required. CC BY on a database creates
+**What those terms actually say**, read 2 August 2026:
+
+| clause | text |
+|---|---|
+| commercial | *"The license ... does not permit any commercial use of TMDB, the TMDB APIs, or TMDB Content"* |
+| caching | *"Cache, for longer than 6 months, any information obtained through or from TMDB or the TMDB APIs"* — prohibited |
+| derivatives | *"Make derivatives of the TMDB APIs or TMDB Content"* — prohibited |
+| AI/ML | *"... in connection with, including for training, a machine learning (ML) or artificial intelligence (AI) based Application"* — prohibited |
+| attribution | the TMDB logo, plus *"This [product] uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB"* |
+| grant | *"non-exclusive, non-transferable, non-sublicensable"* |
+
+They say nothing about factual data or database rights.
+
+**The conflict CC0 creates.** CC0 grants commercial use, redistribution
+and AI training. TMDB forbids all three. Rights you do not hold cannot be
+granted, so CC0 across the whole corpus would purport to license the 27%
+of dates above in ways the agreement prohibits.
+
+**The counter-argument, which is probably decisive in practice.** A death
+date is a fact, not expression. TMDB holds no copyright in *"Auguste
+Lumière died on 10 April 1954"* and the terms claim none. The restriction
+is contractual and binds this project rather than anybody downstream, so
+the realistic consequence of being wrong is a revoked key, not a claim
+against a reuser.
+
+**Recommendation, unchanged in direction and better supported now: CC0**,
+with the citation format in `SOURCES.md` requested rather than required —
+but **fix the source question first**. If most of that 27% resolves to
+Wikidata, CC0 goes from defensible-with-an-argument to plainly fine, and
+the argument stops needing to be made. CC BY on a database creates
 attribution stacking for reusers and buys little; ODC-BY exists if the
-credit should bind. Worth one actual read of TMDB's current terms before
-committing, since that is a contract rather than a default.
+credit should bind.
+
+**The caching clause is answered by the plan that already exists**, with
+two conditions. Periodic re-scanning satisfies *"no longer than 6
+months"* only if it **refreshes** stored values rather than only adding
+new ones, and only if **old corpus versions expire**: `v/<version>/` is
+immutable and served with a year's cache life, so a version published
+eight months ago is TMDB data older than six months still sitting on the
+CDN. `build-corpus.js` notes old versions can be deleted once nothing
+references them; that has to become a policy rather than a possibility.
+It also answers `SOURCES.md` §6.2, which is the same question in
+different clothes.
 
 ---
 

@@ -193,10 +193,24 @@ The honest limits, which any citation of this work should carry with it:
 
 Marked open because they are decisions, not oversights.
 
-1. **A licence for our own output.** The Vault is a derived database. CC0
-   matches Wikidata; CC-BY would ask for credit. Undecided.
-2. **How long the person table keeps someone we have decided is dead.**
+1. **A licence for our own output.** The corpus is a derived database.
+   CC0 matches Wikidata; CC-BY would ask for credit. Undecided, and now
+   gated on the entry below rather than on taste: TMDB's terms were read
+   on 2 August 2026 and forbid commercial use, derivatives, AI training
+   and caching beyond six months, none of which we can grant and CC0
+   purports to. See `BACKLOG.md`, *A licence for the corpus*.
+2. **A quarter of the corpus cites TMDB where Wikidata held the same
+   fact.** 27,058 of 98,925 closings are dated by a death only TMDB
+   recorded, because the pass stops asking once TMDB answers *dead*. §2
+   of `METHOD.md` says Wikidata is the source and TMDB the check; for
+   those closings that is backwards. Until it is fixed, the licence
+   question is harder than it needs to be.
+3. **How long the person table keeps someone we have decided is dead.**
    Indefinitely today, because that is what makes the next pass cheap.
+   TMDB's six-month caching limit bears directly on this, and periodic
+   re-scanning answers it only if the re-scan refreshes stored values and
+   old published corpus versions are expired rather than merely
+   supersedable.
 
 Two questions that were open and are now answered:
 
