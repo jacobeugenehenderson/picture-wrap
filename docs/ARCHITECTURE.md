@@ -99,6 +99,7 @@ Hash-based, so no server rewrites are needed:
 | `#/mildred-pierce/Q979726` | the roster and the bar |
 | `#/ann-blyth/Q255378` | filmography, split by whether each picture has closed |
 | `#/archive` | the Vault, closings grouped by decade then year |
+| `#/archive/<region>/<genre>` | the same, with one or both facets on; `-` for either. `#/archive/French/silent%20film` |
 | `#/about` | what the project is and what its limits are |
 
 The kind is **not** in the URL. The router finds the Q-id wherever it sits

@@ -966,6 +966,32 @@ on every click stops being a place, and the gaps are themselves
 informative — with *Western* chosen, Danish, Indian and Soviet go quiet,
 and that is a fact about the corpus.
 
+**The line says how many of them you are being shown.** *French silent*
+is 2,687 pictures and five buttons, and a count three orders of magnitude
+larger than the list beneath it will be read as the length of that list.
+So the line reads AMERICAN COMEDY · FIVE BEST KNOWN OF 4,811.
+
+**And it is the way to the other 4,806.** The line links to the Vault
+with the same two facets already applied, which is the only place on the
+page that can offer that, because it is the only thing that knows what
+was asked for. `#/archive/French/silent%20film`, either segment a bare
+`-`, so the result can also be sent to somebody.
+
+That required the Vault to gain a genre filter beside the country one it
+already had, and both rows now draw from the same precomputed table the
+doors use — which means every chip can carry **the count it would
+actually produce**: with *silent* on, the region row counts silent
+pictures, and with *French* on, the genre row counts French ones. The
+order never moves, being by size over the whole corpus, so the rows stay
+a grid a reader can learn while the numbers change underneath.
+
+**The drawer counts go away while a facet is on.** A decade's filtered
+count would need every year file it holds, which is precisely the
+download the drawers exist to avoid. A number reading 12,142 above a
+drawer holding four French silents is worse than no number: it is a
+confident answer to the question the reader is actually asking. So they
+are not shown, and the drawer says what it holds when it is opened.
+
 **Sorts and doors clear each other.** A sort is a statement about the
 whole archive and cannot be one about a tenth of it, so choosing one
 closes every door; the doors are lists of five that are already chosen,

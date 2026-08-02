@@ -754,6 +754,22 @@ main,
 
 .vault-filters button[aria-current="true"] span { color: var(--ink-soft); }
 
+/* A crossing with nothing in it. Kept in place and not offered, so the
+   two rows stay a fixed grid a reader can learn rather than a pair that
+   reshuffles under every click. */
+.vault-filters button[disabled] {
+  color: var(--rule);
+  border-color: transparent;
+  cursor: default;
+}
+
+.vault-filters button[disabled] span { color: var(--rule); }
+.vault-filters button[disabled]:hover { background: none; border-color: transparent; }
+
+/* Two rows, and the second sits directly under the first: they are one
+   control with two axes, not two controls. */
+.vault-filters + .vault-filters { margin-top: 0; }
+
 
 /* Years nested inside decades. Quieter than the decade heading — a
    sub-drawer, not a section. */
@@ -1280,14 +1296,35 @@ body.viewing { overflow: hidden; }
 }
 
 /* What is currently open, named in the order the phrase is said:
-   AMERICAN COMEDY 4,811. It sits between the sorts and the pictures,
-   which is where the answer to "what am I looking at" belongs. */
+   AMERICAN COMEDY · FIVE BEST KNOWN OF 4,811. It sits between the sorts
+   and the pictures, which is where the answer to "what am I looking at"
+   belongs — and it is the way to the other 4,806, so the whole line is a
+   link to the Vault with the same two facets on. */
 .landing-standing {
   margin-bottom: 1rem;
   font-size: var(--size-tiny);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink);
+}
+
+.landing-standing a {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  color: inherit;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 1px;
+}
+
+.landing-standing a:hover { border-bottom-color: var(--gold); }
+
+/* The qualifier, which exists because the count is three orders of
+   magnitude larger than the list and a reader is entitled to assume a
+   list is the thing it is counting. Quieter than the name it qualifies. */
+.standing-of {
+  color: var(--ink-faint);
+  letter-spacing: 0.1em;
 }
 
 /* Tabular, in the display face, so an open door reads as an answer

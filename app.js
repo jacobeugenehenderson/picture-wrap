@@ -1365,14 +1365,41 @@ async function loadSummary() {
   return summaryCache;
 }
 
-/* Which country's pictures to show. The Vault runs to 2,135 titles and
-   nearly half aren't American — 287 French, 181 German, 120 Italian, 49
-   Polish. That breadth is the best thing about it and also the problem: a
-   column of Italian titles is unreadable noise unless you came for it. */
-let vaultFilter = 'all';
+/* Which pictures the Vault shows. Two facets, the same two the landing's
+   doors offer, because a reader who arrives from one of those doors
+   arrives having already asked the question.
 
-async function viewArchive() {
+   Breadth is the best thing about this archive and also the problem: a
+   column of Italian titles is unreadable noise unless you came for it,
+   and 123,956 closings is every column at once. */
+const vaultFilter = { region: 'all', genre: 'all' };
+
+/* The Vault, addressable. `#/archive/American/comedy film`, either side a
+   bare `-`, so the landing can hand over what it was showing and a reader
+   can send somebody the result.
+
+   Encoded per segment rather than as one string: `British Raj` has a
+   space in it and `20th-century` has a hyphen, so the separator has to be
+   the one character a label cannot contain. */
+const vaultPath = ({ region, genre }) =>
+  `#/archive/${encodeURIComponent(region || '-')}/${encodeURIComponent(genre || '-')}`;
+
+const readVaultPath = segments => {
+  const at = segments.indexOf('archive');
+  const read = i => {
+    const raw = segments[at + i];
+    if (!raw || raw === '-') return 'all';
+    try { return decodeURIComponent(raw); } catch { return 'all'; }
+  };
+  return { region: read(1), genre: read(2) };
+};
+
+async function viewArchive(segments = []) {
   const summary = await loadSummary();
+
+  /* The URL is the authority on arrival; after that the chips are, and
+     they re-render without routing. */
+  Object.assign(vaultFilter, readVaultPath(segments));
 
   if (!summary.total) {
     setTitle('The Vault');
@@ -1402,24 +1429,56 @@ async function viewArchive() {
 function renderArchive(summary) {
   setTitle(`The Vault — ${summary.total.toLocaleString('en')} pictures`);
 
-  /* Counts come from the whole Vault, not the filtered view, so the row
-     doesn't rearrange itself as you click through it. */
-  const kinds = summary.countries.slice(0, 7);
+  /* The same ten genres and ten regions the landing's doors offer, drawn
+     from the same precomputed table, for two reasons that are really one.
+     A reader arriving from a door must find the chip that door set
+     already lit, or the Vault will look like it ignored them. And the
+     table knows every crossing, so a chip can carry the count it would
+     actually produce rather than its count over the whole archive.
 
-  const chip = (value, label, n) => `
-    <button data-vault="${esc(value)}" ${vaultFilter === value ? 'aria-current="true"' : ''}>
-      ${esc(label)}<span>${n}</span>
-    </button>`;
+     The order never moves — it is by size over the whole corpus — so the
+     row stays a place even as its numbers change under a filter. Chips
+     leading nowhere go quiet, exactly as the doors do. */
+  const doors = summary.doors ?? {};
+  const combinations = doors.picks ?? {};
+  const countFor = (region, genre) => combinations[
+    `${genre === 'all' ? '' : genre}||${region === 'all' ? '' : region}`]?.count ?? 0;
 
-  const filters = `
-    <div class="vault-filters">
-      ${chip('all', 'All', summary.total)}
-      ${kinds.map(([k, n]) => chip(k, k, n)).join('')}
+  const chipRow = kind => {
+    const entries = doors[kind] ?? [];
+    if (!entries.length) return '';
+    const countWith = label => kind === 'region'
+      ? countFor(label, vaultFilter.genre)
+      : countFor(vaultFilter.region, label);
+
+    const chip = (value, label, n) => `
+      <button data-vault="${esc(kind)}" data-label="${esc(value)}"${
+        vaultFilter[kind] === value ? ' aria-current="true"' : ''}${
+        n ? '' : ' disabled'}>
+        ${esc(label)}<span>${n.toLocaleString('en')}</span>
+      </button>`;
+
+    return `<div class="vault-filters">
+      ${chip('all', 'All', countWith('all') || summary.total)}
+      ${entries.map(d => chip(d.label,
+        kind === 'genre' ? sentence(d.label.replace(/ films?$/i, '')) : d.label,
+        countWith(d.label))).join('')}
     </div>`;
+  };
+
+  const filters = chipRow('region') + chipRow('genre');
 
   /* Closing decades, newest first — the axis the Vault has always
      browsed. `decades` in the corpus summary is by RELEASE year and is a
      different question. */
+  /* The drawer counts are over the whole corpus, and there is no honest
+     way to filter them: a decade's count would need every year file it
+     holds, which is the download this drawer exists to avoid. So while a
+     facet is on they are not shown at all. A number that says 12,142
+     above a drawer holding four French silents is worse than no number —
+     it is the wrong answer to the question the reader is asking. */
+  const counted = vaultFilter.region === 'all' && vaultFilter.genre === 'all';
+
   const sections = Object.entries(summary.closingDecades ?? {})
     .sort((a, b) => Number(b[0]) - Number(a[0]))
     .map(([decade, d]) => [`${decade}s`, d.total])
@@ -1427,7 +1486,7 @@ function renderArchive(summary) {
     <details class="decade" data-decade="${esc(label)}">
       <summary>
         <span class="decade-label">${esc(label)}</span>
-        <span class="decade-count">${n}</span>
+        ${counted ? `<span class="decade-count">${n}</span>` : ''}
       </summary>
       <div class="decade-body"><p class="state">Opening&hellip;</p></div>
     </details>`).join('');
@@ -1455,7 +1514,11 @@ function renderArchive(summary) {
 function fillDecade(details) {
   const key = details.dataset.decade;
   const body = details.querySelector('.decade-body');
-  if (!body || body.dataset.filled === key) return;
+  /* Stamped with the filter as well as the decade, because whether the
+     year rows carry counts depends on it — cached on the decade alone,
+     an open drawer kept the counts it was drawn with. */
+  const stamp = `${key}|${vaultFilter.region}|${vaultFilter.genre}`;
+  if (!body || body.dataset.filled === stamp) return;
 
   const decade = summaryCache?.closingDecades?.[String(Number(key.replace(/s$/, '')))];
   const years = Object.entries(decade?.years ?? {}).sort((a, b) => b[0].localeCompare(a[0]));
@@ -1465,12 +1528,13 @@ function fillDecade(details) {
     return;
   }
 
-  body.dataset.filled = key;
+  body.dataset.filled = stamp;
+  const counted = vaultFilter.region === 'all' && vaultFilter.genre === 'all';
   body.innerHTML = years.map(([y, n]) => `
     <details class="yr" data-year="${esc(y)}">
       <summary>
         <span class="yr-label">${esc(y)}</span>
-        <span class="yr-count">${n}</span>
+        ${counted ? `<span class="yr-count">${n}</span>` : ''}
       </summary>
       <div class="yr-body"><p class="state">Opening&hellip;</p></div>
     </details>`).join('');
@@ -1491,7 +1555,8 @@ async function fillYear(details) {
 
   const films = await c.closed(y);
   const shown = films.filter(f =>
-    vaultFilter === 'all' || (f.countries || []).includes(vaultFilter));
+    (vaultFilter.region === 'all' || (f.countries || []).includes(vaultFilter.region)) &&
+    (vaultFilter.genre === 'all' || (f.genres || []).includes(vaultFilter.genre)));
 
   if (!shown.length) {
     body.innerHTML = `<p class="state">Nothing from ${esc(y)} here.</p>`;
@@ -1822,15 +1887,29 @@ async function viewLanding() {
   /* One line naming what is open, in the order the phrase is said:
      "American comedy", not "comedy, American". It carries the count,
      which the doors themselves no longer do — with two of them lit, a
-     number on each would read as two answers to a question with one. */
+     number on each would read as two answers to a question with one.
+
+     And it says *five best known of* that count, because the count is
+     the larger number by three orders of magnitude and a reader is
+     entitled to assume a list is the thing it is counting. French silent
+     is 2,687 pictures and five buttons.
+
+     Which makes the line the obvious way to the other 2,682, so it is a
+     link: the Vault, with the same two facets already on. Nothing else on
+     the page can offer that, because nothing else knows what you asked
+     for. */
+  const standingName = [
+    landingDoors.region,
+    landingDoors.genre && (landingDoors.region
+      ? doorName(landingDoors.genre).toLowerCase()
+      : doorName(landingDoors.genre)),
+  ].filter(Boolean).join(' ');
+
   const standing = open
-    ? `<p class="landing-standing">${esc([
-        landingDoors.region,
-        landingDoors.genre && (landingDoors.region
-          ? doorName(landingDoors.genre).toLowerCase()
-          : doorName(landingDoors.genre)),
-      ].filter(Boolean).join(' '))}<span class="door-count">${
-        open.count.toLocaleString('en')}</span></p>`
+    ? `<p class="landing-standing"><a href="${esc(vaultPath(landingDoors))}">${
+        esc(standingName)}${open.count > films.length
+          ? `<span class="standing-of">${films.length === 5 ? 'five' : films.length} best known of</span>`
+          : ''}<span class="door-count">${open.count.toLocaleString('en')}</span></a></p>`
     : '';
 
   /* A door that leads nowhere is shown and not offered. With a region
@@ -1903,10 +1982,14 @@ document.addEventListener('click', e => {
 
   const vault = e.target.closest('[data-vault]');
   if (vault) {
-    vaultFilter = vault.dataset.vault;
+    /* Each row toggles its own facet and leaves the other alone, so a
+       reader can take the genre off an American comedy and still be
+       looking at American pictures. */
+    const { vault: kind, label } = vault.dataset;
+    vaultFilter[kind] = vaultFilter[kind] === label ? 'all' : label;
     /* Re-render the chips, then re-fill any drawer that was already open.
-       The decade files are cached, so changing the filter costs nothing
-       over the network — it only changes which rows are drawn. */
+       The year files are cached, so changing a filter costs nothing over
+       the network — it only changes which rows are drawn. */
     loadSummary().then(summary => {
       renderArchive(summary);
       for (const d of document.querySelectorAll('details.decade[open]')) fillDecade(d);
@@ -2050,7 +2133,7 @@ async function route() {
     showNav(!!id || kind === 'about');
     wireColophon(kind === 'about');
 
-    if (kind === 'archive') { await viewArchive(); return; }
+    if (kind === 'archive') { await viewArchive(segments); return; }
     if (kind === 'about') { viewAbout(); return; }
     if (!id) { await viewLanding(); return; }
 
