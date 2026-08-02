@@ -1015,6 +1015,41 @@ best-known drama and the best-known American drama — so the films are
 written once into one table and the lists are indices into it. 330
 combinations, 990 lists, 2,234 distinct films.
 
+### The index has to be quieter than what it indexes
+
+Widening to 22 genres and 14 regions made the landing page wrong in a way
+the counts predicted and nobody checked: 36 words of type against five
+titles. The doors had been styled as a footer to the picks when there
+were twenty of them, and at thirty-six the same styling made the menu
+outweigh the meal — a reader's eye landed on the cloud before it landed
+on a single film.
+
+Four corrections, all to presentation:
+
+**The doors set smaller, quieter and tighter** — 0.63rem in a new
+`--ink-quiet`, one step below `--ink-faint` and one above `--rule`. They
+now read as an index rather than a menu. The colour is darker than the
+eye alone would choose because at that size it is *small text* under the
+accessibility rules and wants 4.5:1 rather than 3:1.
+
+**A short rule between the two rows.** Stacked with identical treatment
+they read as one long list that wrapped oddly, and nothing but reading
+the words told you the second row was places. The rule is a flex item at
+full width with only its middle painted, so it takes its own line and
+needs no words.
+
+**The picks break after the third.** Five chips at this measure wrapped
+four-and-one, and a lone fifth reads as a mistake rather than a pick.
+Nothing in flexbox balances lines and the wrap point depends on how long
+the titles happen to be, so the break is placed explicitly.
+
+**The gap under the search field goes to the pictures.** It was 3rem of
+nothing above the sorts while the doors were cramped at the line.
+
+What is deliberately *not* changed is the count. Fewer doors would fix
+the same problem by taking away the genres that made the row worth
+having.
+
 ### How far down the lists the doors go
 
 Ten of each was the first guess, and the counts make its failure plain:

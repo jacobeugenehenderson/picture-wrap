@@ -1882,9 +1882,13 @@ async function viewLanding() {
     ? (open[chosen]?.length ? open[chosen] : open.known ?? []).map(fromTable)
     : chosen ? lists[chosen].films : [];
 
+  /* Broken after the third when there are five, so the row reads 3+2
+     rather than however many happen to fit and then the remainder. */
   const picks = films.length
-    ? films.map(f => `<button data-go="${esc(path(f.title, f.id))}">${esc(f.title)}` +
-        `<span class="pick-year">${esc(year(f.wrapped) || f.wrappedYear || f.year)}</span></button>`).join('')
+    ? films.map((f, i) =>
+        `<button data-go="${esc(path(f.title, f.id))}">${esc(f.title)}` +
+        `<span class="pick-year">${esc(year(f.wrapped) || f.wrappedYear || f.year)}</span></button>` +
+        (films.length === 5 && i === 2 ? '<span class="pick-break"></span>' : '')).join('')
     : PICKS.map(p => `<button data-go="${esc(path(p.name, p.id))}">${esc(p.name)}</button>`).join('');
 
   /* A switch, not a filter: three words, and one of them is always on —

@@ -32,6 +32,14 @@
   --ink:          #16130e;   /* primary text                            */
   --ink-soft:     #4a443c;   /* dates, characters, secondary text  8.5:1 */
   --ink-faint:    #605a52;   /* hints, placeholders                6.0:1 */
+  /* One step quieter again, for an index that must be findable without
+     competing with what it indexes. Below this is --rule, which is a
+     line rather than a word.
+
+     It sets at 0.63rem, which is small text by the accessibility rules
+     and therefore wants 4.5:1 rather than 3:1 — so this is darker than
+     the eye alone would have chosen.                             5.2:1 */
+  --ink-quiet:    #6e6860;
   --rule:         rgba(30, 24, 14, 0.13);  /* hairlines between rows    */
 
   /* --- colour: the gold bar ------------------------------------------ */
@@ -75,6 +83,7 @@
     --ink:          #ece7db;
     --ink-soft:     #b8b2a8;
     --ink-faint:    #99938b;
+    --ink-quiet:    #7c766e;
     --rule:         rgba(236, 231, 219, 0.14);
 
     --gold-dark:  #7a5c12;
@@ -198,7 +207,7 @@ main,
 
 .search {
   position: relative;
-  margin-bottom: 3rem;
+  margin-bottom: 2.25rem;
 }
 
 .search input {
@@ -650,7 +659,7 @@ main,
 /* 9. LANDING & STATES ==================================================== */
 
 .landing {
-  padding-top: 0.5rem;
+  padding-top: 0.25rem;
   text-align: center;
 }
 
@@ -658,7 +667,17 @@ main,
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
+}
+
+/* Five chips at this measure wrap four-and-one, and the orphan reads as
+   a mistake rather than a fifth pick. Nothing in flexbox balances lines,
+   and the wrap point depends on how long the titles happen to be, so the
+   break is placed explicitly: a zero-height item at full width after the
+   third, which puts the line where a designer would. */
+.pick-break {
+  flex: 0 0 100%;
+  height: 0;
 }
 
 .landing-picks button {
@@ -1252,36 +1271,56 @@ body.viewing { overflow: hidden; }
 
    Middots rather than the sorts' dividing rules. A rule between two words
    reads as a switch with two positions; ten rules read as a fence. */
+/* Set below the pictures in every sense. Thirty-six words is more type
+   than the five titles they exist to serve, so if they carry the same
+   weight the menu outweighs the meal — which is what happened when the
+   rows went from twenty labels to thirty-six. Smaller, quieter and
+   tighter-leaded, they read as an index: findable, not first. */
 .landing-doors {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: baseline;
-  gap: 0 0.15rem;
-  margin-top: 1.25rem;
-  font-size: var(--size-tiny);
-  letter-spacing: 0.12em;
+  gap: 0 0.1rem;
+  margin-top: 2rem;
+  font-size: 0.63rem;
+  line-height: 1.4;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--ink-quiet);
 }
 
-.landing-doors + .landing-doors { margin-top: 0.35rem; }
+/* Two axes, not one long list. Without a break between them the rows
+   read as a single cloud that happens to wrap oddly, and nothing but
+   reading the words tells you the second one is places. A short rule
+   says it in no words at all — a flex item at full width, so it takes
+   its own line, with the visible part painted in the middle. */
+.landing-doors + .landing-doors { margin-top: 0.75rem; }
+
+.landing-doors + .landing-doors::before {
+  content: "";
+  flex: 0 0 100%;
+  height: 1px;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(90deg,
+    transparent 44%, var(--rule) 44%, var(--rule) 56%, transparent 56%);
+}
 
 .landing-door {
   font: inherit;
   letter-spacing: inherit;
   text-transform: inherit;
-  color: var(--ink-faint);
+  color: var(--ink-quiet);
   background: none;
   border: 0;
-  padding: 0.15rem 0.4rem;
+  padding: 0.12rem 0.34rem;
   cursor: pointer;
   transition: color 0.15s;
 }
 
 .landing-door + .landing-door::before {
   content: "·";
-  margin-right: 0.55rem;
+  margin-right: 0.46rem;
   color: var(--rule);
 }
 
