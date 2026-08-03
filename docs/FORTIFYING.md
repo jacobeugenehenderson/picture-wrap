@@ -47,10 +47,13 @@ a researcher filter to *entries confirmed against both databases since
 28 July*, which is a materially different and much stronger dataset than
 *everything*.
 
-**Related, and already wrong.** `unverified` is a stored flag on 368
-entries, but **481** actually have no TMDB id — the flag postdates most of
-the archive. Anyone filtering on it gets a wrong answer. It should be
-derived from the missing id, not stored.
+**Related — DONE, 3 August.** `unverified` was a stored flag that
+undercounted, because it postdated most of the archive. It is now derived
+from `tested` at build time, published on every closing, carried as bit 4
+of the packed flags byte, and drawn in the Vault as **Wikidata alone**.
+55,612 of 120,567 closings, which is 46% and was never visible before.
+The half of the fix above — `checkedAt` and a `checkedBy` that survives
+into the published record — is still open.
 
 ### 3. There is no version to cite
 
@@ -117,7 +120,7 @@ error this project spent 28 July undoing.
 
 **This now has a first concrete use, which it did not have on 29 July.**
 `provenance.js` found **337 people whose death date TMDB and Wikidata
-record differently**, across 1,061 published closings — see
+record differently**, across 1,034 published closings — see
 `FINDINGS.md` §7b. Nothing has adjudicated them, deliberately: the match
 is a name and a birth year, which `verify.js` says is not good enough to
 date a wrap.

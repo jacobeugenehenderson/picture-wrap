@@ -277,7 +277,7 @@ wants an **absolute** `og:image` URL at **1200×630**; give it
 
 The repository holds no image bigger than a 6.8 KB apple-touch icon, so
 the card has to be made. The obvious one draws itself: the wordmark, the
-gold bar, and the count — *123,956 pictures* — on the same near-black
+gold bar, and the count — *120,567 pictures* — on the same near-black
 ground the site uses. Most links people paste are the front page anyway,
 so this alone fixes the common case.
 
@@ -287,7 +287,7 @@ Hash routing means `picture-wrap.com/#/mildred-pierce/Q979726` never
 sends the id to a server, so a per-picture card cannot come from static
 metadata. The old plan — prerender one HTML file per entry and hook it to
 `publishVault` — is dead twice over: `publishVault` no longer builds
-anything, and the Vault has gone from 11,457 entries to **123,956**.
+anything, and the Vault has gone from 11,457 entries to **120,567**.
 That many files is not something to put in a git repository or serve off
 GitHub Pages.
 
@@ -301,7 +301,7 @@ Three live options:
    Namecheap and the apex currently points at GitHub Pages, so this is a
    DNS change plus a deploy, not a rewrite.
 2. **Prerender the few that get shared** — the posting queue, a few
-   hundred — rather than all 123,956. Cheap, and covers what actually
+   hundred — rather than all 120,567. Cheap, and covers what actually
    circulates.
 3. **Path routing instead of hash routing**, which would let a static
    prerender work per URL, but is a change to every link the project has
@@ -568,11 +568,12 @@ a share of all cinema.
 
 ---
 
-## Wiring the corpus into the site — DONE, except the hosting
+## Wiring the corpus into the site — DONE
 
-*Closed on the evening of 2 August. What remains of it is the upload.*
+*Closed on the evening of 2 August; the hosting followed on 3 August.
+Kept because the decisions below still explain the shape.*
 
-The corpus pass produced 357,510 judged pictures and 123,956 closings,
+The corpus pass produced 329,957 judged pictures and 120,567 closings,
 audited, published as static shards by `build-corpus.js` and readable by
 `corpus.js`. All three call sites now go through it, the decade drawers
 open onto years, and the landing page reads its sorts and its doors out
@@ -580,9 +581,12 @@ of `summary.json`. Nothing in `app.js` opens `vault/*.json` any more —
 which means **those files are now dead weight in the repository and
 should be deleted**.
 
-**What is left is hosting.** `CORPUS_BASE` points at a local `corpus/`
-directory. Cloudflare R2, immutable tree first and `manifest.json` last.
-Until that is done the live site still serves the old 11,457-entry Vault.
+**The hosting is done.** `CORPUS_BASE` is an absolute URL and the corpus
+is on Cloudflare Pages, chosen over R2 because 803 immutable static files
+bulk-upload and deploy atomically — so the "manifest last" ordering has
+nothing to guard against. The site itself stayed on GitHub Pages, which
+is the two-host split that now costs a deploy step; see the link-previews
+entry.
 
 The decisions the work was done under, kept because they explain the
 shape:
@@ -716,7 +720,7 @@ precision from contradiction — 318 had 1 January on one side with the
 years agreeing, which is one source knowing less rather than the two
 disagreeing — **337 people across 889 closings genuinely conflict.** They
 are in `pass/provenance-disputes.tsv`, worst first by how many closings
-each dates, and **1,061 closings now carry a `disputed` mark in the
+each dates, and **1,034 closings now carry a `disputed` mark in the
 corpus and on the Vault's rows** (a flagged closer flags every picture
 they date). 0.86% of the archive.
 

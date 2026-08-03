@@ -7,10 +7,12 @@ the last person who made it is gone.*
 **[@picture-wrap.bsky.social](https://bsky.app/profile/picture-wrap.bsky.social)**
 
 > **Picking this up mid-flight? Read [HANDOFF.md](HANDOFF.md) first.**
-> It records the current state and what is unfinished. As of 2 August
-> 2026 the site serves a corpus of **123,956 closings** hosted on
-> Cloudflare Pages; `archive.json` and `vault/` are the superseded
-> 11,457-entry Vault and nothing reads them.
+> It records the current state and what is unfinished. As of 3 August
+> 2026 the site serves a corpus of **120,567 closings**: the corpus files
+> are on Cloudflare Pages, the site itself is on GitHub Pages, and a
+> change to what a closing says usually needs both deployed.
+> `archive.json` and `vault/` are the superseded 11,457-entry Vault and
+> nothing on the site reads them.
 
 A film's page is a single list of everyone credited on it, divided by a gold
 bar: the living above, the dead below. As people die the bar rises. When it
@@ -25,7 +27,7 @@ The project is deliberately things that barely know about each other.
 | | | |
 |---|---|---|
 | **The site** | `index.html` `style.css` `app.js` `corpus.js` `shared.js` `verify.js` | Static files. No backend, no build step, nothing shipped that it didn't write. The browser queries Wikidata and TMDB directly, and reads the corpus over HTTP. |
-| **The corpus** | built by `poster/build-corpus.js` into `dist/` | 123,956 closings as immutable, versioned, static shards. Hosted on Cloudflare Pages; `CORPUS_BASE` in `app.js` is the only thing that names where. |
+| **The corpus** | built by `poster/build-corpus.js` into `dist/` | 120,567 closings as immutable, versioned, static shards. Hosted on Cloudflare Pages; `CORPUS_BASE` in `app.js` is the only thing that names where. |
 | **The poster** | `poster/` | Node scripts. Judges pictures, records the working, and posts approved closings to Bluesky. |
 
 They share two files, and the difference between them is the design.
@@ -75,7 +77,7 @@ things done by hand: `picture-wrap-preview`, `picture-wrap-review`,
 
 ## The scripts
 
-**The corpus.** These built and maintain the 123,956 closings the site
+**The corpus.** These built and maintain the 120,567 closings the site
 serves. None of them posts anything.
 
 | | |

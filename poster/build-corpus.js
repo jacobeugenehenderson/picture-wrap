@@ -201,7 +201,14 @@ const byClosingYear = new Map();
 const byDay = new Map();
 const byMonth = new Map();
 const ids = [];
-let closed = 0, open = 0, unchecked = 0, duplicated = 0;
+let closed = 0, duplicated = 0;
+
+/* Distinct pictures, by what became of them. A picture that closes under
+   any release year is closed, whatever another year said before the
+   evidence was complete — so these are resolved against `filed` once the
+   years are all read, never as they go. */
+const running = new Set();
+const unchecked = new Set();
 
 /* Every picture already filed, so a later release year cannot file it
    again. Ids, not titles — two different pictures share a title all the
@@ -213,8 +220,14 @@ for (const year of years) {
   try { works = await lines(join(IN, String(year), 'works.jsonl')); } catch { continue; }
 
   for (const w of works) {
-    if (w.verdict === 'open') { open++; continue; }
-    if (w.verdict !== 'closed') { unchecked++; continue; }
+    /* Counted into sets, not incremented, for the same reason the
+       closings are filed into one: a picture judged under two release
+       years is one picture. Incrementing published a total that did not
+       add up — 120,567 + 229,628 + 1,386 against 329,957 actually
+       judged — and the count of what is still running is the second
+       number this project quotes. */
+    if (w.verdict === 'open') { running.add(w.id); continue; }
+    if (w.verdict !== 'closed') { unchecked.add(w.id); continue; }
 
     /* One picture, one closing, however many times it was released.
 
@@ -318,8 +331,10 @@ for (const list of [...byYear.values(), ...byClosingYear.values(),
      4  every crossing ranked three ways, over one film table
      5  a closing can carry `disputed`
      6  a closing can carry `unverified`, and flag bits 4-5 are written
+     7  `open` and `unchecked` count pictures rather than rows, and the
+        manifest carries `pictures` as their total
 */
-const FORMAT = 6;
+const FORMAT = 7;
 
 const digest = createHash('sha256');
 digest.update(`format:${FORMAT}\n`);
@@ -390,6 +405,13 @@ await put(join(base, 'ids.bin'), Buffer.from(table.buffer, table.byteOffset, tab
 
    Two 32-bit halves rather than one 64-bit field, so a browser reading
    this never needs BigInt for what is a set of checkboxes. */
+/* Resolved now the years are all read. Closed beats running beats never
+   checked, so nothing is counted under two headings. */
+for (const id of filed) { running.delete(id); unchecked.delete(id); }
+for (const id of running) unchecked.delete(id);
+const stillRunning = running.size;
+const neverChecked = unchecked.size;
+
 const ROW = 25;
 const BASIS = { none: 0, year: 1, month: 2, day: 3 };
 
@@ -562,7 +584,7 @@ const longestWait = bestOfEach(everyClosing
 
    A reader who likes pictures does not arrive wanting "the archive". They
    arrive as somebody who likes Russian horror, or Danish documentaries,
-   or Westerns, and the fastest way to make an archive of 123,956 closings
+   or Westerns, and the fastest way to make an archive of 120,567 closings
    legible is to let them say so in one click.
 
    Ten genres and ten regions, and **they cross**. "Russian horror" and
@@ -717,7 +739,7 @@ for (const e of everyClosing) {
 const countries = Object.entries(countryCounts).sort((a, b) => b[1] - a[1]);
 
 await put(join(base, 'summary.json'), JSON.stringify({
-  closed, open, unchecked,
+  closed, open: stillRunning, unchecked: neverChecked,
   countries,
   years: [...byYear.keys()].sort((a, b) => a - b),
   decades,
@@ -766,7 +788,9 @@ await put(join(OUT, 'manifest.json'), JSON.stringify({
   version,
   base: `v/${version}`,
   built: new Date().toISOString(),
-  counts: { closed, open, unchecked, years: byYear.size, days: byDay.size },
+  counts: { closed, open: stillRunning, unchecked: neverChecked,
+            pictures: closed + stillRunning + neverChecked,
+            years: byYear.size, days: byDay.size },
   surfaces: {
     year: 'year/{year}.json',
     day: 'day/{MM-DD}.json',

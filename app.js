@@ -22,13 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear, impossible } from './verify.js?v=50';
-import { openCorpus } from './corpus.js?v=50';
+import { survivors, beyondLiving, earliestLivingBirthYear, impossible } from './verify.js?v=51';
+import { openCorpus } from './corpus.js?v=51';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js?v=50';
+} from './shared.js?v=51';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -1410,7 +1410,7 @@ async function loadSuppressed() {
 /* The corpus, which replaced the Vault.
 
    Three files used to be fetched from `vault/` — a summary, every closed
-   id as quoted JSON, and a decade at a time. At 123,956 closings the
+   id as quoted JSON, and a decade at a time. At 120,567 closings the
    second is a megabyte of quoted strings on every person page and the
    third is six megabytes for the 2010s. Neither survives the scale.
 
@@ -1463,7 +1463,7 @@ async function loadSummary() {
 
    Breadth is the best thing about this archive and also the problem: a
    column of Italian titles is unreadable noise unless you came for it,
-   and 123,956 closings is every column at once. */
+   and 120,567 closings is every column at once. */
 const vaultFilter = { region: 'all', genre: 'all' };
 
 /* The Vault, addressable. `#/archive/American/comedy film`, either side a

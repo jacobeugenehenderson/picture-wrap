@@ -8,6 +8,10 @@ nine errors in the previous version of this file; the corpus pass of 1-2
 August added six rules and corrected three. **The canon below is the
 authoritative list**; the prose after it explains each one.
 
+Last reviewed 3 August 2026, when rule 6 reached the film page and rules
+30 and 31 were written down after the same picture was found in the Vault
+twice.
+
 ---
 
 ## The canon
@@ -18,7 +22,7 @@ column that matters — **whether anything checks it**.
 A rule nobody checks is a rule that has already drifted from the code
 once, in this project, three times. The audit reproduces every verdict
 from stored evidence, so rules marked *reproduced* are verified against
-123,956 closings on every run. The rest are asserted, and are listed as
+120,567 closings on every run. The rest are asserted, and are listed as
 asserted rather than quietly implied to be safe.
 
 | # | rule | lives in | checked? |
@@ -58,10 +62,13 @@ asserted rather than quietly implied to be safe.
 | **People** | | | |
 | 26 | Withholding a name takes **the name and never the vote** | `pass.js`, `app.js` | asserted |
 | **Where the rules are applied** | | | |
-| 27 | A **person page asks Wikidata directly** and must apply rules 6, 7 and 8 itself; the audit does not reach it | `app.js` `readPeople` | asserted |
+| 27 | A **person page and a film page ask Wikidata directly** and must apply rules 6, 7 and 8 themselves; the audit reaches neither | `app.js` `readPeople`, `app.js` `viewFilm` | asserted |
 | **Disagreement** | | | |
 | 28 | Where two sources give **different dates** for one death, neither is preferred: the published date stands and the disagreement is published beside it | `provenance.js` | asserted |
 | 29 | Agreement on the **year** where one source records only a year is **not** a disagreement — it is one source knowing less | `provenance.js` | asserted |
+| **One picture, one closing** | | | |
+| 30 | A picture is **one work class**, the most specific Wikidata gives it; several classes are not several pictures | `pass.js`, `shared.js` `mostSpecificType` | asserted |
+| 31 | A picture is **filed once**, under its earliest release year, however many release dates it has; the id decides, never the title | `build-corpus.js` | integrity check |
 
 ### What the audit actually does
 
@@ -70,7 +77,7 @@ circular rather than decorative:
 
 1. **Reproduction.** Re-decide every verdict and every wrap date from that
    year's own evidence, with the network unplugged. Any rule marked
-   *reproduced* above is exercised 123,956 times per run, because a
+   *reproduced* above is exercised 120,567 times per run, because a
    verdict that cannot be re-derived from the evidence means either the
    rule changed or the evidence is insufficient — and rule 19 is why those
    two are reported separately.
@@ -81,7 +88,7 @@ circular rather than decorative:
    counts match the unknowns listed.
 
 **Asserted means only that a human wrote it down.** Rules 5, 12, 13, 15,
-18 and 20-29 are not checked by anything, and the honest reading of that
+18, 20-30 are not checked by anything, and the honest reading of that
 column is that those are where the next drift will be found — which is
 how rule 6 was found on 1 August, having been applied to half the people
 it named for as long as it had existed.

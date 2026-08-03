@@ -257,7 +257,20 @@ even where Wikidata held the same fact.
 | after asking Wikidata under the existing name-and-birth-year rule | **~8%** |
 | newly corroborated — Wikidata records the identical date | **19,614** |
 | Wikidata agrees on the year but records only a year | 318 |
-| the two sources give **different** dates | **1,061** (0.86%) |
+| the two sources give **different** dates | **1,034** (0.86%) |
+
+> **Correction, 3 August 2026.** The ~8% row describes a state the
+> published corpus has never been in, and this table read as though it
+> had. `provenance.js` writes its corroboration into `evidence.jsonl`;
+> the closer recorded on each closing comes from `works.jsonl`, and
+> `rebuild.js` ran *before* provenance rather than after, so the promotion
+> never reached the published record. Measured on the corpus as it now
+> stands: **26,836 closings, 22%, name a closer dated by TMDB alone.**
+> 19,255 of those are already corroborated in the evidence and one
+> offline `rebuild.js` pass would promote them, leaving **7,581** — which
+> is the number the ~8% row is describing. The disagreement count is 1,034
+> rather than 1,061 because 27 of them were the same picture counted twice;
+> see the 3 August dedupe.
 
 **No verdict or wrap date moved.** The rule that made the match — a name
 plus an exact birth year — is documented in `verify.js` as good enough to
@@ -266,7 +279,7 @@ it was not relaxed for this. All 137 years still audit clean.
 
 ### The disagreements are a finding in their own right
 
-337 people, 1,061 closings. Separating precision from contradiction
+337 people, 1,034 closings. Separating precision from contradiction
 matters: **1 January on one side with the years agreeing is one source
 recording only a year**, not two sources disagreeing, and 318 such cases
 were reclassified rather than flagged.

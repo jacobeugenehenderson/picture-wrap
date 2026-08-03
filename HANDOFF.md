@@ -1,81 +1,113 @@
-# Handoff — 2 August 2026, night
+# Handoff — 3 August 2026
 
 Read this before touching anything. Nothing is running. Every job this
-project has is finished and its output is on disk.
+project has is finished and its output is on disk and deployed.
 
 ## The one sentence
 
-**It is live.** picture-wrap.com serves the corpus — 123,956 closings,
-the doors, the Vault, the person pages — from Cloudflare Pages. The gate
-this file named for two days is gone.
+**It is live, and it is smaller.** picture-wrap.com serves 120,567
+closings. It said 123,956 yesterday, and the difference is not a loss —
+136 of those pictures were never closed, and 3,253 were the same picture
+counted twice.
 
 ## Where things stand
 
 | | |
 |---|---|
-| **The corpus** | 137 release years, **357,510 pictures** — 123,956 closed, 232,151 running, 1,403 unchecked |
+| **The corpus** | 137 release years, 329,957 pictures — **120,567 closed**, 208,017 running, 1,373 unchecked |
 | Audit | **137 years, 0 failures**, re-run after every change below |
-| Built | `dist/`, 104 MB, version `76641b1c66b7`, gitignored. `corpus/` is a copy for the local server |
-| **Hosted** | Cloudflare Pages, project `picture-wrap-corpus`, at `https://picture-wrap-corpus.pages.dev/` — 803 files, deployed in 8 seconds |
-| Sources | 19,614 closings re-sourced from TMDB to Wikidata on 2 August; TMDB-only dates fell from ~27% to ~8% |
-| Disputed | **1,061 closings** where two sources give different dates, published with the disagreement rather than adjudicated |
-| Evidence | 1.7 GB local; 130 MB gzipped per year on the Desktop, in iCloud, **and on an external drive as of 2 August** |
-| Live site | current with `main`, **serving the corpus**, `?v=71` |
+| Built | `dist/`, 101.3 MB, version `7d5a418d0cc3`, gitignored |
+| **Corpus hosted** | Cloudflare Pages, project `picture-wrap-corpus`, at `https://picture-wrap-corpus.pages.dev/` — 803 files |
+| **Site hosted** | GitHub Pages from `main`, at picture-wrap.com. **Two hosts. The site is not on Cloudflare** |
+| Live site | current with `main`, `?v=72` |
+| Verified | 64,955 closings tested against both databases; **55,612 (46%) rest on Wikidata alone** and now say so on the page |
+| Disputed | 1,034 closings where two sources give different dates, published with the disagreement rather than adjudicated |
+| Evidence | 1.7 GB local; on the Desktop, in iCloud, and on an external drive — **the Desktop copy is behind for the years deduped on 3 August** |
 | Bluesky | 26 posts; 37 entries survive |
 
-## What happened on 2 August, evening
+## What happened on 3 August
 
-Everything in this session came out of one question — what licence the
-corpus should carry — and almost none of it turned out to be about
-licences.
+One question — why is *Gidget* in the Vault when its own page shows
+someone living — and it was three bugs down.
 
-**The landing page got doors.** Ten genres and ten regions, then 22 and
-14 when the first cut turned out to have no horror in it. They cross, and
-they compose with the three sorts, so "the longest wait among French
-silents" is a lookup. All 330 combinations are precomputed into
-`summary.json`, which is now 175 KB — the largest deliberate trade on the
-site.
+**The corpus was closing pictures without asking TMDB.** `retest.js`
+handed `judge.js` the record that goes to disk; `judge.js` read the field
+names the pass's query uses. `tmdbId` against `tmdb` and `tv`. Both came
+back undefined, every picture fell through the no-id branch, and 965 were
+closed on Wikidata's word alone with the id sitting in the argument
+unread. The tell was in the run and nobody read it: *965 re-tested, 965
+closed, none reopened.* A real test of that many pictures never comes back
+unanimous. Re-tested the 809 that had an id — **671 close, 136 do not**,
+2 have no credits in TMDB at all and keep their old verdict. The log now
+counts "closed against TMDB" apart from "closed untested", because those
+being one number is how this hid.
 
-**Person pages were applying two fewer rules than film pages.** Philip
-Glass, born 1937, credited on *Dracula* (1931) for a 1999 score, held
-that picture open on his co-workers' pages while the Vault had it closed
-on Carla Laemmle in 2014. The page now returns the people rather than
-counts, and applies the same rules `verify.js` does. Rule 27.
+**Rule 6 did not reach the film page.** Nobody worked on a picture
+released before they were born. The Vault applied it; the film page did
+not. So *Gidget* showed a living screenwriter who is an Australian
+politician born in 1964 — Wikidata's P58 points at Q5516102 and not at
+the Gabrielle Upton who wrote it and died in 2022. Same picture, two
+answers, one site. `viewFilm` now applies it, and `VERIFICATION.md` says
+so.
 
-**TMDB's terms were read**, which the backlog had been asking for since
-1 August. Three findings, all in `BACKLOG.md`:
+**`unverified` was documented and never written.** Bits 4 and 5 of the
+packed flags byte have been in the manifest's field list since
+`build-corpus.js` was written, and nothing ever set them; `corpus.js`
+never decoded them. A described field that is always zero reads as
+measured and says nothing. Both bits are written now, both are read, each
+closing carries `unverified`, and the Vault marks those closings
+**Wikidata alone**. Derived from `tested`, never from the stored flag,
+which undercounts — `FORTIFYING.md` had said so since 28 July.
 
-1. A quarter of published closings were dated by a death only TMDB
-   recorded — not a broken join, but because the pass stops asking once
-   TMDB answers *dead*. `provenance.js` now asks. **Fixed.**
-2. The required TMDB credit was hidden unless a browser key was set.
-   **Fixed**, except the logo, which the terms also require and this
-   repository does not hold.
-3. CC0 conflicts with terms that forbid commercial use, derivatives and
-   AI training. **Still open**, but much easier at 8% than at 27%.
+**One picture was being filed as several.** Two causes, both ours.
 
-**A person's page now marks the pictures they were the last of** — a
-gold dot in a gutter down the left of the filmography, free, because the
-wrap date already *is* the last death and the comparison had never been
-made. Carla Laemmle closed eight of her nine; Hitchcock was the last
-maker of exactly two, both wartime shorts thin enough in the credits that
-the director outlived the record.
+The pass grouped its works query by `?typeLabel`, and Wikidata gives one
+picture several of the classes we ask about — 1,166 are both "film" and
+"short film". Each came back as a row and was judged as a picture. Across
+3,924 duplicated groups not one disagreed about the verdict or the wrap
+date; only the label did. Fixed in `pass.js`, where the classes are now
+ranked general-to-specific so the surviving row is the one that says the
+most, and repaired on disk by the new `dedupe.js`. **4,025 collapsed.**
 
-**The disagreements are the find nobody was looking for.** 337 people
-across 889 closings where TMDB and Wikidata give different dates. On the
-year, they are almost all one digit with the day and month identical:
-Antonio Moreno 1987 against 1967, Mary Stuart 2022 against 2002. Moreno
-died in 1967. The archive publishes the typo — and now says so beside it.
+And the pass is a batch job over a release year, so a picture released
+across two years was judged and filed in both. `build-corpus.js` now
+files by id, earliest release winning, *before* any index is built — so
+the year lists, the closing axis, the day and month files, `ids.bin`,
+`facts.bin` and every count read one set. **1,904 collapsed.**
 
-## Redeploying the corpus
+*Casablanca* was the tell, and the comment about it was wrong. It said
+Wikidata holds two items dated 1942 and 1943 and that merging them was a
+claim about identity belonging upstream. There is one item, Q132689, with
+four release dates — New York 1942, America 1943, Sweden 1943, France
+1947 — and both copies carried 107 sitelinks because they were the same
+item. Filed once now, in 1942, which is what Wikidata calls it.
 
-The site reads whatever `manifest.json` points at, so a new corpus is one
-command and needs no change to the site:
+## Redeploying
+
+**Two hosts, and both must move.** This is the thing most likely to trip
+you: the corpus is on Cloudflare and the site is on GitHub Pages, and a
+change to what a closing *says* usually needs both.
 
 ```
 node poster/build-corpus.js
 npx wrangler pages deploy dist --project-name picture-wrap-corpus --branch main
+git push origin main          # the site; GitHub Pages serves from main
 ```
+
+The site reads whatever `manifest.json` points at, so a new corpus needs
+no change to the site — but a new *field* in a closing needs the site
+pushed to draw it. On 3 August the corpus went out knowing which closings
+were unverified while the site had no code to show it, and that gap is
+invisible from either side.
+
+**Bump both `?v=` numbers in `index.html` by hand** whenever `app.js` or
+`style.css` changes, and the `?v=` on the module imports at the top of
+`app.js` alongside. They stand at 73 and 51.
+
+**If you change what `build-corpus.js` writes, bump `FORMAT`.** It stands
+at 7. The version digest reads the closings and cannot see the shape they
+are written in, so without the bump the immutable URLs do not move and a
+returning reader keeps a year-stale file.
 
 Pages was chosen over R2 because the corpus is 803 immutable static
 files: it bulk-uploads them, deploys atomically — so there is no
@@ -85,39 +117,56 @@ header and both cache policies.
 
 ## What to do next, in order
 
-**Named for tomorrow: the TMDB logo, and the link previews.**
+1. **Run `rebuild.js` and republish.** `provenance.js` corroborated
+   19,932 deaths against Wikidata on 2 August, and that work is sitting
+   in `evidence.jsonl` where nothing reads it: `rebuild.js` ran *before*
+   provenance, so `works.jsonl` still carries the pass's original source
+   on every closer. **26,836 closings (22%) name a closer dated by TMDB
+   alone; 19,255 of those are already corroborated and would be promoted
+   by one offline pass.** This also fills in the closers' `wikidataId`,
+   without which a closing cannot link to the person's page — 26,836
+   currently cannot.
 
-1. **Add the TMDB logo** to the colophon. The terms require it and the
+   Note for whoever writes the next version of this file: the figure
+   "~7,750 closings rest on a TMDB-only date, about 8%" appeared here on
+   2 August and describes the state *after* that rebuild. The corpus has
+   never actually been in it. The true remainder afterwards is **7,581**.
+
+2. **Add the TMDB logo** to the colophon. The terms require it and the
    asset is not in this repository — it is a download from TMDB's
    logos-and-attribution page, left for its owner to make.
-2. **The link previews, which are worse than they look.** There are *no*
-   `og:` or `twitter:` tags on this site at all, so iMessage has no image
-   and shows the barest card it has. The cheap half is a site-wide card:
-   an absolute `og:image` at 1200×630 — the wordmark, the bar and the
-   count would draw it — plus `og:title`, `og:description`, `og:url` and
+
+3. **The link previews.** There are *no* `og:` or `twitter:` tags on this
+   site at all, so iMessage has no image and shows the barest card it
+   has. The cheap half is a site-wide card: an absolute `og:image` at
+   1200×630 — the wordmark, the bar and the count would draw it — plus
+   `og:title`, `og:description`, `og:url` and
    `twitter:card=summary_large_image`. That alone fixes the common case,
    since most pasted links are the front page.
 
-   The per-picture half is a real fork, and the old plan for it is dead:
-   hash routing sends no id to a server, `publishVault` no longer builds
-   anything, and prerendering one file per entry means 123,956 files
-   rather than the 11,457 that plan assumed. **Moving the site to
-   Cloudflare Pages** — where the corpus already lives — would let a
-   Function answer crawlers with real tags, collapse two hosts into one,
-   and let CORS relax. Weigh that first; the reasons to do it are bigger
-   than previews. `BACKLOG.md` has all three options.
-3. **Decide the licence.** CC0 with citation requested is the standing
+   The per-picture half is a real fork. Hash routing sends no id to a
+   server, and prerendering one file per entry means 120,567 files.
+   **Moving the site to Cloudflare Pages** — where the corpus already
+   lives — would let a Function answer crawlers with real tags, collapse
+   two hosts into one, and let CORS relax. Weigh that first; the reasons
+   to do it are bigger than previews, and after 3 August the two-host
+   split has a name and a cost. `BACKLOG.md` has all three options.
+
+4. **Decide the licence.** CC0 with citation requested is the standing
    recommendation; `BACKLOG.md` has the clauses verbatim and the
-   argument.
-4. **Delete `vault/*.json`.** Nothing reads them.
+   argument. It turns on how much of the corpus rests on TMDB, which is
+   item 1.
+
 5. **Read `pass/provenance-disputes.tsv`.** 337 people. Where Wikidata
    carries a reference it is a repair; where it does not it is a second
    opinion. Nothing should overwrite a date on a name match alone.
-6. **Propagate the new `wikidataId`s into `works.jsonl`** with a
-   `rebuild.js` pass, so 19,614 closings can link their closer to the
-   person's page.
-7. **Expire old corpus versions** once nothing references them — the
-   six-month caching clause below turns on it.
+
+6. **Copy the deduped `pass/` to the Desktop evidence archive.** The
+   3 August dedupe rewrote 131 years and the durable copy did not follow.
+
+7. **Delete `vault/*.json` and `archive.json`.** Nothing on the site
+   reads them — but `poster/lib.js`, `review.js` and `backfill-tmdbids.js`
+   still do, so this is a deletion with a small amount of code behind it.
 
 Then the Desk, still the largest thing not built on the posting side.
 
@@ -130,60 +179,64 @@ Then the Desk, still the largest thing not built on the posting side.
 | `poster/audit.js` | re-decides a year from its own files, network unplugged |
 | `poster/rebuild.js` | re-derives conclusions from stored evidence, offline |
 | `poster/retest.js` | repairs verdicts that predate a rule change; needs the network |
+| `poster/dedupe.js` | collapses pictures a year's files hold more than once; offline |
 | `poster/provenance.js` | asks Wikidata whether it holds a death we took from TMDB |
 | `poster/enrich.js` | genre, country and fame per year |
 | `poster/build-corpus.js` | pass output → static sharded files + `manifest.json` |
 | `corpus.js` | the browser client for those files |
 | `verify.js` | the single judgement, imported by the site, the poster and the pass |
 
-**If you change what `build-corpus.js` writes, bump `FORMAT` in it.** It
-stands at 5. The version digest reads the closings and cannot see the
-shape they are written in, so without the bump the immutable URLs do not
-move and a returning reader keeps a year-stale file.
-
 ## Reproducing from what is on disk
 
 ```
-node poster/rebuild.js --years 1890-2026     # offline, minutes
-node poster/enrich.js --countries            # the label dictionary
-node poster/build-corpus.js                  # → dist/
+node poster/dedupe.js --years 1890-2026     # offline, idempotent
+node poster/rebuild.js --years 1890-2026    # offline, minutes
+node poster/enrich.js --countries           # the label dictionary
+node poster/build-corpus.js                 # → dist/
 ```
 
 `provenance.js` is idempotent: run it twice and the second run is a
 no-op. Always give it `--archive ~/Desktop/picture-wrap-evidence` so the
-backup does not silently fall behind `pass/`.
+backup does not silently fall behind `pass/`. **Run `rebuild.js` after
+`provenance.js`, never before** — see item 1.
 
 ## Known and unfixed
 
-- **The audit does not reach the person pages.** They query Wikidata live
-  and apply rules 6, 7 and 8 in the browser — a second implementation
-  nothing checks against the first. Rule 27, and a backlog entry for the
-  test that would catch it.
-- **~7,750 closings still rest on a date only TMDB recorded** — 6,547
-  with no single Wikidata candidate, and the disputed ones. This is what
-  the licence question now turns on.
-- **The TMDB logo is missing** and the terms require it.
-- **`corpus/` is gitignored and `CORPUS_BASE` is now an absolute URL.**
-  It pointed at `corpus/` for two days and the live site served 404s the
-  whole time, degrading quietly into an empty Vault because a corpus that
-  will not open is caught. If it is ever moved back to a relative path,
-  check the path is committed.
-- **Six-month caching** vs immutable versions served for a year. Periodic
-  re-scanning answers it only if the re-scan refreshes values *and* old
-  versions expire. Not yet a policy.
-- **30% of closers have no on-screen/behind flag**, from years passed
-  before that field existed.
-- **1,403 pictures are `unchecked`** — TMDB did not answer. Retriable.
-- **20,114 closings carry no fame**, having no sitelinks anywhere. They
+- **The audit does not reach the film page or the person page.** Both
+  apply rules in the browser that nothing checks against `verify.js`.
+  The film page got rule 6 on 3 August only because a reader noticed the
+  contradiction. `wikidataClosed` in `viewPerson` is a second
+  implementation of "has this closed", safe today only because it is
+  ANDed with corpus membership; loosen that and person pages start
+  closing pictures on Wikidata alone again. A backlog entry describes
+  the test that would catch this class.
+- **55,612 closings (46%) rest on Wikidata alone**, almost all because
+  the picture carries no TMDB id and there is nothing to ask. Marked on
+  the page since 3 August. This is a floor, not a bug — but it is the
+  archive's weakest half and the licence question turns on it.
+- **2 closings could not be re-tested**: TMDB answers 200 with an empty
+  cast and crew, so the survivor test reports it did not run and
+  `retest.js` declines to overwrite. They will re-present on every run.
+  The summary calls this "TMDB did not answer", which is not quite true —
+  it answered with nothing.
+- **27% of named closers have no on-screen/behind flag**, from years
+  passed before that field existed.
+- **1,386 pictures are `unchecked`** — TMDB did not answer. Retriable.
+- **19,615 closings carry no fame**, having no sitelinks anywhere. They
   sort last in every list that uses it.
+- **Old corpus versions are not retained.** `dist/` holds only the build
+  that made it, and a Pages deploy replaces the site, so the previous
+  version disappears from the origin. Readers holding a `manifest.json`
+  less than five minutes old can request a 404 until it revalidates.
+  This is expiry by overwrite rather than by policy, and the six-month
+  re-scanning clause in the licence draft assumes a policy.
+- **Nothing lints CSS.**
 - **Nothing is scheduled.** Cron is blocked by TCC under `~/Desktop`.
-- **Nothing lints CSS**, and the two `?v=` numbers in `index.html` are
-  bumped by hand. They stand at 69.
 
 ## Everything else
 
 `README.md` indexes the documents. `METHOD.md` is the citable account.
-`VERIFICATION.md` is how a wrap is decided, and its canon — now 29 rules
-— is the list to check any change against. `FINDINGS.md` is what the
+`VERIFICATION.md` is how a wrap is decided, and its canon — 31 rules —
+is the list to check any change against. `FINDINGS.md` is what the
 archive says rather than how it works. `SOURCES.md` is what is accessed,
 collected and published. `BACKLOG.md` holds the open work.
