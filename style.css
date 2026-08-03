@@ -1149,6 +1149,31 @@ main,
 
 .colophon p { margin: 0; }
 
+/* The mark on a picture this person was the last of.
+
+   It is the bar, in miniature and in the same three stops, because it
+   means exactly what the bar means: with this death nobody who made the
+   picture was left. Anything else — a dot, a star, a word — would have
+   been a second vocabulary for the one idea this site already has a
+   shape for.
+
+   Set before the date rather than after it, because it is the reason for
+   the date and not a comment on it. Carried on a label for anyone who
+   cannot see the gold. */
+/* One line inside the column, so a mark and a date sit side by side. */
+.when-line { white-space: nowrap; }
+
+.closed-it {
+  display: inline-block;
+  width: 15px;
+  height: 3px;
+  margin-right: 0.55rem;
+  vertical-align: 0.18em;
+  border-radius: 1px;
+  background: linear-gradient(90deg,
+    var(--gold-dark), var(--gold-light), var(--gold-dark));
+}
+
 /* A closing whose date two sources disagree about. Quiet, because the
    date is still the archive's best answer and 1,417 of 123,956 closings
    carry this — it is a footnote, not an alarm. Set beside the date it
@@ -1178,7 +1203,7 @@ main,
    as a mistake without looking like one. */
 .colophon .colophon-tmdb {
   max-width: 30rem;
-  margin: 0.7rem auto 0;
+  margin: 1.1rem auto 0;
   font-size: var(--size-tiny);
   line-height: 1.5;
   color: var(--ink-quiet);

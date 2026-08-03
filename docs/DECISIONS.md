@@ -1188,3 +1188,37 @@ year are almost all a single digit with the day and month identical —
 Antonio Moreno 1987 against 1967, Mary Stuart 2022 against 2002, Zena
 Keefe 1977 against 1976. Moreno died in 1967 and Stuart in 2002. The
 archive is publishing the typo, and now says so while it does.
+
+
+---
+
+## The mark for a picture you were the last of
+
+*2 August 2026.*
+
+**Decision.** On a person's page, a picture they closed carries a small
+gold rule beside its date.
+
+**Why it needed no new data.** The wrap date *is* the last death, so a
+picture whose wrap date equals this person's death date is one they were
+the last of. Both sides were already computed on that page for other
+reasons; the comparison had simply never been made. It costs no request.
+
+**Why that shape.** It is the bar, in miniature, in the same three stops
+— because it means exactly what the bar means: with this death, nobody
+who made the picture was left. A dot or a star or a word would have been
+a second vocabulary for the one idea this site already has a shape for.
+It sits before the date because it is the reason for the date.
+
+**What it turns a filmography into.** The claim this archive exists to
+make was previously reachable only by opening each picture in turn and
+reading the sentence on it. Carla Laemmle's page now shows that she
+closed eight of her nine. Hitchcock's shows that of everything he
+directed, he was the last maker of exactly two — *Aventure malgache* and
+*Bon Voyage*, the wartime shorts for the Ministry of Information, whose
+credits are thin enough that the director outlived the record.
+
+**Ties are marked, not resolved.** Two people who died on the same day
+were jointly the last of a picture. The corpus names one of them as its
+closer, and that is a presentation choice rather than a fact about who
+outlived whom, so both pages show the mark.

@@ -1117,6 +1117,28 @@ async function viewPerson(id) {
 
   for (const f of films) f.people_ = readPeople(f);
 
+  /* Which of these did this person close?
+
+     The wrap date is the last death, so a picture whose wrap date is
+     this person's death date is one they were the last of. No extra
+     request is needed to know it — the page has already computed both
+     sides for its own purposes, and this is the comparison nobody had
+     made.
+
+     It is the claim the whole archive exists to make, and until now a
+     reader could only find it by opening each picture in turn and
+     reading the sentence there. Carla Laemmle closed eight of her nine.
+
+     Ties are marked as such rather than resolved. Two people who died on
+     the same day were jointly the last of it, and the corpus naming one
+     of them as the closer is a presentation choice, not a fact about who
+     outlived whom. */
+  const diedOn = meta.dod ? String(meta.dod).slice(0, 10) : null;
+  for (const f of films) {
+    f.closedIt_ = !!diedOn && /^\d{4}-\d{2}-\d{2}$/.test(diedOn) &&
+      f.people_.wrapped === diedOn;
+  }
+
   /* Recorded deaths plus the people no record can make living again —
      and, for a picture older than any human life, everybody, since
      nobody on it can have been born after it. */
@@ -1200,8 +1222,21 @@ function filmRow(f, wrapped) {
         <span class="who-name">${esc(f.filmLabel || qid)}</span>
         ${roles.length ? `<span class="who-role">${esc(roles.join(' &middot; ').replace(/&middot;/g, '·'))}</span>` : ''}
       </span>
-      <span class="when">${wrapped && f.people_?.wrapped
-        ? esc(longDate(f.people_.wrapped)) : esc(f.year || '')}</span>
+      <span class="when"><span class="when-line">${
+        /* A miniature of the bar, and it means what the bar means: with
+           this death, nobody who made this picture was left. Set before
+           the date because it is the reason for the date.
+
+           Both wrapped in one child, because `.when` is a COLUMN flex
+           container — it stacks a date over a sub-line elsewhere on the
+           site, and a mark added as a second child stacked above the
+           date instead of sitting beside it. */
+        wrapped && f.closedIt_
+          ? `<span class="closed-it" role="img"
+                   aria-label="Last of this picture's makers"
+                   title="Last of this picture's makers"></span>`
+          : ''}${wrapped && f.people_?.wrapped
+        ? esc(longDate(f.people_.wrapped)) : esc(f.year || '')}</span></span>
     </li>`;
 }
 

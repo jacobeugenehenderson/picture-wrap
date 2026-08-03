@@ -136,7 +136,7 @@ backup does not silently fall behind `pass/`.
   sort last in every list that uses it.
 - **Nothing is scheduled.** Cron is blocked by TCC under `~/Desktop`.
 - **Nothing lints CSS**, and the two `?v=` numbers in `index.html` are
-  bumped by hand. They stand at 65.
+  bumped by hand. They stand at 69.
 
 ## Everything else
 
