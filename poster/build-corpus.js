@@ -780,7 +780,7 @@ const longestWait = bestOfEach(everyClosing
 
    A reader who likes pictures does not arrive wanting "the archive". They
    arrive as somebody who likes Russian horror, or Danish documentaries,
-   or Westerns, and the fastest way to make an archive of 120,567 closings
+   or Westerns, and the fastest way to make an archive of 120,556 closings
    legible is to let them say so in one click.
 
    Ten genres and ten regions, and **they cross**. "Russian horror" and

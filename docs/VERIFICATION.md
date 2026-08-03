@@ -8,9 +8,11 @@ nine errors in the previous version of this file; the corpus pass of 1-2
 August added six rules and corrected three. **The canon below is the
 authoritative list**; the prose after it explains each one.
 
-Last reviewed 3 August 2026, when rule 6 reached the film page and rules
-30 and 31 were written down after the same picture was found in the Vault
-twice.
+Last reviewed 3 August 2026, when rule 6 reached the film page, rules 30
+and 31 were written down after the same picture was found in the Vault
+twice, and rules 32 and 33 followed from building the retraction record —
+32 because eleven pictures were closed under one release year while
+another year knew somebody living.
 
 ---
 
@@ -22,7 +24,7 @@ column that matters — **whether anything checks it**.
 A rule nobody checks is a rule that has already drifted from the code
 once, in this project, three times. The audit reproduces every verdict
 from stored evidence, so rules marked *reproduced* are verified against
-120,567 closings on every run. The rest are asserted, and are listed as
+120,556 closings on every run. The rest are asserted, and are listed as
 asserted rather than quietly implied to be safe.
 
 | # | rule | lives in | checked? |
@@ -69,6 +71,9 @@ asserted rather than quietly implied to be safe.
 | **One picture, one closing** | | | |
 | 30 | A picture is **one work class**, the most specific Wikidata gives it; several classes are not several pictures | `pass.js`, `shared.js` `mostSpecificType` | asserted |
 | 31 | A picture is **filed once**, under its earliest release year, however many release dates it has; the id decides, never the title | `build-corpus.js` | integrity check |
+| 32 | A living person found under **any** release year vetoes the picture under **all** of them; a second release year cannot outvote a survivor | `build-corpus.js` | integrity check |
+| **Retraction** | | | |
+| 33 | A closing that leaves the corpus is **recorded, not deleted**: what was published, when it entered, when it left, and who was found living | `build-corpus.js` | asserted |
 
 ### What the audit actually does
 
@@ -77,7 +82,7 @@ circular rather than decorative:
 
 1. **Reproduction.** Re-decide every verdict and every wrap date from that
    year's own evidence, with the network unplugged. Any rule marked
-   *reproduced* above is exercised 120,567 times per run, because a
+   *reproduced* above is exercised 120,556 times per run, because a
    verdict that cannot be re-derived from the evidence means either the
    rule changed or the evidence is insufficient — and rule 19 is why those
    two are reported separately.
@@ -88,7 +93,7 @@ circular rather than decorative:
    counts match the unknowns listed.
 
 **Asserted means only that a human wrote it down.** Rules 5, 12, 13, 15,
-18, 20-30 are not checked by anything, and the honest reading of that
+18, 20-30 and 33 are not checked by anything, and the honest reading of that
 column is that those are where the next drift will be found — which is
 how rule 6 was found on 1 August, having been applied to half the people
 it named for as long as it had existed.
@@ -427,7 +432,7 @@ archive was the old 11,457-entry Vault.
 
 Nothing on the page used to distinguish them from closings both databases
 agreed on. They now carry a **Wikidata alone** mark in the Vault, and
-section 6 of "Methods and sources" states the proportion. The fact travels
+section 7 of "Methods and sources" states the proportion. The fact travels
 as `unverified` on each closing and as bit 4 of the packed flags byte —
 bits 4 and 5 were named in the manifest from the start and written by
 nothing until 3 August, so any reader of a corpus older than format 6 will

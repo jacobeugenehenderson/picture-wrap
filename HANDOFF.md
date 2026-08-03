@@ -5,18 +5,20 @@ project has is finished and its output is on disk and deployed.
 
 ## The one sentence
 
-**It is live, and it is smaller.** picture-wrap.com serves 120,567
-closings. It said 123,956 yesterday, and the difference is not a loss —
-136 of those pictures were never closed, and 3,253 were the same picture
-counted twice.
+**It is live, it is smaller, and it now says what it took back.**
+picture-wrap.com serves 120,556 closings. It said 123,956 yesterday, and
+the difference is not a loss — 147 of those pictures were never closed,
+and 3,253 were the same picture counted twice. The 147 are published as
+retractions rather than quietly dropped.
 
 ## Where things stand
 
 | | |
 |---|---|
-| **The corpus** | 137 release years, 329,957 pictures — **120,567 closed**, 208,017 running, 1,373 unchecked |
+| **The corpus** | 137 release years, 329,957 pictures — **120,556 closed**, 208,028 running, 1,373 unchecked |
+| Retractions | **138**, published as `removed.json` and stated on the picture's own page. The record opens 3 August 2026 |
 | Audit | **137 years, 0 failures**, re-run after every change below |
-| Built | `dist/`, 101.3 MB, version `d8b9bfde96ff`, gitignored |
+| Built | `dist/`, 101.3 MB, version `9bfc997e9964`, gitignored |
 | **Corpus hosted** | Cloudflare Pages, project `picture-wrap-corpus`, at `https://picture-wrap-corpus.pages.dev/` — 803 files |
 | **Site hosted** | GitHub Pages from `main`, at picture-wrap.com. **Two hosts. The site is not on Cloudflare** |
 | Live site | current with `main`, `?v=72` |
@@ -102,10 +104,10 @@ invisible from either side.
 
 **Bump both `?v=` numbers in `index.html` by hand** whenever `app.js` or
 `style.css` changes, and the `?v=` on the module imports at the top of
-`app.js` alongside. They stand at 74 and 52.
+`app.js` alongside. They stand at 76 and 54.
 
 **If you change what `build-corpus.js` writes, bump `FORMAT`.** It stands
-at 8. Since format 8 the digest reads the whole of every published row,
+at 9. Since format 8 the digest reads the whole of every published row,
 so a change to any field moves the URLs on its own; `FORMAT` is now only
 for the shape of the files themselves. Before that it hashed an id and a
 wrap date, and three changes in one day slipped past it.
@@ -118,20 +120,16 @@ header and both cache policies.
 
 ## What to do next, in order
 
-1. **Run `rebuild.js` and republish.** `provenance.js` corroborated
-   19,932 deaths against Wikidata on 2 August, and that work is sitting
-   in `evidence.jsonl` where nothing reads it: `rebuild.js` ran *before*
-   provenance, so `works.jsonl` still carries the pass's original source
-   on every closer. **26,836 closings (22%) name a closer dated by TMDB
-   alone; 19,255 of those are already corroborated and would be promoted
-   by one offline pass.** This also fills in the closers' `wikidataId`,
-   without which a closing cannot link to the person's page — 26,836
-   currently cannot.
-
-   Note for whoever writes the next version of this file: the figure
-   "~7,750 closings rest on a TMDB-only date, about 8%" appeared here on
-   2 August and describes the state *after* that rebuild. The corpus has
-   never actually been in it. The true remainder afterwards is **7,581**.
+1. **Decide what the *Wikidata alone* mark should say, and how much room
+   it should take.** It is on 46% of Vault rows, which is too many for a
+   text badge, and on 3 August its own commissioner read it as meaning
+   *the Wikidata signal was strong enough that we did not need to check
+   elsewhere* — the exact opposite of what it means. A mark that is
+   misread by the person who asked for it is not a marginal wording
+   problem. The standing suggestion is to state the route into the Vault
+   positively — how many sources confirmed a closing — rather than badging
+   the ones that fall short. Section 4 of "Methods and sources" now states
+   the two conditions positively; the row mark does not yet match it.
 
 2. **Add the TMDB logo** to the colophon. The terms require it and the
    asset is not in this repository — it is a download from TMDB's
@@ -146,7 +144,7 @@ header and both cache policies.
    since most pasted links are the front page.
 
    The per-picture half is a real fork. Hash routing sends no id to a
-   server, and prerendering one file per entry means 120,567 files.
+   server, and prerendering one file per entry means 120,556 files.
    **Moving the site to Cloudflare Pages** — where the corpus already
    lives — would let a Function answer crawlers with real tags, collapse
    two hosts into one, and let CORS relax. Weigh that first; the reasons
@@ -181,6 +179,7 @@ Then the Desk, still the largest thing not built on the posting side.
 | `poster/rebuild.js` | re-derives conclusions from stored evidence, offline |
 | `poster/retest.js` | repairs verdicts that predate a rule change; needs the network |
 | `poster/dedupe.js` | collapses pictures a year's files hold more than once; offline |
+| `poster/seed-removals.js` | opened the retraction record from a pre-repair snapshot; a one-off |
 | `poster/provenance.js` | asks Wikidata whether it holds a death we took from TMDB |
 | `poster/enrich.js` | genre, country and fame per year |
 | `poster/build-corpus.js` | pass output → static sharded files + `manifest.json` |
@@ -231,13 +230,25 @@ backup does not silently fall behind `pass/`. **Run `rebuild.js` after
   less than five minutes old can request a 404 until it revalidates.
   This is expiry by overwrite rather than by policy, and the six-month
   re-scanning clause in the licence draft assumes a policy.
+- **The retraction record begins on 3 August 2026.** Nothing withdrawn
+  before that date was kept and none of it is reconstructible; the 138
+  opening entries carry no entry date for the same reason. `recheck.js`
+  is not wired to the ledger either — departures are caught at build time
+  by diffing the roll, which misses nothing but attributes nothing to the
+  run that caused it. And there is no page listing retractions: they are
+  reachable from the picture, which is the case that matters, and not
+  browsable.
+- **`last.source` is not published.** The corpus knows whether a closing
+  date came from Wikidata, from both databases agreeing, or from TMDB
+  alone, and the site cannot show it. That is the second of the three
+  confidence axes and the only one with no surface.
 - **Nothing lints CSS.**
 - **Nothing is scheduled.** Cron is blocked by TCC under `~/Desktop`.
 
 ## Everything else
 
 `README.md` indexes the documents. `METHOD.md` is the citable account.
-`VERIFICATION.md` is how a wrap is decided, and its canon — 31 rules —
+`VERIFICATION.md` is how a wrap is decided, and its canon — 33 rules —
 is the list to check any change against. `FINDINGS.md` is what the
 archive says rather than how it works. `SOURCES.md` is what is accessed,
 collected and published. `BACKLOG.md` holds the open work.

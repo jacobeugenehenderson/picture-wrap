@@ -277,7 +277,7 @@ wants an **absolute** `og:image` URL at **1200×630**; give it
 
 The repository holds no image bigger than a 6.8 KB apple-touch icon, so
 the card has to be made. The obvious one draws itself: the wordmark, the
-gold bar, and the count — *120,567 pictures* — on the same near-black
+gold bar, and the count — *120,556 pictures* — on the same near-black
 ground the site uses. Most links people paste are the front page anyway,
 so this alone fixes the common case.
 
@@ -287,7 +287,7 @@ Hash routing means `picture-wrap.com/#/mildred-pierce/Q979726` never
 sends the id to a server, so a per-picture card cannot come from static
 metadata. The old plan — prerender one HTML file per entry and hook it to
 `publishVault` — is dead twice over: `publishVault` no longer builds
-anything, and the Vault has gone from 11,457 entries to **120,567**.
+anything, and the Vault has gone from 11,457 entries to **120,556**.
 That many files is not something to put in a git repository or serve off
 GitHub Pages.
 
@@ -301,7 +301,7 @@ Three live options:
    Namecheap and the apex currently points at GitHub Pages, so this is a
    DNS change plus a deploy, not a rewrite.
 2. **Prerender the few that get shared** — the posting queue, a few
-   hundred — rather than all 120,567. Cheap, and covers what actually
+   hundred — rather than all 120,556. Cheap, and covers what actually
    circulates.
 3. **Path routing instead of hash routing**, which would let a static
    prerender work per URL, but is a change to every link the project has
@@ -573,7 +573,7 @@ a share of all cinema.
 *Closed on the evening of 2 August; the hosting followed on 3 August.
 Kept because the decisions below still explain the shape.*
 
-The corpus pass produced 329,957 judged pictures and 120,567 closings,
+The corpus pass produced 329,957 judged pictures and 120,556 closings,
 audited, published as static shards by `build-corpus.js` and readable by
 `corpus.js`. All three call sites now go through it, the decade drawers
 open onto years, and the landing page reads its sorts and its doors out

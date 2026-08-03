@@ -22,13 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear, impossible } from './verify.js?v=53';
-import { openCorpus } from './corpus.js?v=53';
+import { survivors, beyondLiving, earliestLivingBirthYear, impossible } from './verify.js?v=54';
+import { openCorpus } from './corpus.js?v=54';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js?v=53';
+} from './shared.js?v=54';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -1471,7 +1471,7 @@ async function loadSuppressed() {
 /* The corpus, which replaced the Vault.
 
    Three files used to be fetched from `vault/` — a summary, every closed
-   id as quoted JSON, and a decade at a time. At 120,567 closings the
+   id as quoted JSON, and a decade at a time. At 120,556 closings the
    second is a megabyte of quoted strings on every person page and the
    third is six megabytes for the 2010s. Neither survives the scale.
 
@@ -1546,7 +1546,7 @@ async function loadSummary() {
 
    Breadth is the best thing about this archive and also the problem: a
    column of Italian titles is unreadable noise unless you came for it,
-   and 120,567 closings is every column at once. */
+   and 120,556 closings is every column at once. */
 const vaultFilter = { region: 'all', genre: 'all' };
 
 /* The Vault, addressable. `#/archive/American/comedy film`, either side a
@@ -1910,7 +1910,29 @@ function viewAbout() {
         with a dash. They are neither counted as living nor as dead.
       </p>
 
-      <h3>4. Sources</h3>
+      <h3>4. How a picture enters the Vault</h3>
+      <p>
+        Two conditions, and both must hold.
+      </p>
+      <ol>
+        <li><strong>Every person on record has a death on record.</strong>
+          Not a majority and not a threshold &mdash; one living person keeps
+          a picture out, and a person whose dates are unknown is never
+          counted as dead. A person credited on a picture released before
+          they were born is set aside, since they cannot have worked on it.</li>
+        <li><strong>Both databases were asked, wherever both could be
+          asked.</strong> Wikidata&rsquo;s cast lists are routinely a
+          fraction of the real cast, so a picture is not closed on
+          Wikidata&rsquo;s word while TMDB has a record to check. Where TMDB
+          has no record of the picture at all there is nothing to ask, and
+          the closing rests on one source and is marked as doing so.</li>
+      </ol>
+      <p>
+        A picture that meets both leaves the Vault again the moment either
+        stops being true, and the withdrawal is recorded.
+      </p>
+
+      <h3>5. Sources</h3>
       <p>
         Credits and dates come from
         <a href="https://www.wikidata.org" rel="noopener">Wikidata</a>,
@@ -1928,7 +1950,7 @@ function viewAbout() {
         certified, or otherwise approved by TMDB.
       </p>
 
-      <h3>5. Scope</h3>
+      <h3>6. Scope</h3>
       <p>
         A maker is anyone credited in cast, direction, writing,
         cinematography, music, editing, production or costume design.
@@ -1938,7 +1960,7 @@ function viewAbout() {
         which is a smaller set than everyone who worked on a picture.
       </p>
 
-      <h3>6. Known limits</h3>
+      <h3>7. Known limits</h3>
       <ul>
         <li>A picture may be shown as closed while somebody who was never
           recorded is living.</li>
@@ -1949,7 +1971,7 @@ function viewAbout() {
           This is the largest limit on this page and the count of names is
           stated on every picture.</li>
         <li>Three closings in four are dated to the day. Of the rest, most
-          &mdash; 24,698 of 120,567 &mdash; have no recorded death at all
+          &mdash; 24,693 of 120,556 &mdash; have no recorded death at all
           and are closed by the age rules above rather than by a date.</li>
         <li>Coverage varies by picture and is stated per entry. Where it
           can be measured, the median closing holds a third of the names
@@ -1964,10 +1986,11 @@ function viewAbout() {
           period we hold 901 South Asian pictures &mdash; 869 filed under
           British Raj and 32 under India. This site said &ldquo;37 Indian
           titles&rdquo; for months, having asked the wrong question.</li>
-        <li>A closing that is removed leaves no trace. On 3 August 2026,
-          136 pictures left the Vault because a repair found they had never
-          been checked against a second database and someone was living.
-          Nothing here records that they were ever in it.</li>
+        <li>A closing that is withdrawn is recorded rather than deleted,
+          and the picture&rsquo;s own page says so. That record begins on
+          3 August 2026 and opens with 138 withdrawals; nothing before that
+          date was kept, so this archive cannot tell you what it took back
+          in July.</li>
         <li>Just under half of all closings &mdash; those marked
           <em>Wikidata alone</em> in the Vault &mdash; were never checked
           against a second database, almost always because the picture
@@ -1979,7 +2002,7 @@ function viewAbout() {
         <li>A death date may simply be wrong, or entered in error.</li>
       </ul>
 
-      <h3>7. The Vault</h3>
+      <h3>8. The Vault</h3>
       <p>
         Closed pictures, most recent first. It is the only part of this site
         not computed live: the result is worked out in advance and stored, so
@@ -1988,7 +2011,7 @@ function viewAbout() {
         still lists it as closed, until the next check.
       </p>
 
-      <h3>8. Corrections</h3>
+      <h3>9. Corrections</h3>
       <p>
         Errors here are almost always errors upstream. Every picture and
         person links to its Wikidata item, which is where a correction should
@@ -1996,7 +2019,7 @@ function viewAbout() {
         site follows on its next pass.
       </p>
 
-      <h3>9. Privacy</h3>
+      <h3>10. Privacy</h3>
       <p>
         This site sets no cookies, runs no analytics and keeps no logs. It is
         static files served from a CDN and nothing about readers is collected.
@@ -2011,7 +2034,7 @@ function viewAbout() {
         Requests go to the address in the footer.
       </p>
 
-      <h3>10. Citation</h3>
+      <h3>11. Citation</h3>
       <p>
         Cite the picture&rsquo;s Wikidata identifier and the date consulted,
         since the underlying databases change:

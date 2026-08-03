@@ -20,21 +20,55 @@ That is the whole of what follows.
 
 ## The four gaps
 
-### 1. Nothing records a removal
+*Gap 1 was built on 3 August 2026 and gap 2 was half-built the same day;
+both are marked below. Gaps 3 and 4 remain open.*
 
-`recheck.js` prints reopened pictures to the console and deletes them.
-**278 went in one pass, 65 in another, and neither left a trace in the
-data.** If someone cited *Cats' Play* and it later reopened on Gyöngyi
-Bürös, there is no way for them to find that out and no way for us to
+### 1. Nothing records a removal — BUILT, 3 August 2026
+
+*This was the highest-value item on this page for five days. It is done,
+and the shape it took differs from the one proposed here in one way worth
+recording.*
+
+**The problem.** `recheck.js` printed reopened pictures to the console and
+deleted them. 278 went in one pass, 65 in another, and neither left a
+trace. If someone cited *Cats' Play* and it later reopened on Gyöngyi
+Bürös, there was no way for them to find that out and no way for us to
 reconstruct it.
 
-**Fix.** `vault/removed.json`, appended to by anything that drops an
-entry: the id and title, when it entered the Vault, when it left, and who
-was found alive. `recheck.js` already holds every one of those fields and
-discards them at the end of the run.
+**What was built.** Two files, both in `pass/` rather than in the
+published tree, because `dist/` is deleted and rebuilt on every run and a
+record a rebuild can erase is not a record.
 
-Highest value on this page. It turns a silent deletion into a retraction
-record, which is the difference between a website and a citable source.
+- `pass/published.json` — the roll: every picture currently published and
+  the date it first appeared. This is the part the proposal above missed.
+  "When did it enter" cannot be reconstructed after the fact from
+  anything, so it has to be written down as it happens, and without it a
+  retraction can say what was withdrawn but not how long the claim stood.
+- `pass/removed.jsonl` — the ledger: one line per departure, carrying what
+  was published, when it entered, when it left, the verdict that replaced
+  it, and who was found living.
+
+`build-corpus.js` diffs the two on every build and publishes the ledger
+into the corpus as `removed.json`, so the retraction travels with the
+thing it retracts. A film page states it above the roster.
+
+**It opened with 138 entries rather than empty**, seeded by
+`seed-removals.js` from a snapshot taken before the 3 August repair. An
+empty record published on the day of the largest retraction this archive
+has made would have read as *nothing has ever been retracted*, which is
+the precise false impression the record exists to prevent.
+
+**Seeded lines carry `entered: null` and keep it.** Those pictures were
+published across many builds before any roll existed and the day each
+first appeared is not recoverable. A retraction that guesses when the
+claim began is worse than one that says it does not know, and the page
+says it in those words.
+
+**What is still missing.** `recheck.js` was never wired to the ledger —
+departures are detected at build time by diffing, which catches everything
+but attributes nothing to the run that caused it. And there is no page
+listing retractions; they are reachable from the picture, which is the
+case that matters, and not browsable.
 
 ### 2. An entry does not say when it was checked
 
@@ -51,7 +85,7 @@ a researcher filter to *entries confirmed against both databases since
 undercounted, because it postdated most of the archive. It is now derived
 from `tested` at build time, published on every closing, carried as bit 4
 of the packed flags byte, and drawn in the Vault as **Wikidata alone**.
-55,612 of 120,567 closings, which is 46% and was never visible before.
+55,610 of 120,556 closings, which is 46% and was never visible before.
 The half of the fix above — `checkedAt` and a `checkedBy` that survives
 into the published record — is still open.
 

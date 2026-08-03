@@ -8,7 +8,7 @@ the last person who made it is gone.*
 
 > **Picking this up mid-flight? Read [HANDOFF.md](HANDOFF.md) first.**
 > It records the current state and what is unfinished. As of 3 August
-> 2026 the site serves a corpus of **120,567 closings**: the corpus files
+> 2026 the site serves a corpus of **120,556 closings**: the corpus files
 > are on Cloudflare Pages, the site itself is on GitHub Pages, and a
 > change to what a closing says usually needs both deployed.
 > `archive.json` and `vault/` are the superseded 11,457-entry Vault and
@@ -27,7 +27,7 @@ The project is deliberately things that barely know about each other.
 | | | |
 |---|---|---|
 | **The site** | `index.html` `style.css` `app.js` `corpus.js` `shared.js` `verify.js` | Static files. No backend, no build step, nothing shipped that it didn't write. The browser queries Wikidata and TMDB directly, and reads the corpus over HTTP. |
-| **The corpus** | built by `poster/build-corpus.js` into `dist/` | 120,567 closings as immutable, versioned, static shards. Hosted on Cloudflare Pages; `CORPUS_BASE` in `app.js` is the only thing that names where. |
+| **The corpus** | built by `poster/build-corpus.js` into `dist/` | 120,556 closings as immutable, versioned, static shards, plus the retraction record. Hosted on Cloudflare Pages; `CORPUS_BASE` in `app.js` is the only thing that names where. |
 | **The poster** | `poster/` | Node scripts. Judges pictures, records the working, and posts approved closings to Bluesky. |
 
 They share two files, and the difference between them is the design.
@@ -77,7 +77,7 @@ things done by hand: `picture-wrap-preview`, `picture-wrap-review`,
 
 ## The scripts
 
-**The corpus.** These built and maintain the 120,567 closings the site
+**The corpus.** These built and maintain the 120,556 closings the site
 serves. None of them posts anything.
 
 | | |
@@ -88,6 +88,8 @@ serves. None of them posts anything.
 | `rebuild.js` | Re-derives conclusions from stored evidence, offline, when a rule changes. |
 | `retest.js` | Repairs verdicts that predate a rule change. The one repair that needs the network. |
 | `provenance.js` | Asks Wikidata whether it already holds a death we recorded from TMDB. Corroborates; never overwrites. |
+| `dedupe.js` | Collapses pictures a year's files hold more than once. Offline, idempotent. |
+| `seed-removals.js` | Opened the retraction record with the departures already known. A one-off. |
 | `enrich.js` | Genre, country and fame per year. `--countries` builds the label dictionary. |
 | `build-corpus.js` | Pass output → immutable versioned static shards + `manifest.json`. |
 | `../corpus.js` | The browser's client for those files. |

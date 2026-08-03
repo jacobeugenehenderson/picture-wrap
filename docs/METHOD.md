@@ -12,7 +12,7 @@ judgement is made rather than a fact retrieved is marked as such.
 Measurements are point-in-time and dated.*
 
 **Last revised 3 August 2026, and re-measured against the archive it now
-describes.** Every figure below is taken from the corpus of 120,567
+describes.** Every figure below is taken from the corpus of 120,556
 closings published on 3 August 2026, unless it names its own date.
 
 Until 3 August this document measured the 11,457-entry Vault that the
@@ -296,7 +296,7 @@ asks whether Wikidata knew the whole cast.
 
 **A TMDB identifier for the picture is required.** Without one there is
 nothing to ask, and the procedure reports that it did not run rather than
-returning an empty result. **55,612 closings — 46% — have been tested
+returning an empty result. **55,610 closings — 46% — have been tested
 against Wikidata alone for want of one**, concentrated in early and
 non-English cinema where TMDB's coverage largely stops. They are marked
 as such wherever they appear; see §12.
@@ -491,7 +491,7 @@ approval is the only thing that publishes.
 
 **This describes the announcement path and not the bulk one, and the
 distinction is material — more so now than when it was written.** Of the
-**120,567 closings held, 37 were announced on Bluesky after a person read
+**120,556 closings held, 37 were announced on Bluesky after a person read
 them.** Every other one was decided by the procedure in this document and
 published without individual review. The protection that a human reads
 each item is real for anything posted and describes essentially none of
@@ -517,8 +517,7 @@ archive but is not counted as verified, because nothing verified it.
 
 Anything that reopens is removed from the archive and cleared from the
 record of pictures already considered, so a later sweep can find it again.
-Removal leaves no trace in the published data, which §13 states as the
-largest gap on this page.
+Removal is recorded as a retraction; see §13.
 
 Two limits of this loop should be understood. Re-checking detects
 **Wikidata** drift. There is no equivalent change feed for TMDB, so a
@@ -540,8 +539,8 @@ alive, it was tested and the test could not run, or it was never asked.
 Only the first is a finding.
 
 As of 3 August 2026 the pass has judged **every release year from 1890 to
-2026 — 137 years, no gaps — and 329,957 pictures**, of which **120,567
-have closed**, 208,017 are still running, and 1,373 could not be checked
+2026 — 137 years, no gaps — and 329,957 pictures**, of which **120,556
+have closed**, 208,028 are still running, and 1,373 could not be checked
 because TMDB did not answer.
 
 Each of those is a count of pictures, not of records. A picture with
@@ -620,7 +619,7 @@ kept in period terms. §8 of `FINDINGS.md` states the general form.
 
 ### How much of this rests on one database
 
-**55,612 closings — 46% — were never checked against TMDB**, almost
+**55,610 closings — 46% — were never checked against TMDB**, almost
 always because the picture carries no TMDB identifier and there is
 therefore nothing to ask. These are the archive's weakest claims, they are
 marked *Wikidata alone* on the site, and the reason they are published
@@ -628,11 +627,11 @@ rather than withheld is that the pictures without an identifier are
 overwhelmingly the obscure and the non-English, which is most of what
 closes.
 
-The remaining 64,955 were tested against both databases.
+The remaining 64,946 were tested against both databases.
 
-Of the 96,402 closings that name a closer, the date came from Wikidata for
-69,566, from both databases agreeing for 19,112, and from **TMDB alone for
-7,724 — 8.0%**. The middle figure is the work of `provenance.js`, which
+Of the 96,396 closings that name a closer, the date came from Wikidata for
+69,564, from both databases agreeing for 19,111, and from **TMDB alone for
+7,721 — 8.0%**. The middle figure is the work of `provenance.js`, which
 asks Wikidata whether it already holds a death first recorded from TMDB;
 it corroborates and never overwrites.
 
@@ -657,15 +656,27 @@ not reopen a closed picture until the next pass over that year. Film pages
 are computed live and will show it immediately; the Vault will not. That
 disagreement is visible on the site and is the honest state of it.
 
-**Removals leave no trace, and this is the largest gap on this page.**
-A picture that reopens is simply absent from the next corpus. On 3 August
-**136 closings were removed** after a repair found the survivor test had
-never actually run on them — among them *Gidget* (1959), which had been
-published as closed while Jo Morrow, who played Mary Lou, was alive and
-credited on TMDB. Nothing in the published data records that those 136
-were ever there, what removed them, or who was found living. A reader who
-cited one has no way to discover it. `FORTIFYING.md` §1 specifies the
-retraction record that would fix this; it is not built.
+**Removals are recorded, since 3 August 2026.** A picture that reopens
+used to be simply absent from the next corpus, and nothing said it had
+ever been present. It is now a retraction: the corpus publishes
+`removed.json`, and a picture's own page states above its roster what was
+claimed, when the claim was withdrawn, and who turned out to be living.
+
+The record opens with **138 retractions**, all dated 3 August 2026. 127
+are pictures the survivor test had never actually run on — among them
+*Gidget* (1959), published as closed while Jo Morrow, who played Mary Lou,
+was alive and credited on TMDB. The other 11 were closed under one release
+year while another release year's judgement named somebody living, which
+is a rule this archive believed it already had and did not.
+
+**The limits of that record should be read with it.** It begins on
+3 August 2026; nothing before that date was kept and nothing can
+reconstruct it, so the archive cannot tell you what it withdrew in July.
+Every one of the 138 opening entries carries no entry date, because those
+pictures were published across many builds before any roll of what-is-
+published existed. A retraction that guessed when the claim began would be
+worse than one that says it does not know, and the page says it does not
+know.
 
 **Superseded, 3 August 2026.** This section previously reported that
 1,077 entries had no TMDB identifier and that a stored flag marking them
@@ -673,7 +684,7 @@ was unreliable because it postdated part of the archive. Both facts
 belonged to the 11,457-entry Vault. In the corpus the flag is no longer
 stored at all: it is derived at build time from whether the survivor test
 ran, published on every closing, and drawn on the site. The quantity is
-**55,612 closings, 46%** — see §12.
+**55,610 closings, 46%** — see §12.
 
 **Upstream sourcing is uneven, and is not currently published.** Wikidata
 death dates carry their own references. Across a sample of 40 pictures
@@ -776,10 +787,10 @@ whose death is recorded to the day. A year that fails any of these has
 kept too little.
 
 As of 3 August 2026 the pass has judged **137 release years, 1890 to 2026,
-with no gaps: 329,957 pictures**, of which 120,567 are closed, 208,017
-still running and 1,373 could not be checked. Of the closings, **91,184
+with no gaps: 329,957 pictures**, of which 120,556 are closed, 208,028
+still running and 1,373 could not be checked. Of the closings, **91,178
 are dated to the day** (75.6%), 488 to a month, 4,197 to a year only, and
-**24,698 carry no recorded death at all** (20.5%) — those are closed by
+**24,693 carry no recorded death at all** (20.5%) — those are closed by
 the arithmetic of §8 rather than by a date, and the record says so rather
 than inventing one.
 
@@ -788,7 +799,7 @@ credited on a picture from those years can be living, so §8 settles them
 permanently.
 
 **What a closing actually rests on.** The median closing rests on **two
-recorded names**, and 49,612 of them — 41% — rest on exactly one. This is
+recorded names**, and 49,610 of them — 41% — rest on exactly one. This is
 the single most important caveat in this document and §3 states it in
 full: a picture whose credit list holds one name closes when that person
 dies, and the sixty people who actually made it were never in any free
