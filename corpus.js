@@ -202,6 +202,24 @@ export async function openCorpus(root = '/') {
     closed: y => json(manifest.surfaces.closed.replace('{YYYY}', String(y))),
     resolution: manifest.resolution,
 
+    /* What has been retracted, and when.
+
+       Fetched whole and once. It is small by construction — a corpus that
+       retracts often is one nobody should be citing — and a reader
+       checking whether a claim still stands is asking about a specific
+       picture, which means the answer has to be a lookup rather than a
+       shard they must guess at.
+
+       Cached as the promise, not the result, so ten pictures asking at
+       once is one request. Missing from an older corpus is an empty list
+       and not an error: a corpus built before the record existed has
+       nothing to say about retractions, which is different from saying
+       there were none — but no reader can be shown what was never kept. */
+    async removed() {
+      if (!manifest.surfaces.removed) return [];
+      return json(manifest.surfaces.removed);
+    },
+
     /* Every closing at once, packed, for questions the shards cannot
        answer — anything that crosses two columns. One fetch of about
        2.5 MB, then filtering happens in memory.

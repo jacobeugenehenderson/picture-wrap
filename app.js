@@ -22,13 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear, impossible } from './verify.js?v=52';
-import { openCorpus } from './corpus.js?v=52';
+import { survivors, beyondLiving, earliestLivingBirthYear, impossible } from './verify.js?v=53';
+import { openCorpus } from './corpus.js?v=53';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js?v=52';
+} from './shared.js?v=53';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -463,6 +463,13 @@ async function viewFilm(id) {
      The Wizard of Oz is the page to test on: Caren Marsh is alive. */
   tmdbFailed = false;
 
+  /* Asked on every film page, not only the ones that look wrong. A
+     retracted picture usually looks entirely ordinary now — it is open,
+     somebody is listed as living, and nothing about the page suggests it
+     ever said otherwise. That is exactly why the check cannot be
+     conditional on something looking off. */
+  retraction = await retractionFor(id);
+
   /* The other reason to ask. Resolving a TMDB credit against Wikidata by
      id (above) finds an item and its dates; it does not decide anything.
      An item with a birth date and no death date is not a survivor — it is
@@ -641,6 +648,19 @@ let undated = [];
    nobody, and it must not read as one. */
 let tmdbFailed = false;
 
+/* This picture was once published as closed and no longer is.
+
+   The page already tells the truth — a survivor is listed and the bar is
+   down — but the truth is not the whole of what a reader needs. Somebody
+   who cited this picture as wrapped needs to know the claim was made,
+   when it was withdrawn, and who turned out to be living. Without that
+   the correction is silent, and a silent correction is indistinguishable
+   from never having been wrong.
+
+   `FORTIFYING.md` §1 calls this the difference between a website and a
+   citable source, and it was the largest gap on the METHOD page. */
+let retraction = null;
+
 /* Living: oldest last, so the oldest is the row touching the divider.
    Unknown birth dates go to the top — a missing date shouldn't win the
    spot next to it, which is meant to say "probably next".
@@ -747,6 +767,7 @@ function renderRoster() {
   show(
     titleCard(filmMeta, wrapDate, lastOne) +
     shareControls(shareText, location.hash) +
+    retractionNotice(retraction) +
 
     /* The bar is under the title when the picture has wrapped, so nothing
        caps the roster any more. Still running: the crew card sits above,
@@ -890,6 +911,46 @@ function titleCard(meta, wrappedOn, lastOne) {
         ? `<p class="closing-line">${esc(lastOne.pLabel)} was the last of its makers.</p>`
         : ''}
     </section>`;
+}
+
+/* A correction, stated in the place the mistake was made.
+
+   Set above the roster rather than below it, because a reader who arrived
+   from a citation needs it before they read the list, not after. Bordered
+   in gold and not in red: this is the archive working — a claim was
+   tested again and withdrawn — rather than an error state, and dressing
+   it as an alarm would discourage the thing it is meant to encourage.
+
+   It states four things and no more: what we said, when we said it, when
+   we stopped, and who turned out to be living. Everything else a reader
+   might want is the page underneath. */
+function retractionNotice(r) {
+  if (!r) return '';
+  const living = r.living?.length
+    ? r.living.map(p => p.wikidata || p.wikidataId
+        ? `<a href="https://www.wikidata.org/wiki/${esc(p.wikidataId)}"
+             rel="noopener">${esc(p.name)}</a>`
+        : esc(p.name)).join(', ')
+    : '';
+  const claim = r.published?.wrapped
+    ? `that this picture wrapped on ${esc(longDate(r.published.wrapped))}` +
+      (r.published.closer ? `, with ${esc(r.published.closer)} its last surviving maker` : '')
+    : 'that this picture had wrapped';
+  return `
+    <aside class="retraction">
+      <p class="retraction-head">Withdrawn ${esc(longDate(r.left))}</p>
+      <p>
+        This archive published ${claim}.
+        ${living
+          ? `That was wrong: ${living} ${r.living.length > 1 ? 'were' : 'was'}
+             credited on it and living.`
+          : `A later check found the claim could not be supported.`}
+        ${r.entered
+          ? `The claim stood from ${esc(longDate(r.entered))}.`
+          : `It is not recorded when the claim was first published; this
+             archive did not keep that until 3 August 2026.`}
+      </p>
+    </aside>`;
 }
 
 /* Same row, minus the one thing this zone cannot give: a date. Only a
@@ -1447,6 +1508,28 @@ function corpus() {
     return null;
   });
   return corpusPromise;
+}
+
+/* Has this picture been retracted, and what did we say before?
+
+   The whole ledger is fetched once and kept, because it is small and
+   because the alternative — a request per film page — would make the
+   honest thing the expensive thing. A corpus built before the record
+   existed answers with nothing, which is not the same as answering that
+   nothing was retracted; the About page says which.
+
+   The most recent departure wins if a picture has left more than once.
+   That can happen — a picture reopens, is closed again by a later death,
+   and reopens again — and the reader is standing in the present. */
+let retractionsPromise = null;
+async function retractionFor(qid) {
+  const c = await corpus();
+  if (!c?.removed) return null;
+  retractionsPromise ??= c.removed().catch(() => []);
+  const all = await retractionsPromise;
+  const mine = all.filter(r => r.id === qid);
+  if (!mine.length) return null;
+  return mine.sort((a, b) => String(a.left).localeCompare(String(b.left))).pop();
 }
 
 async function loadSummary() {

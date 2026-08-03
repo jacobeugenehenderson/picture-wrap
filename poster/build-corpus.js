@@ -203,12 +203,63 @@ const byMonth = new Map();
 const ids = [];
 let closed = 0, duplicated = 0;
 
-/* Distinct pictures, by what became of them. A picture that closes under
-   any release year is closed, whatever another year said before the
-   evidence was complete — so these are resolved against `filed` once the
-   years are all read, never as they go. */
+/* Distinct pictures, by what became of them. */
 const running = new Set();
 const unchecked = new Set();
+
+/* Read once, before anything is filed: every picture some release year
+   found a living person on.
+
+   The comment this replaces had it backwards. It said a picture that
+   closes under any year is closed, whatever another year said — which is
+   the permissive reading, and the one direction this project is never
+   allowed to fail in. One living person vetoes a picture; a second
+   release year cannot outvote them.
+
+   It was not hypothetical. Eleven pictures were published as closed while
+   another year's judgement named somebody alive — Q7902072 closed under
+   1915 and held open under 1960 by a TMDB survivor. A picture is judged
+   per release year, but a picture is one picture, and the veto belongs to
+   the picture. */
+const livingSomewhere = new Set();
+
+/* Kept from the same read, because the retraction record below needs to
+   say why a picture left and only the pass knows. */
+const whatBecameOf = new Map();
+
+for (const year of years) {
+  let works;
+  try { works = await lines(join(IN, String(year), 'works.jsonl')); } catch { continue; }
+  for (const w of works) {
+    if (w.verdict === 'open') livingSomewhere.add(w.id);
+    if (!whatBecameOf.has(w.id)) whatBecameOf.set(w.id, []);
+    whatBecameOf.get(w.id).push(w);
+  }
+}
+/* A set, not a counter: a vetoed picture is never filed, so each of its
+   release-year rows reaches the veto and a tally would count the picture
+   once per release. */
+const vetoed = new Set();
+
+/* Who was found alive, for the pictures where TMDB settled it and there is
+   therefore no `heldOpenBy`. Read from the evidence, which is where the
+   survivor test's working was written down.
+
+   Only for pictures that are open somewhere — reading every year's
+   evidence for 330,000 pictures to answer a question about a few hundred
+   would be minutes of work to no purpose. */
+const livingFromEvidence = new Map();
+for (const year of years) {
+  let evidence;
+  try { evidence = await lines(join(IN, String(year), 'evidence.jsonl')); } catch { continue; }
+  for (const e of evidence) {
+    if (!livingSomewhere.has(e.id) || livingFromEvidence.has(e.id)) continue;
+    const alive = (e.judged || [])
+      .filter(p => p.status === 'alive' && !p.impossible)
+      .map(p => ({ name: p.name, wikidataId: p.wikidataId ?? null }));
+    if (alive.length) livingFromEvidence.set(e.id, alive);
+  }
+}
 
 /* Every picture already filed, so a later release year cannot file it
    again. Ids, not titles — two different pictures share a title all the
@@ -255,6 +306,11 @@ for (const year of years) {
        would leave the others disagreeing, which is the failure this whole
        file is arranged to avoid. */
     if (filed.has(w.id)) { duplicated++; continue; }
+
+    /* Another release year found somebody living on this picture. It does
+       not close, whatever this row concluded from a thinner population. */
+    if (livingSomewhere.has(w.id)) { vetoed.add(w.id); running.add(w.id); continue; }
+
     filed.add(w.id);
 
     closed++;
@@ -335,8 +391,9 @@ for (const list of [...byYear.values(), ...byClosingYear.values(),
         manifest carries `pictures` as their total
      8  the version digest reads the whole published row, so a change to
         any field moves the URLs without FORMAT being touched
+     9  the corpus carries `removed.json`, the retraction record
 */
-const FORMAT = 8;
+const FORMAT = 9;
 
 /* The whole of each published row, not an id and a date.
 
@@ -364,6 +421,115 @@ for (const year of [...byYear.keys()].sort((a, b) => a - b)) {
   for (const e of byYear.get(year)) digest.update(JSON.stringify(e));
 }
 const version = digest.digest('hex').slice(0, 12);
+
+/* --- the retraction record --------------------------------------------- */
+
+/* What left, when, and on whose account.
+
+   A picture that reopens simply stops being in the corpus, and until now
+   nothing anywhere said it had ever been in it. That is the difference
+   between a website and something citable: a reader who cited a closing
+   that later turned out to be wrong had no way to find that out, and we
+   had no way to tell them. `FORTIFYING.md` §1 has asked for this since
+   29 July and called it the highest-value item on that page.
+
+   Two facts are needed and neither is derivable after the fact, so both
+   are kept as they happen:
+
+   `pass/published.json` is the roll — every picture currently published
+   and the date it first appeared. It is the only way to answer "when did
+   this enter", which a retraction must state and which nothing else
+   records.
+
+   `pass/removed.jsonl` is the ledger, appended to and never rewritten. A
+   line is a departure.
+
+   Both live in `pass/` rather than `dist/`, because `dist/` is deleted and
+   rebuilt on every run and a record that a rebuild can erase is not a
+   record. The ledger is then published INTO the corpus, so the retraction
+   travels with the thing it retracts.
+
+   A picture that leaves and later returns gets a line for each departure.
+   That is correct: it was wrong twice, and a reader who cited it during
+   either window needs to know which. */
+const rollPath = join(IN, 'published.json');
+const ledgerPath = join(IN, 'removed.jsonl');
+const today = new Date().toISOString().slice(0, 10);
+
+let roll = {};
+try { roll = JSON.parse(await readFile(rollPath, 'utf8')).entered || {}; } catch { /* first run */ }
+
+let ledger = [];
+try { ledger = await lines(ledgerPath); } catch { /* first run */ }
+
+/* Only pictures the roll knows about can be said to have left. On the
+   first run the roll is empty, so nothing is reported as removed — which
+   is right: we cannot claim a departure we did not witness. */
+const departed = Object.keys(roll).filter(id => !filed.has(id));
+
+/* Why it went, from the pass's own record rather than from a guess, and
+   who was found living. `heldOpenBy` carries them where Wikidata settled
+   it; where TMDB did, the evidence holds the people and this reads them.
+   A picture that vanished from `pass/` entirely leaves with no reason,
+   and says so rather than inventing one. */
+const departures = [];
+for (const id of departed) {
+  const rows = (whatBecameOf.get(id) || []);
+  const openRow = rows.find(w => w.verdict === 'open');
+  const living = openRow?.heldOpenBy?.map(p => ({ name: p.name, wikidataId: p.wikidataId ?? null }))
+    ?? livingFromEvidence.get(id)
+    ?? [];
+  departures.push({
+    id,
+    title: openRow?.title ?? roll[id]?.title ?? null,
+    year: openRow?.year ?? roll[id]?.year ?? null,
+    /* What we had published, so a citation can be matched against it. */
+    published: { wrapped: roll[id]?.wrapped ?? null, closer: roll[id]?.closer ?? null },
+    entered: roll[id]?.entered ?? null,
+    left: today,
+    verdict: openRow?.verdict ?? 'absent',
+    reason: openRow?.reason ?? 'no longer in the pass',
+    living,
+  });
+}
+
+/* A build is not an event. Running it twice in one day must not record
+   the same departure twice, and a build that failed after writing the
+   ledger must not double it on the retry — so a line is identified by the
+   picture and the day it left, and one already there is left alone. */
+const already = new Set(ledger.map(d => `${d.id}|${d.left}`));
+const fresh = departures.filter(d => !already.has(`${d.id}|${d.left}`));
+
+if (fresh.length) {
+  await writeFile(ledgerPath,
+    [...ledger, ...fresh].map(d => JSON.stringify(d)).join('\n') + '\n');
+  ledger = [...ledger, ...fresh];
+}
+
+/* The roll, rewritten to what is being published now. A picture keeps the
+   date it first entered; a new one takes today. */
+/* Over byYear rather than `everyClosing`, which is assembled further down
+   for the packed table. Same set, read earlier. */
+const entered = {};
+for (const e of [...byYear.values()].flat()) {
+  /* Presence in the roll decides, not the date in it. A picture
+     bootstrapped from an already-published corpus is in the roll with
+     `entered: null` — we know it was published and do not know when — and
+     that is a different fact from "arrived today". Testing the date rather
+     than the key would quietly restamp every one of them with today's
+     date and turn an honest unknown into a false precision. */
+  const known = Object.prototype.hasOwnProperty.call(roll, e.id);
+  entered[e.id] = {
+    entered: known ? roll[e.id].entered : today,
+    /* Kept current, so a retraction quotes what was actually published
+       rather than what it looked like on the day it arrived. */
+    title: e.title,
+    year: e.year,
+    wrapped: e.wrapped ?? e.wrappedYear ?? null,
+    closer: e.last?.name ?? null,
+  };
+}
+await writeFile(rollPath, JSON.stringify({ at: today, entered }));
 
 /* --- write ------------------------------------------------------------- */
 
@@ -405,6 +571,15 @@ for (const [y, list] of byClosingYear) {
    bytes. */
 const table = new Uint32Array(ids);
 await put(join(base, 'ids.bin'), Buffer.from(table.buffer, table.byteOffset, table.byteLength));
+
+/* The retraction record, published with the corpus it retracts from.
+
+   Newest first, like everything else, and whole rather than sharded: it
+   is small by construction — a corpus that retracts often is a corpus
+   nobody should be citing — and a reader checking whether a claim still
+   stands should not have to know which shard to ask for. */
+await put(join(base, 'removed.json'), JSON.stringify(
+  [...ledger].sort((a, b) => String(b.left).localeCompare(String(a.left)))));
 
 /* --- the packed table -------------------------------------------------- */
 
@@ -811,6 +986,9 @@ await put(join(OUT, 'manifest.json'), JSON.stringify({
   built: new Date().toISOString(),
   counts: { closed, open: stillRunning, unchecked: neverChecked,
             pictures: closed + stillRunning + neverChecked,
+            /* Cumulative since the ledger opened on 3 August 2026, not a
+               count of what is missing today. */
+            removed: ledger.length,
             years: byYear.size, days: byDay.size },
   surfaces: {
     year: 'year/{year}.json',
@@ -818,6 +996,7 @@ await put(join(OUT, 'manifest.json'), JSON.stringify({
     month: 'month/{YYYY-MM}.json',
     closed: 'closed/{YYYY}.json',
     ids: 'ids.bin',
+    removed: 'removed.json',
     summary: 'summary.json',
     facts: 'facts.bin',
     factsDictionary: 'facts.json',
@@ -858,7 +1037,9 @@ const dayBytes = [...byDay.values()].map(l => JSON.stringify(l).length).sort((a,
 const yearBytes = [...byYear.values()].map(l => JSON.stringify(l).length).sort((a, b) => a - b);
 
 console.log(`\npublished ${closed} closings, version ${version}` +
-  (duplicated ? `  (${duplicated} re-releases of a picture already filed)` : '') + '\n');
+  (duplicated ? `  (${duplicated} re-releases of a picture already filed)` : '') +
+  (vetoed.size ? `  (${vetoed.size} vetoed by a living person found under another release year)` : '') +
+  '\n');
 console.log(`  ${written.year} year files   median ${kb(yearBytes[yearBytes.length >> 1])}, largest ${kb(yearBytes.at(-1))}`);
 console.log(`  ${written.day} day files    median ${kb(dayBytes[dayBytes.length >> 1])}, largest ${kb(dayBytes.at(-1))}`);
 console.log(`  ${written.closed} closing years — the Vault's own axis`);
