@@ -1708,16 +1708,9 @@ async function viewUnclassified(segments = []) {
   show(`
     <section class="card">
       <h2>Unclassified</h2>
-      <p class="card-quote">&mdash; nobody on them has a date</p>
+      <p class="card-quote">&mdash; no death on record for anyone credited,
+        so neither wrapped nor running</p>
     </section>
-    <p class="prose-note">
-      ${total.toLocaleString('en')} pictures where no death is recorded for
-      anyone credited, and which are too recent for age alone to settle.
-      They are neither wrapped nor known to be running. The date is the
-      year of release, which is the only date these have, and the count is
-      how many names are on record &mdash; none of them dated.
-      <a href="#/about">How a picture enters the Vault</a>.
-    </p>
     ${sections}
   `);
   if (segments.includes('open')) document.querySelector('.decade')?.setAttribute('open', '');
