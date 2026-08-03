@@ -463,12 +463,6 @@ async function viewFilm(id) {
      The Wizard of Oz is the page to test on: Caren Marsh is alive. */
   tmdbFailed = false;
 
-  /* Asked on every film page, not only the ones that look wrong. A
-     retracted picture usually looks entirely ordinary now — it is open,
-     somebody is listed as living, and nothing about the page suggests it
-     ever said otherwise. That is exactly why the check cannot be
-     conditional on something looking off. */
-  retraction = await retractionFor(id);
 
   /* The other reason to ask. Resolving a TMDB credit against Wikidata by
      id (above) finds an item and its dates; it does not decide anything.
@@ -648,18 +642,6 @@ let undated = [];
    nobody, and it must not read as one. */
 let tmdbFailed = false;
 
-/* This picture was once published as closed and no longer is.
-
-   The page already tells the truth — a survivor is listed and the bar is
-   down — but the truth is not the whole of what a reader needs. Somebody
-   who cited this picture as wrapped needs to know the claim was made,
-   when it was withdrawn, and who turned out to be living. Without that
-   the correction is silent, and a silent correction is indistinguishable
-   from never having been wrong.
-
-   `FORTIFYING.md` §1 calls this the difference between a website and a
-   citable source, and it was the largest gap on the METHOD page. */
-let retraction = null;
 
 /* Living: oldest last, so the oldest is the row touching the divider.
    Unknown birth dates go to the top — a missing date shouldn't win the
@@ -767,7 +749,6 @@ function renderRoster() {
   show(
     titleCard(filmMeta, wrapDate, lastOne) +
     shareControls(shareText, location.hash) +
-    retractionNotice(retraction) +
     sourcesNote(filmMeta) +
 
     /* The bar is under the title when the picture has wrapped, so nothing
@@ -934,46 +915,6 @@ function sourcesNote(meta) {
       routinely a fraction of the real cast, and anyone it has not
       recorded is not counted here.
     </p>`;
-}
-
-/* A correction, stated in the place the mistake was made.
-
-   Set above the roster rather than below it, because a reader who arrived
-   from a citation needs it before they read the list, not after. Bordered
-   in gold and not in red: this is the archive working — a claim was
-   tested again and withdrawn — rather than an error state, and dressing
-   it as an alarm would discourage the thing it is meant to encourage.
-
-   It states four things and no more: what we said, when we said it, when
-   we stopped, and who turned out to be living. Everything else a reader
-   might want is the page underneath. */
-function retractionNotice(r) {
-  if (!r) return '';
-  const living = r.living?.length
-    ? r.living.map(p => p.wikidata || p.wikidataId
-        ? `<a href="https://www.wikidata.org/wiki/${esc(p.wikidataId)}"
-             rel="noopener">${esc(p.name)}</a>`
-        : esc(p.name)).join(', ')
-    : '';
-  const claim = r.published?.wrapped
-    ? `that this picture wrapped on ${esc(longDate(r.published.wrapped))}` +
-      (r.published.closer ? `, with ${esc(r.published.closer)} its last surviving maker` : '')
-    : 'that this picture had wrapped';
-  return `
-    <aside class="retraction">
-      <p class="retraction-head">Withdrawn ${esc(longDate(r.left))}</p>
-      <p>
-        This archive published ${claim}.
-        ${living
-          ? `That was wrong: ${living} ${r.living.length > 1 ? 'were' : 'was'}
-             credited on it and living.`
-          : `A later check found the claim could not be supported.`}
-        ${r.entered
-          ? `The claim stood from ${esc(longDate(r.entered))}.`
-          : `It is not recorded when the claim was first published; this
-             archive did not keep that until 3 August 2026.`}
-      </p>
-    </aside>`;
 }
 
 /* Same row, minus the one thing this zone cannot give: a date. Only a
@@ -1533,28 +1474,6 @@ function corpus() {
   return corpusPromise;
 }
 
-/* Has this picture been retracted, and what did we say before?
-
-   The whole ledger is fetched once and kept, because it is small and
-   because the alternative — a request per film page — would make the
-   honest thing the expensive thing. A corpus built before the record
-   existed answers with nothing, which is not the same as answering that
-   nothing was retracted; the About page says which.
-
-   The most recent departure wins if a picture has left more than once.
-   That can happen — a picture reopens, is closed again by a later death,
-   and reopens again — and the reader is standing in the present. */
-let retractionsPromise = null;
-async function retractionFor(qid) {
-  const c = await corpus();
-  if (!c?.removed) return null;
-  retractionsPromise ??= c.removed().catch(() => []);
-  const all = await retractionsPromise;
-  const mine = all.filter(r => r.id === qid);
-  if (!mine.length) return null;
-  return mine.sort((a, b) => String(a.left).localeCompare(String(b.left))).pop();
-}
-
 async function loadSummary() {
   const c = await corpus();
   summaryCache ??= c
@@ -1738,75 +1657,6 @@ function renderArchive(summary) {
       whether they have wrapped.` : ''}
       <a href="#/about">How a picture enters the Vault</a>.
     </p>
-  `);
-}
-
-/* --- withdrawn ----------------------------------------------------------- */
-
-/* Everything this archive published and then took back.
-
-   A picture that reopens used to just stop being in the corpus, and
-   nothing anywhere said it had ever been in it. That is the difference
-   between a website and a record: an archive that only shows its current
-   answers is asking to be trusted, while one that shows what it withdrew
-   can be checked.
-
-   Only claims that were WRONG are here — a picture published as wrapped
-   while somebody credited on it was living. Pictures withdrawn because
-   the evidence was never sufficient are a different statement and are not
-   retractions; they live in the pass output rather than on the site. */
-async function viewWithdrawn() {
-  const c = await corpus();
-  const all = c?.removed ? await c.removed() : [];
-
-  setTitle(`Withdrawn — ${all.length} closings`);
-
-  if (!all.length) {
-    show(`<section class="card"><h2>Withdrawn</h2></section>
-      <p class="state">Nothing has been withdrawn, or this corpus was built
-      before the record existed.</p>`);
-    return;
-  }
-
-  const byDay = new Map();
-  for (const r of all) {
-    if (!byDay.has(r.left)) byDay.set(r.left, []);
-    byDay.get(r.left).push(r);
-  }
-
-  show(`
-    <section class="card">
-      <h2>Withdrawn</h2>
-      <p class="card-quote">&mdash; what we said, and took back</p>
-    </section>
-    <p class="prose-note">
-      ${all.length} closings this archive published and later withdrew,
-      because somebody credited on the picture turned out to be living.
-      The record begins on 3 August 2026; nothing withdrawn before that
-      date was kept.
-    </p>
-    ${[...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([day, rows]) => `
-      <section class="withdrawn-day">
-        <h3 class="withdrawn-date">${esc(longDate(day))}</h3>
-        <ul class="closing-films">
-          ${rows.map(r => `
-            <li class="is-link" data-go="${esc(path(r.title, r.id))}">
-              <span class="closing-film">
-                <span class="who-name">${esc(r.title)}</span>
-                <span class="closing-missing">
-                  published as wrapped${r.published?.wrapped
-                    ? ` ${esc(longDate(r.published.wrapped))}` : ''}${
-                    r.published?.closer ? `, by ${esc(r.published.closer)}` : ''}
-                  &mdash; ${r.living?.length
-                    ? `${esc(r.living.map(p => p.name).join(', '))} ${
-                        r.living.length > 1 ? 'were' : 'was'} living`
-                    : 'the claim could not be supported'}
-                </span>
-              </span>
-              <span class="when-span">${esc(r.year || '')}</span>
-            </li>`).join('')}
-        </ul>
-      </section>`).join('')}
   `);
 }
 
@@ -2199,7 +2049,7 @@ function viewAbout() {
       </ol>
       <p>
         A picture that meets both leaves the Vault again the moment either
-        stops being true, and the withdrawal is recorded.
+        stops being true.
       </p>
       <p>
         A picture that meets neither &mdash; nobody on it recorded as
@@ -2262,11 +2112,6 @@ function viewAbout() {
           period we hold 901 South Asian pictures &mdash; 869 filed under
           British Raj and 32 under India. This site said &ldquo;37 Indian
           titles&rdquo; for months, having asked the wrong question.</li>
-        <li>A closing that is withdrawn is recorded rather than deleted:
-          the picture&rsquo;s own page says so, and they are listed
-          together under <a href="#/withdrawn">Withdrawn</a>. That record
-          begins on 3 August 2026, so this archive cannot tell you what it
-          took back in July.</li>
         <li>Two closings in five were never checked against a second
           database, because TMDB has no record of the picture and there is
           nothing to ask. They are the archive&rsquo;s weakest claims, each
@@ -2293,12 +2138,7 @@ function viewAbout() {
         be made: it is fixed at the source and everyone benefits, and this
         site follows on its next pass.
       </p>
-      <p>
-        When a closing published here turns out to be wrong, it is withdrawn
-        and the withdrawal is kept. The picture&rsquo;s own page states what
-        was claimed and who turned out to be living, and
-        <a href="#/withdrawn">every withdrawal is listed together</a>.
-      </p>
+
 
       <h3>10. Privacy</h3>
       <p>
@@ -2686,7 +2526,7 @@ async function route() {
   const segments = location.hash.split('/').slice(1);
   const id = segments.find(s => /^Q\d+$/.test(s));
   let kind = segments.find(s =>
-    ['film', 'person', 'archive', 'about', 'unclassified', 'withdrawn'].includes(s));
+    ['film', 'person', 'archive', 'about', 'unclassified'].includes(s));
   window.scrollTo(0, 0);
 
   try {
@@ -2696,12 +2536,11 @@ async function route() {
        Vault. Now it is the only way to reach the unclassified from the
        Vault — and hiding it on the Vault is hiding the door from the room
        you would look for it in. */
-    showNav(!!id || ['about', 'archive', 'unclassified', 'withdrawn'].includes(kind));
+    showNav(!!id || ['about', 'archive', 'unclassified'].includes(kind));
     wireColophon(kind === 'about');
 
     if (kind === 'archive') { await viewArchive(segments); return; }
     if (kind === 'unclassified') { await viewUnclassified(segments); return; }
-    if (kind === 'withdrawn') { await viewWithdrawn(); return; }
     if (kind === 'about') { viewAbout(); return; }
     if (!id) { await viewLanding(); return; }
 
