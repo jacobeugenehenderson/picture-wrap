@@ -2507,9 +2507,24 @@ function wireColophon(onAbout) {
   link.textContent = onAbout ? 'Back to the top' : 'Methods and sources';
 }
 
-function showNav(on) {
+/* The way to the other archive, never a tab bar.
+
+   This was one link — "The Vault" — and its whole job was getting back
+   there. Adding "Unclassified" beside it turned it into two buttons with
+   nothing saying which you were looking at, so on the Vault it offered to
+   take you to the Vault.
+
+   So it shows the place you are NOT. One link, the same as before, and
+   the question it answers is still "where else can I go". */
+function showNav(on, kind) {
   const nav = document.getElementById('nav');
-  if (nav) nav.hidden = !on;
+  if (!nav) return;
+  nav.hidden = !on;
+  const here = kind === 'archive' ? '#/archive'
+    : kind === 'unclassified' ? '#/unclassified' : null;
+  for (const a of nav.querySelectorAll('a')) {
+    a.hidden = here !== null && a.getAttribute('href') === here;
+  }
 }
 
 async function route() {
@@ -2529,7 +2544,7 @@ async function route() {
        Vault. Now it is the only way to reach the unclassified from the
        Vault — and hiding it on the Vault is hiding the door from the room
        you would look for it in. */
-    showNav(!!id || ['about', 'archive', 'unclassified'].includes(kind));
+    showNav(!!id || ['about', 'archive', 'unclassified'].includes(kind), kind);
     wireColophon(kind === 'about');
 
     if (kind === 'archive') { await viewArchive(segments); return; }
