@@ -1200,6 +1200,26 @@ main,
   vertical-align: 0.1em;
 }
 
+/* Reaching a label that did not earn a tile. Set at the end of its row
+   and styled down, because it is the exception to the row above it rather
+   than a peer of it. */
+.chip-find { margin: 0.15rem 0 0.35rem; }
+
+.chip-find input {
+  width: 14rem;
+  max-width: 100%;
+  padding: 0.28rem 0.5rem;
+  background: transparent;
+  border: 1px dashed var(--rule);
+  border-radius: 2px;
+  font-size: var(--size-tiny);
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+.chip-find input::placeholder { color: var(--ink-quiet); }
+.chip-find input:focus { outline: none; border-color: var(--gold); border-style: solid; }
+
 /* The source filter, set apart from the region and genre chips: those
    narrow WHAT you are looking at, this narrows how well it is evidenced,
    and running them together in one row would imply they are the same kind

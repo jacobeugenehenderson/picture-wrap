@@ -1491,6 +1491,11 @@ async function loadSummary() {
    and 97,395 closings is every column at once. */
 const vaultFilter = { region: 'all', genre: 'all', sources: 'all' };
 
+/* The unclassified keeps its own, because the two archives have
+   different label sets and carrying a Vault genre across would land on
+   a chip that does not exist here. */
+const uFilter = { region: 'all', genre: 'all' };
+
 /* The Vault, addressable. `#/archive/American/comedy film`, either side a
    bare `-`, so the landing can hand over what it was showing and a reader
    can send somebody the result.
@@ -1557,10 +1562,14 @@ function renderArchive(summary) {
      The order never moves — it is by size over the whole corpus — so the
      row stays a place even as its numbers change under a filter. Chips
      leading nowhere go quiet, exactly as the doors do. */
-  const doors = summary.doors ?? {};
+  /* The Vault's own tiles, not the landing's doors. A door is a curated
+     way in and carries film picks; a tile is a filter and carries a
+     count, which is why they are separate and why this row can afford to
+     be complete. */
+  const doors = summary.vaultDoors ?? {};
   const combinations = doors.picks ?? {};
   const countFor = (region, genre) => combinations[
-    `${genre === 'all' ? '' : genre}||${region === 'all' ? '' : region}`]?.count ?? 0;
+    `${genre === 'all' ? '' : genre}||${region === 'all' ? '' : region}`] ?? 0;
 
   const chipRow = kind => {
     const entries = doors[kind] ?? [];
@@ -1576,10 +1585,26 @@ function renderArchive(summary) {
         ${esc(label)}<span>${n.toLocaleString('en')}</span>
       </button>`;
 
+    /* "Romantic comedy film" and "romantic comedy" are two Wikidata
+       labels, and trimming the suffix off both drew the same tile twice —
+       865 beside 265, with nothing to tell a reader which was which. So
+       the suffix comes off only where doing it leaves the label unique.
+       This did not show at 22 tiles and does at 30, which is the usual
+       shape of a display rule that was really a coincidence. */
+    const trimmed = new Map();
+    for (const d of entries) {
+      const short = d.label.replace(/ films?$/i, '');
+      trimmed.set(short, (trimmed.get(short) || 0) + 1);
+    }
+    const shown = label => {
+      const short = label.replace(/ films?$/i, '');
+      return sentence(trimmed.get(short) > 1 ? label : short);
+    };
+
     return `<div class="vault-filters">
       ${chip('all', 'All', countWith('all') || summary.total)}
       ${entries.map(d => chip(d.label,
-        kind === 'genre' ? sentence(d.label.replace(/ films?$/i, '')) : d.label,
+        kind === 'genre' ? shown(d.label) : d.label,
         countWith(d.label))).join('')}
     </div>`;
   };
@@ -1598,7 +1623,9 @@ function renderArchive(summary) {
       title="Everyone credited was checked against Wikidata and TMDB, not Wikidata alone">Confirmed</button>
   </div>`;
 
-  const filters = chipRow('region') + chipRow('genre') + sourceRow;
+  const filters = chipRow('region') + findRow('region', summary.allCountries, vaultFilter, 'vault')
+    + chipRow('genre') + findRow('genre', summary.allGenres, vaultFilter, 'vault')
+    + sourceRow;
 
   /* Closing decades, newest first — the axis the Vault has always
      browsed. `decades` in the corpus summary is by RELEASE year and is a
@@ -1660,6 +1687,34 @@ function renderArchive(summary) {
   `);
 }
 
+/* Anything the tiles left out.
+
+   A tile is earned by holding one picture in five hundred, which leaves
+   451 genres and 228 countries below the line — Faroese, Manx, the
+   long tail of co-productions and sub-genres. They are in the archive and
+   a reader should be able to ask for them, but 679 tiles is not a filter
+   row, it is a wall.
+
+   So: a native `datalist`, which gives type-ahead with no script and no
+   dropdown of our own to get wrong. It shows only when the label is not
+   already a tile, and it shows the count, because a reader typing
+   "Faroese" should learn there are three before they commit to it. */
+function findRow(kind, labels, state, ns) {
+  if (!labels?.length) return '';
+  const id = `find-${ns}-${kind}`;
+  const current = state[kind] === 'all' ? '' : state[kind];
+  return `
+    <div class="chip-find">
+      <input list="${id}" data-find="${esc(kind)}" data-ns="${esc(ns)}"
+             value="${esc(current)}"
+             placeholder="${kind === 'region' ? 'another country' : 'another genre'}\u2026"
+             aria-label="${kind === 'region' ? 'Find a country' : 'Find a genre'}">
+      <datalist id="${id}">
+        ${labels.map(l => `<option value="${esc(l.label)}">${esc(l.label)} — ${l.count}</option>`).join('')}
+      </datalist>
+    </div>`;
+}
+
 /* --- the unclassified ---------------------------------------------------- */
 
 /* Pictures the archive cannot place.
@@ -1693,14 +1748,64 @@ async function viewUnclassified(segments = []) {
     return;
   }
 
+  /* Its own labels, not the Vault's. Documentary is 64% of everything
+     here that carries a genre and Australian is the second region, both
+     of which are false of the Vault — a shared row would have been tiles
+     nobody could use. */
+  const doors = summary.unclassifiedDoors ?? {};
+  const picks = doors.picks ?? {};
+  const countFor = (region, genre) => picks[
+    `${genre === 'all' ? '' : genre}||${region === 'all' ? '' : region}`] ?? 0;
+
+  const chipRow = kind => {
+    const entries = doors[kind] ?? [];
+    if (!entries.length) return '';
+    const countWith = label => kind === 'region'
+      ? countFor(label, uFilter.genre)
+      : countFor(uFilter.region, label);
+
+    const chip = (value, label, n) => `
+      <button data-unc="${esc(kind)}" data-label="${esc(value)}"${
+        uFilter[kind] === value ? ' aria-current="true"' : ''}${
+        n ? '' : ' disabled'}>
+        ${esc(label)}<span>${n.toLocaleString('en')}</span>
+      </button>`;
+
+    /* Same rule as the Vault: trim the suffix only where it stays
+       unique, so two labels never draw one tile. */
+    const trimmed = new Map();
+    for (const d of entries) {
+      const short = d.label.replace(/ films?$/i, '');
+      trimmed.set(short, (trimmed.get(short) || 0) + 1);
+    }
+    const shown = label => {
+      const short = label.replace(/ films?$/i, '');
+      return sentence(trimmed.get(short) > 1 ? label : short);
+    };
+
+    return `<div class="vault-filters">
+      ${chip('all', 'All', countWith('all') || total)}
+      ${entries.map(d => chip(d.label,
+        kind === 'genre' ? shown(d.label) : d.label,
+        countWith(d.label))).join('')}
+    </div>`;
+  };
+
+  const filters = chipRow('region') + findRow('region', doors.allCountries, uFilter, 'unc')
+    + chipRow('genre') + findRow('genre', doors.allGenres, uFilter, 'unc');
   const decades = summary.unclassifiedDecades ?? {};
+  /* Same rule as the Vault: a drawer count that ignores the facet is the
+     wrong answer to the question being asked, and an honest one would
+     need every year file. */
+  const counted = uFilter.region === 'all' && uFilter.genre === 'all';
+
   const sections = Object.entries(decades)
     .sort((a, b) => Number(b[0]) - Number(a[0]))
     .map(([decade, n]) => `
       <details class="decade" data-udecade="${esc(decade)}s">
         <summary>
           <span class="decade-label">${esc(decade)}s</span>
-          <span class="decade-count">${n.toLocaleString('en')}</span>
+          ${counted ? `<span class="decade-count">${n.toLocaleString('en')}</span>` : ''}
         </summary>
         <div class="decade-body"><p class="state">Opening&hellip;</p></div>
       </details>`).join('');
@@ -1711,6 +1816,7 @@ async function viewUnclassified(segments = []) {
       <p class="card-quote">&mdash; no death on record for anyone credited,
         so neither wrapped nor running</p>
     </section>
+    ${filters}
     ${sections}
   `);
   if (segments.includes('open')) document.querySelector('.decade')?.setAttribute('open', '');
@@ -1721,7 +1827,8 @@ async function viewUnclassified(segments = []) {
 function fillUnclassifiedDecade(details) {
   const key = details.dataset.udecade;
   const body = details.querySelector('.decade-body');
-  if (!body || body.dataset.filled === key) return;
+  const stamp = `${key}|${uFilter.region}|${uFilter.genre}`;
+  if (!body || body.dataset.filled === stamp) return;
 
   const decade = Number(key.replace(/s$/, ''));
   const years = Object.entries(summaryCache?.unclassifiedYears ?? {})
@@ -1733,12 +1840,13 @@ function fillUnclassifiedDecade(details) {
     return;
   }
 
-  body.dataset.filled = key;
+  body.dataset.filled = stamp;
+  const counted = uFilter.region === 'all' && uFilter.genre === 'all';
   body.innerHTML = years.map(([y, n]) => `
     <details class="yr" data-uyear="${esc(y)}">
       <summary>
         <span class="yr-label">${esc(y)}</span>
-        <span class="yr-count">${n.toLocaleString('en')}</span>
+        ${counted ? `<span class="yr-count">${n.toLocaleString('en')}</span>` : ''}
       </summary>
       <div class="yr-body"><p class="state">Opening&hellip;</p></div>
     </details>`).join('');
@@ -1760,7 +1868,10 @@ async function fillUnclassifiedYear(details) {
     return;
   }
 
-  const films = await c.unclassified(y);
+  const all = await c.unclassified(y);
+  const films = all.filter(f =>
+    (uFilter.region === 'all' || (f.countries || []).includes(uFilter.region)) &&
+    (uFilter.genre === 'all' || (f.genres || []).includes(uFilter.genre)));
   if (!films.length) {
     body.innerHTML = `<p class="state">Nothing from ${esc(y)} here.</p>`;
     return;
@@ -1858,6 +1969,36 @@ async function fillYear(details) {
 }
 
 /* `toggle` doesn't bubble, so it has to be caught on the way down. */
+/* A typed label behaves exactly as a tile does, including clearing on an
+   empty value — so the input is a way to reach the untiled rather than a
+   second kind of filter with its own rules. An unknown label is left
+   alone: the datalist offered what exists, and inventing a facet for
+   something the archive does not hold would show an empty list with no
+   explanation. */
+document.addEventListener('change', e => {
+  const find = e.target.closest('[data-find]');
+  if (!find) return;
+  const { find: kind, ns } = find.dataset;
+  const state = ns === 'unc' ? uFilter : vaultFilter;
+  const wanted = find.value.trim();
+  const known = ns === 'unc'
+    ? (summaryCache?.unclassifiedDoors?.[kind === 'region' ? 'allCountries' : 'allGenres'] ?? [])
+    : (summaryCache?.[kind === 'region' ? 'allCountries' : 'allGenres'] ?? []);
+  if (wanted && !known.some(l => l.label === wanted)) return;
+  state[kind] = wanted || 'all';
+
+  if (ns === 'unc') {
+    viewUnclassified().then(() => {
+      for (const d of document.querySelectorAll('details.decade[open]')) fillUnclassifiedDecade(d);
+    });
+  } else {
+    loadSummary().then(summary => {
+      renderArchive(summary);
+      for (const d of document.querySelectorAll('details.decade[open]')) fillDecade(d);
+    });
+  }
+});
+
 document.addEventListener('toggle', e => {
   const details = e.target;
   if (!details.open) return;
@@ -2369,6 +2510,18 @@ document.addEventListener('click', e => {
   if (sort) {
     landingSort = sort.dataset.sort;
     viewLanding();
+    return;
+  }
+
+  /* Same behaviour, its own state. */
+  const unc = e.target.closest('[data-unc]');
+  if (unc) {
+    const { unc: kind, label } = unc.dataset;
+    uFilter[kind] = uFilter[kind] === label ? 'all' : label;
+    viewUnclassified().then(() => {
+      for (const d of document.querySelectorAll('details.decade[open]')) fillUnclassifiedDecade(d);
+    });
+    window.scrollTo(0, 0);
     return;
   }
 

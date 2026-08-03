@@ -21,7 +21,7 @@ retractions rather than quietly dropped.
 | Built | `dist/`, 101.3 MB, version `9bfc997e9964`, gitignored |
 | **Corpus hosted** | Cloudflare Pages, project `picture-wrap-corpus`, at `https://picture-wrap-corpus.pages.dev/` — 803 files |
 | **Site hosted** | GitHub Pages from `main`, at picture-wrap.com. **Two hosts. The site is not on Cloudflare** |
-| Live site | current with `main`, `?v=80` |
+| Live site | current with `main`, `?v=85` |
 | Verified | 58,758 closings tested against both databases; **38,637 (46%) rest on Wikidata alone** and now say so on the page |
 | Disputed | 1,034 closings where two sources give different dates, published with the disagreement rather than adjudicated |
 | Evidence | 1.7 GB local; on the Desktop, in iCloud, and on an external drive — **the Desktop copy is behind for the years deduped on 3 August** |
@@ -104,10 +104,10 @@ invisible from either side.
 
 **Bump both `?v=` numbers in `index.html` by hand** whenever `app.js` or
 `style.css` changes, and the `?v=` on the module imports at the top of
-`app.js` alongside. They stand at 80 and 55.
+`app.js` alongside. They stand at 85 and 55.
 
 **If you change what `build-corpus.js` writes, bump `FORMAT`.** It stands
-at 11. Since format 8 the digest reads the whole of every published row,
+at 13. Since format 8 the digest reads the whole of every published row,
 so a change to any field moves the URLs on its own; `FORMAT` is now only
 for the shape of the files themselves. Before that it hashed an id and a
 wrap date, and three changes in one day slipped past it.

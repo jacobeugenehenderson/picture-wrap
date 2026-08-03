@@ -461,8 +461,12 @@ for (const list of [...byYear.values(), ...byClosingYear.values(),
     11  closing decades and years carry a `confirmed` count beside their
         total, so the source filter changes the drawer numbers instead of
         blanking them
+    12  summary.json carries `unclassifiedDoors` — the unclassified's own
+        genre and region labels, with their crossings
+    13  tiles are earned by share rather than rank, and every label is
+        listed with its count so nothing is unreachable
 */
-const FORMAT = 11;
+const FORMAT = 13;
 
 /* The whole of each published row, not an id and a date.
 
@@ -925,13 +929,6 @@ const slim = e => ({
   wrappedYear: e.wrappedYear || undefined,
 });
 
-const topLabels = (labelsOf, howMany) => {
-  const counts = new Map();
-  for (const e of everyClosing) {
-    for (const label of new Set(labelsOf(e))) counts.set(label, (counts.get(label) || 0) + 1);
-  }
-  return [...counts].sort((a, b) => b[1] - a[1]).slice(0, howMany);
-};
 
 /* How far down each list the doors go, and the answer is "past the point
    where a reader stops recognising them, not before".
@@ -957,8 +954,86 @@ const topLabels = (labelsOf, howMany) => {
    (381) are different labels rather than two spellings of one, because
    the demonym belongs to whichever state still uses it. The same holds
    for British Raj and India. */
-const doorGenres = topLabels(e => e.genres || [], 23).filter(([l]) => l !== 'fiction film');
-const doorRegions = topLabels(e => e.countries || [], 14);
+/* A share, not a rank.
+
+   This was "the top 23 genres and the top 14 regions", and a rank cut is
+   arbitrary wherever it happens to land. Where it landed: Japanese
+   cinema, at 822 closings, had no tile — while the Methods page names
+   Japanese under-representation as a limit of the sources. So did
+   Spanish, Polish, Hungarian and Czechoslovak, and science fiction among
+   the genres. 214 omitted country labels covered 15,108 closings.
+
+   The rule now is a share of the archive the labels belong to: one
+   picture in five hundred earns a tile. It scales without a second
+   number — the Vault and the unclassified are different sizes and get
+   proportionate rows from the same constant — and it is a sentence a
+   reader could check rather than a cut nobody can account for.
+
+   Everything under the line is still reachable by name; see
+   `allGenres` and `allCountries` below. Nothing is hidden, only
+   untiled. */
+const topByRank = (labelsOf, howMany) => {
+  const counts = new Map();
+  for (const e of everyClosing) {
+    for (const label of new Set(labelsOf(e))) counts.set(label, (counts.get(label) || 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1]).slice(0, howMany);
+};
+
+const TILE_SHARE = 500;
+const tiled = (labelsOf, list) => {
+  const floor = Math.ceil(list.length / TILE_SHARE);
+  const counts = new Map();
+  for (const e of list) {
+    for (const label of new Set(labelsOf(e))) counts.set(label, (counts.get(label) || 0) + 1);
+  }
+  return [...counts].filter(([, n]) => n >= floor).sort((a, b) => b[1] - a[1]);
+};
+
+/* Every label with its count, for the reader who wants one that did not
+   earn a tile. Cheap — a few hundred short strings — and it is the whole
+   of what "complete" costs. Tiling all of them would need 451 x 228
+   crossings, which is the megabytes this file exists to avoid. */
+const allLabels = (labelsOf, list) => {
+  const counts = new Map();
+  for (const e of list) {
+    for (const label of new Set(labelsOf(e))) counts.set(label, (counts.get(label) || 0) + 1);
+  }
+  return [...counts].sort((a, b) => a[0].localeCompare(b[0])).map(([label, count]) => ({ label, count }));
+};
+
+/* The landing's doors and the Vault's filters are different jobs, and
+   giving them one label set cost 389 KB on a file every visitor fetches.
+
+   A door is a front page: a handful of recognisable ways in, each
+   carrying five picks ranked three ways, which is why it is expensive per
+   combination. A filter row is a browse tool, wants every label that
+   earns one, and needs nothing but a count.
+
+   So the doors keep the smaller curated set and their film tables, and
+   the Vault gets its own tiles with counts alone. */
+const doorGenres = topByRank(e => e.genres || [], 23).filter(([l]) => l !== 'fiction film');
+const doorRegions = topByRank(e => e.countries || [], 14);
+
+const vaultGenres = tiled(e => e.genres || [], everyClosing).filter(([l]) => l !== 'fiction film');
+const vaultRegions = tiled(e => e.countries || [], everyClosing);
+const vaultPicks = {};
+{
+  const buckets = new Map(vaultGenres.map(([label]) => [label, []]));
+  for (const e of everyClosing) for (const g of new Set(e.genres || [])) buckets.get(g)?.push(e);
+  const count = (g, r) => {
+    const pool = g ? (buckets.get(g) || []) : everyClosing;
+    return r ? pool.filter(e => (e.countries || []).includes(r)).length : pool.length;
+  };
+  for (const [g] of [['', null], ...vaultGenres]) {
+    for (const [r] of [['', null], ...vaultRegions]) vaultPicks[`${g}||${r}`] = count(g, r);
+  }
+}
+const vaultDoors = {
+  genre: vaultGenres.map(([label, count]) => ({ label, count })),
+  region: vaultRegions.map(([label, count]) => ({ label, count })),
+  picks: vaultPicks,
+};
 
 /* Bucketed once rather than filtered a hundred times: 124k closings
    against 120 combinations is 15 million comparisons the naive way, and
@@ -1040,6 +1115,41 @@ const doors = {
   picks,
 };
 
+/* The same two rows for the unclassified, and its own labels.
+
+   Borrowing the Vault's would have been wrong rather than merely lazy:
+   this is a different population and its shape says so. Documentary is
+   7,856 of the 12,309 that carry any genre at all — 64%, against sixth
+   place in the Vault — and Australian is second among regions, ahead of
+   Canadian and German, where in the Vault it is small. The Vault's row
+   would have offered tiles that are nearly empty here and hidden the ones
+   that actually sort this.
+
+   Crossings are counted rather than derived in the browser, so a tile can
+   say what it would produce rather than what it produces on its own. 22 x
+   14 counts is a few kilobytes; the Vault's equivalent also carries film
+   tables and is the largest thing in this file. */
+const unclassifiedList = [...byUnclassifiedYear.values()].flat();
+const uGenres = tiled(e => e.genres || [], unclassifiedList).filter(([l]) => l !== 'fiction film');
+const uRegions = tiled(e => e.countries || [], unclassifiedList);
+
+const uPicks = {};
+for (const [g] of [['', null], ...uGenres]) {
+  for (const [r] of [['', null], ...uRegions]) {
+    uPicks[`${g}||${r}`] = unclassifiedList.filter(e =>
+      (!g || (e.genres || []).includes(g)) &&
+      (!r || (e.countries || []).includes(r))).length;
+  }
+}
+
+const unclassifiedDoors = {
+  genre: uGenres.map(([label, count]) => ({ label, count })),
+  region: uRegions.map(([label, count]) => ({ label, count })),
+  picks: uPicks,
+  allGenres: allLabels(e => e.genres || [], unclassifiedList),
+  allCountries: allLabels(e => e.countries || [], unclassifiedList),
+};
+
 /* Counts over the whole corpus, not a filtered view, so a filter row does
    not rearrange itself as somebody clicks through it. */
 const countryCounts = {};
@@ -1056,6 +1166,10 @@ await put(join(base, 'summary.json'), JSON.stringify({
     [...byUnclassifiedYear.entries()]
       .reduce((m, [y, list]) => m.set(Math.floor(y / 10) * 10,
         (m.get(Math.floor(y / 10) * 10) || 0) + list.length), new Map())),
+  vaultDoors,
+  unclassifiedDoors,
+  allGenres: allLabels(e => e.genres || [], everyClosing),
+  allCountries: allLabels(e => e.countries || [], everyClosing),
   unclassifiedYears: Object.fromEntries(
     [...byUnclassifiedYear.entries()].map(([y, list]) => [y, list.length])),
   countries,
