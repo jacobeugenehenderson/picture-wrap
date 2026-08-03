@@ -1218,25 +1218,32 @@ function filmRow(f, wrapped) {
   const roles = rolesOn(f);
   return `
     <li class="is-link ${wrapped ? 'gone' : 'living'}" data-go="${esc(path(f.filmLabel, qid))}">
+      ${/* A gutter down the left of the whole filmography, holding a dot
+            on every picture this person was the last of.
+
+            Furthest left, because that is the only column a reader scans
+            rather than reads — beside the date it was a footnote to the
+            date, and this is not a footnote. It is the claim.
+
+            The slot is emitted on every row, filled or empty. Without it
+            the marked rows would indent and the titles would no longer
+            line up, which costs more than the mark is worth.
+
+            A dot, not a miniature of the bar. The bar is a rule across
+            the whole list and means "everything below this is over"; a
+            mark that repeats its shape at the size of a tick reads as a
+            small bar rather than as a different statement. */''}
+      <span class="closed-slot">${wrapped && f.closedIt_
+        ? `<span class="closed-dot" role="img"
+                 aria-label="Last of this picture's makers"
+                 title="Last of this picture's makers"></span>`
+        : ''}</span>
       <span class="who">
         <span class="who-name">${esc(f.filmLabel || qid)}</span>
         ${roles.length ? `<span class="who-role">${esc(roles.join(' &middot; ').replace(/&middot;/g, '·'))}</span>` : ''}
       </span>
-      <span class="when"><span class="when-line">${
-        /* A miniature of the bar, and it means what the bar means: with
-           this death, nobody who made this picture was left. Set before
-           the date because it is the reason for the date.
-
-           Both wrapped in one child, because `.when` is a COLUMN flex
-           container — it stacks a date over a sub-line elsewhere on the
-           site, and a mark added as a second child stacked above the
-           date instead of sitting beside it. */
-        wrapped && f.closedIt_
-          ? `<span class="closed-it" role="img"
-                   aria-label="Last of this picture's makers"
-                   title="Last of this picture's makers"></span>`
-          : ''}${wrapped && f.people_?.wrapped
-        ? esc(longDate(f.people_.wrapped)) : esc(f.year || '')}</span></span>
+      <span class="when">${wrapped && f.people_?.wrapped
+        ? esc(longDate(f.people_.wrapped)) : esc(f.year || '')}</span>
     </li>`;
 }
 

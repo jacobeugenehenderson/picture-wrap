@@ -1149,29 +1149,36 @@ main,
 
 .colophon p { margin: 0; }
 
-/* The mark on a picture this person was the last of.
+/* The gutter down the left of a filmography, and the dot in it marking
+   a picture this person was the last of.
 
-   It is the bar, in miniature and in the same three stops, because it
-   means exactly what the bar means: with this death nobody who made the
-   picture was left. Anything else — a dot, a star, a word — would have
-   been a second vocabulary for the one idea this site already has a
-   shape for.
+   Furthest left, because that is the only column of a list a reader
+   scans rather than reads. Beside the date it was a footnote to the
+   date, and this is not a footnote — it is the claim the whole archive
+   exists to make, about the person whose page you are on.
 
-   Set before the date rather than after it, because it is the reason for
-   the date and not a comment on it. Carried on a label for anyone who
-   cannot see the gold. */
-/* One line inside the column, so a mark and a date sit side by side. */
-.when-line { white-space: nowrap; }
+   A dot rather than a miniature of the gold bar. The bar is a rule
+   across the entire list meaning "everything below this is over"; the
+   same shape shrunk to a tick reads as a small bar rather than as a
+   different statement, and at a glance the two were being confused.
 
-.closed-it {
-  display: inline-block;
-  width: 15px;
-  height: 3px;
-  margin-right: 0.55rem;
-  vertical-align: 0.18em;
-  border-radius: 1px;
-  background: linear-gradient(90deg,
-    var(--gold-dark), var(--gold-light), var(--gold-dark));
+   The slot is present on every row whether or not it is filled, so the
+   titles stay in one column. An indent that appeared only on marked rows
+   would cost more than the mark is worth. */
+.closed-slot {
+  flex: 0 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: -0.3rem;
+}
+
+.closed-dot {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
 }
 
 /* A closing whose date two sources disagree about. Quiet, because the

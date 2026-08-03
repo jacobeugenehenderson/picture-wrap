@@ -1204,11 +1204,21 @@ picture whose wrap date equals this person's death date is one they were
 the last of. Both sides were already computed on that page for other
 reasons; the comparison had simply never been made. It costs no request.
 
-**Why that shape.** It is the bar, in miniature, in the same three stops
-— because it means exactly what the bar means: with this death, nobody
-who made the picture was left. A dot or a star or a word would have been
-a second vocabulary for the one idea this site already has a shape for.
-It sits before the date because it is the reason for the date.
+**Why a dot, and why at the far left.** It was first a miniature of the
+gold bar, set beside the date, on the reasoning that it means what the
+bar means. Both halves of that were wrong in practice. The bar is a rule
+across the whole list saying *everything below this is over*; the same
+shape shrunk to a tick reads as a small bar rather than as a different
+statement, and at a glance the two were confused. And beside the date it
+was a footnote to the date, when it is not a footnote at all — it is the
+claim the archive exists to make, about the person whose page you are
+on.
+
+So: a dot, in the far-left column, which is the only column of a list
+anybody scans rather than reads. The slot is rendered on every row
+whether or not it is filled, because an indent appearing only on marked
+rows would break the title column, and that costs more than the mark is
+worth.
 
 **What it turns a filmography into.** The claim this archive exists to
 make was previously reachable only by opening each picture in turn and
