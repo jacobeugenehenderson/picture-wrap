@@ -5,8 +5,8 @@ project has is finished and its output is on disk and deployed.
 
 ## The one sentence
 
-**It is live, it is smaller, and it now says what it took back.**
-picture-wrap.com serves 120,556 closings. It said 123,956 yesterday, and
+**It is live, it is smaller, and it now has three states instead of two.**
+picture-wrap.com serves 97,395 closings. It said 123,956 yesterday, and
 the difference is not a loss — 147 of those pictures were never closed,
 and 3,253 were the same picture counted twice. The 147 are published as
 retractions rather than quietly dropped.
@@ -15,14 +15,14 @@ retractions rather than quietly dropped.
 
 | | |
 |---|---|
-| **The corpus** | 137 release years, 329,957 pictures — **120,556 closed**, 208,028 running, 1,373 unchecked |
+| **The corpus** | 137 release years, 329,957 pictures — **97,395 closed**, **23,161 unclassified**, 208,028 running, 1,373 unchecked |
 | Retractions | **138**, published as `removed.json` and stated on the picture's own page. The record opens 3 August 2026 |
 | Audit | **137 years, 0 failures**, re-run after every change below |
 | Built | `dist/`, 101.3 MB, version `9bfc997e9964`, gitignored |
 | **Corpus hosted** | Cloudflare Pages, project `picture-wrap-corpus`, at `https://picture-wrap-corpus.pages.dev/` — 803 files |
 | **Site hosted** | GitHub Pages from `main`, at picture-wrap.com. **Two hosts. The site is not on Cloudflare** |
 | Live site | current with `main`, `?v=72` |
-| Verified | 64,955 closings tested against both databases; **55,612 (46%) rest on Wikidata alone** and now say so on the page |
+| Verified | 58,758 closings tested against both databases; **38,637 (46%) rest on Wikidata alone** and now say so on the page |
 | Disputed | 1,034 closings where two sources give different dates, published with the disagreement rather than adjudicated |
 | Evidence | 1.7 GB local; on the Desktop, in iCloud, and on an external drive — **the Desktop copy is behind for the years deduped on 3 August** |
 | Bluesky | 26 posts; 37 entries survive |
@@ -144,7 +144,7 @@ header and both cache policies.
    since most pasted links are the front page.
 
    The per-picture half is a real fork. Hash routing sends no id to a
-   server, and prerendering one file per entry means 120,556 files.
+   server, and prerendering one file per entry means 97,395 files.
    **Moving the site to Cloudflare Pages** — where the corpus already
    lives — would let a Function answer crawlers with real tags, collapse
    two hosts into one, and let CORS relax. Weigh that first; the reasons
@@ -210,7 +210,7 @@ backup does not silently fall behind `pass/`. **Run `rebuild.js` after
   ANDed with corpus membership; loosen that and person pages start
   closing pictures on Wikidata alone again. A backlog entry describes
   the test that would catch this class.
-- **55,612 closings (46%) rest on Wikidata alone**, almost all because
+- **38,637 closings (46%) rest on Wikidata alone**, almost all because
   the picture carries no TMDB id and there is nothing to ask. Marked on
   the page since 3 August. This is a floor, not a bug — but it is the
   archive's weakest half and the licence question turns on it.
@@ -222,7 +222,7 @@ backup does not silently fall behind `pass/`. **Run `rebuild.js` after
 - **27% of named closers have no on-screen/behind flag**, from years
   passed before that field existed.
 - **1,386 pictures are `unchecked`** — TMDB did not answer. Retriable.
-- **19,615 closings carry no fame**, having no sitelinks anywhere. They
+- **7,770 closings carry no fame**, having no sitelinks anywhere. They
   sort last in every list that uses it.
 - **Old corpus versions are not retained.** `dist/` holds only the build
   that made it, and a Pages deploy replaces the site, so the previous
@@ -248,7 +248,7 @@ backup does not silently fall behind `pass/`. **Run `rebuild.js` after
 ## Everything else
 
 `README.md` indexes the documents. `METHOD.md` is the citable account.
-`VERIFICATION.md` is how a wrap is decided, and its canon — 33 rules —
+`VERIFICATION.md` is how a wrap is decided, and its canon — 34 rules —
 is the list to check any change against. `FINDINGS.md` is what the
 archive says rather than how it works. `SOURCES.md` is what is accessed,
 collected and published. `BACKLOG.md` holds the open work.

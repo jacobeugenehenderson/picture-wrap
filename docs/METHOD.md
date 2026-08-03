@@ -12,7 +12,7 @@ judgement is made rather than a fact retrieved is marked as such.
 Measurements are point-in-time and dated.*
 
 **Last revised 3 August 2026, and re-measured against the archive it now
-describes.** Every figure below is taken from the corpus of 120,556
+describes.** Every figure below is taken from the corpus of 97,395
 closings published on 3 August 2026, unless it names its own date.
 
 Until 3 August this document measured the 11,457-entry Vault that the
@@ -296,7 +296,7 @@ asks whether Wikidata knew the whole cast.
 
 **A TMDB identifier for the picture is required.** Without one there is
 nothing to ask, and the procedure reports that it did not run rather than
-returning an empty result. **55,610 closings — 46% — have been tested
+returning an empty result. **38,637 closings — 46% — have been tested
 against Wikidata alone for want of one**, concentrated in early and
 non-English cinema where TMDB's coverage largely stops. They are marked
 as such wherever they appear; see §12.
@@ -491,7 +491,7 @@ approval is the only thing that publishes.
 
 **This describes the announcement path and not the bulk one, and the
 distinction is material — more so now than when it was written.** Of the
-**120,556 closings held, 37 were announced on Bluesky after a person read
+**97,395 closings held, 37 were announced on Bluesky after a person read
 them.** Every other one was decided by the procedure in this document and
 published without individual review. The protection that a human reads
 each item is real for anything posted and describes essentially none of
@@ -539,7 +539,7 @@ alive, it was tested and the test could not run, or it was never asked.
 Only the first is a finding.
 
 As of 3 August 2026 the pass has judged **every release year from 1890 to
-2026 — 137 years, no gaps — and 329,957 pictures**, of which **120,556
+2026 — 137 years, no gaps — and 329,957 pictures**, of which **97,395
 have closed**, 208,028 are still running, and 1,373 could not be checked
 because TMDB did not answer.
 
@@ -619,7 +619,7 @@ kept in period terms. §8 of `FINDINGS.md` states the general form.
 
 ### How much of this rests on one database
 
-**55,610 closings — 46% — were never checked against TMDB**, almost
+**38,637 closings — 46% — were never checked against TMDB**, almost
 always because the picture carries no TMDB identifier and there is
 therefore nothing to ask. These are the archive's weakest claims, they are
 marked *Wikidata alone* on the site, and the reason they are published
@@ -627,7 +627,7 @@ rather than withheld is that the pictures without an identifier are
 overwhelmingly the obscure and the non-English, which is most of what
 closes.
 
-The remaining 64,946 were tested against both databases.
+The remaining 58,758 were tested against both databases.
 
 Of the 96,396 closings that name a closer, the date came from Wikidata for
 69,564, from both databases agreeing for 19,111, and from **TMDB alone for
@@ -684,7 +684,7 @@ was unreliable because it postdated part of the archive. Both facts
 belonged to the 11,457-entry Vault. In the corpus the flag is no longer
 stored at all: it is derived at build time from whether the survivor test
 ran, published on every closing, and drawn on the site. The quantity is
-**55,610 closings, 46%** — see §12.
+**38,637 closings, 46%** — see §12.
 
 **Upstream sourcing is uneven, and is not currently published.** Wikidata
 death dates carry their own references. Across a sample of 40 pictures
@@ -787,10 +787,10 @@ whose death is recorded to the day. A year that fails any of these has
 kept too little.
 
 As of 3 August 2026 the pass has judged **137 release years, 1890 to 2026,
-with no gaps: 329,957 pictures**, of which 120,556 are closed, 208,028
+with no gaps: 329,957 pictures**, of which 97,395 are closed, 208,028
 still running and 1,373 could not be checked. Of the closings, **91,178
-are dated to the day** (75.6%), 488 to a month, 4,197 to a year only, and
-**24,693 carry no recorded death at all** (20.5%) — those are closed by
+are dated to the day** (93.6%), 488 to a month, 4,197 to a year only, and
+**1,532 carry no recorded death at all** (1.6%) — those are closed by
 the arithmetic of §8 rather than by a date, and the record says so rather
 than inventing one.
 
@@ -799,7 +799,7 @@ credited on a picture from those years can be living, so §8 settles them
 permanently.
 
 **What a closing actually rests on.** The median closing rests on **two
-recorded names**, and 49,610 of them — 41% — rest on exactly one. This is
+recorded names**, and 30,265 of them — 31% — rest on exactly one. This is
 the single most important caveat in this document and §3 states it in
 full: a picture whose credit list holds one name closes when that person
 dies, and the sixty people who actually made it were never in any free
@@ -812,7 +812,7 @@ under half of TMDB's list. Coverage is stated per closing so that a reader
 can weigh one without taking the average on trust.
 
 **The closer was in front of the camera** on 30,490 closings and behind it
-on 39,732. On 26,180 neither database said, and those were judged before
+on 39,732. On 26,178 neither database said, and those were judged before
 the field existed rather than being genuinely unknown.
 
 **None of this is published.** It is a working artefact of roughly two

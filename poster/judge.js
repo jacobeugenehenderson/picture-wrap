@@ -17,7 +17,7 @@
 import { qid } from './lib.js';
 import { CREDITS, VALUES, LANGS } from '../shared.js';
 import {
-  survivors, statusOf, fromWikidata, datesAWrap, wrapDate, impossible,
+  survivors, statusOf, fromWikidata, datesAWrap, wrapDate, impossible, evidenced,
 } from '../verify.js';
 
 const ROLE = new Map(CREDITS.map(([prop, label]) => [prop.replace('wdt:', ''), label]));
@@ -159,7 +159,9 @@ export async function judge(work, creditRows, { sparql, tmdb }) {
   if (!tmdbId) {
     const dated = wrapDate(recorded, releaseYear);
     return {
-      verdict: 'closed', reason: 'wikidata-only', tested: false, unverified: true,
+      verdict: evidenced(recorded, releaseYear) ? 'closed' : 'unclassified',
+      reason: evidenced(recorded, releaseYear) ? 'wikidata-only' : 'nobody-dated',
+      tested: false, unverified: true,
       recorded, resolved: [], unknownCount: null, tmdbCredited: null,
       ...dated, ok: true,
     };
@@ -199,9 +201,14 @@ export async function judge(work, creditRows, { sparql, tmdb }) {
     ? { wrapped: null, wrappedYear: null, dateBasis: null, last: null }
     : wrapDate([...recorded, ...resolved], releaseYear);
 
+  /* Nobody living and nobody dead is not a closing. Both databases were
+     asked and neither had a date for anyone credited, which is a fact
+     about the record rather than about the picture. */
+  const shown = evidenced([...recorded, ...resolved], releaseYear);
+
   return {
-    verdict: alive ? 'open' : 'closed',
-    reason: alive ? 'tmdb-survivor' : 'tested',
+    verdict: alive ? 'open' : (shown ? 'closed' : 'unclassified'),
+    reason: alive ? 'tmdb-survivor' : (shown ? 'tested' : 'nobody-dated'),
     tested: true,
     recorded, resolved,
     unknownCount: found.unknown,

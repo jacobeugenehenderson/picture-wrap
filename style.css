@@ -1182,7 +1182,7 @@ main,
 }
 
 /* A closing whose date two sources disagree about. Quiet, because the
-   date is still the archive's best answer and 1,034 of 120,556 closings
+   date is still the archive's best answer and 1,034 of 97,395 closings
    carry this — it is a footnote, not an alarm. Set beside the date it
    qualifies rather than under it, so it cannot be read as a second date. */
 .closing-disputed {
@@ -1219,6 +1219,37 @@ main,
   cursor: help;
   vertical-align: 0.1em;
   white-space: nowrap;
+}
+
+/* The unclassified list. Same bones as a closing row, but the second line
+   states an absence rather than a fact, so it is set quieter than the
+   type line above it — a reader scanning for titles should not be caught
+   by "none dated" on every row. */
+.closing-missing {
+  display: block;
+  font-size: var(--size-tiny);
+  color: var(--ink-quiet);
+  font-style: italic;
+}
+
+.unclassified-list { border-left-color: var(--rule); }
+
+/* A note in the archive's own voice, set as prose rather than as a row.
+   Used at the foot of the Vault and the head of the unclassified. */
+.prose-note {
+  max-width: 34rem;
+  margin: 1.2rem 0 1.6rem;
+  font-size: var(--size-small);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.prose-note a { border-bottom: 1px solid var(--gold); }
+
+.vault-foot {
+  margin-top: 2.4rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--rule);
 }
 
 /* A withdrawn claim, stated above the picture it was made about.

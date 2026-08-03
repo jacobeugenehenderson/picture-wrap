@@ -24,7 +24,7 @@ column that matters — **whether anything checks it**.
 A rule nobody checks is a rule that has already drifted from the code
 once, in this project, three times. The audit reproduces every verdict
 from stored evidence, so rules marked *reproduced* are verified against
-120,556 closings on every run. The rest are asserted, and are listed as
+97,395 closings on every run. The rest are asserted, and are listed as
 asserted rather than quietly implied to be safe.
 
 | # | rule | lives in | checked? |
@@ -74,6 +74,8 @@ asserted rather than quietly implied to be safe.
 | 32 | A living person found under **any** release year vetoes the picture under **all** of them; a second release year cannot outvote a survivor | `build-corpus.js` | integrity check |
 | **Retraction** | | | |
 | 33 | A closing that leaves the corpus is **recorded, not deleted**: what was published, when it entered, when it left, and who was found living | `build-corpus.js` | asserted |
+| **Evidence** | | | |
+| 34 | A closing needs **at least one recorded death**, or a release year old enough that arithmetic settles it; nobody living and nobody dead is **unclassified**, not closed | `verify.js` `evidenced` | reproduced |
 
 ### What the audit actually does
 
@@ -82,7 +84,7 @@ circular rather than decorative:
 
 1. **Reproduction.** Re-decide every verdict and every wrap date from that
    year's own evidence, with the network unplugged. Any rule marked
-   *reproduced* above is exercised 120,556 times per run, because a
+   *reproduced* above is exercised 97,395 times per run, because a
    verdict that cannot be re-derived from the evidence means either the
    rule changed or the evidence is insufficient — and rule 19 is why those
    two are reported separately.

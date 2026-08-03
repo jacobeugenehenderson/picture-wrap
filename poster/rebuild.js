@@ -30,7 +30,7 @@
 import { readFile, writeFile, rename, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { wrapDate, impossible } from '../verify.js';
+import { wrapDate, impossible, evidenced } from '../verify.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -115,10 +115,23 @@ for (const year of years) {
     continue;
   }
 
-  const tally = { day: 0, month: 0, year: 0, none: 0, open: 0, changed: 0 };
+  const tally = { day: 0, month: 0, year: 0, none: 0, open: 0, changed: 0,
+                  unclassified: 0, reclassified: 0 };
   const rebuilt = works.map(work => {
     const record = evidence.get(work.id);
-    if (!record || work.verdict !== 'closed') {
+    /* Both directions, from the same evidence.
+
+       This used to re-derive only from `closed`, which quietly made the
+       reclassification one-way: a picture could leave the Vault for want
+       of a death and could never come back when one arrived. Evidence is
+       symmetric and so is this — a stored verdict of closed or
+       unclassified is re-decided, and either may become the other.
+
+       `unrecorded` is the name this state carried for about an hour on
+       3 August before it was renamed; accepted here so no year has to be
+       migrated by hand. */
+    const rederivable = ['closed', 'unclassified', 'unrecorded'];
+    if (!record || !rederivable.includes(work.verdict)) {
       if (work.verdict === 'open') tally.open++;
       return work;
     }
@@ -135,7 +148,35 @@ for (const year of years) {
     tally[dated.dateBasis]++;
     if ((work.wrapped ?? null) !== (dated.wrapped ?? null)) tally.changed++;
 
-    return { ...work, ...dated, rebuiltAt: new Date().toISOString() };
+    /* Evidence arrived for something previously unclassified: it is a
+       closing again, and says so rather than keeping the older label. */
+    const reopened = work.verdict !== 'closed'
+      ? { verdict: 'closed', reason: work.reason === 'nobody-dated' ? 'wikidata-only' : work.reason }
+      : {};
+    if (work.verdict !== 'closed') tally.reclassified++;
+
+    /* A closing needs a death. Nobody living and nobody dead is not a
+       wrap — it is a picture the record has nothing to say about, and it
+       was reaching the Vault because the rule that unrecorded people never
+       veto had nothing to push back against when EVERYONE was unrecorded.
+
+       Re-derived here rather than re-fetched, which is the whole bargain
+       this file exists to make: the rule arrived on 3 August and the
+       corpus catches up for the cost of reading its own evidence. */
+    if (!evidenced(judged, record.releaseYear)) {
+      tally.unclassified++;
+      if (work.verdict === 'closed') tally.changed++;
+      return {
+        ...work,
+        verdict: 'unclassified',
+        reason: 'nobody-dated',
+        wrapped: null, wrappedMonth: null, wrappedYear: null,
+        dateBasis: null, last: null,
+        rebuiltAt: new Date().toISOString(),
+      };
+    }
+
+    return { ...work, ...reopened, ...dated, rebuiltAt: new Date().toISOString() };
   });
 
   /* The flag goes back into the evidence, not just into the conclusion.
@@ -162,5 +203,6 @@ for (const year of years) {
 
   console.log(`${year}  ${works.length} pictures — day ${tally.day}, month ${tally.month}, ` +
     `year ${tally.year}, unplaceable ${tally.none}, open ${tally.open}` +
+    (tally.unclassified ? `, unclassified ${tally.unclassified}` : '') +
     (tally.changed ? `  (${tally.changed} changed)` : ''));
 }

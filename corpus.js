@@ -202,6 +202,14 @@ export async function openCorpus(root = '/') {
     closed: y => json(manifest.surfaces.closed.replace('{YYYY}', String(y))),
     resolution: manifest.resolution,
 
+    /* Pictures nobody could date: no death on record for anyone credited,
+       and not old enough for arithmetic to settle it. Keyed by RELEASE
+       year, which is the only date they have — every other surface here
+       is keyed by a closing, and these have none. */
+    unclassified: y => (manifest.surfaces.unclassified
+      ? json(manifest.surfaces.unclassified.replace('{YYYY}', String(y)))
+      : Promise.resolve([])),
+
     /* What has been retracted, and when.
 
        Fetched whole and once. It is small by construction — a corpus that

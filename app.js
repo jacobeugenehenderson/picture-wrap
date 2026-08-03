@@ -22,13 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear, impossible } from './verify.js?v=54';
-import { openCorpus } from './corpus.js?v=54';
+import { survivors, beyondLiving, earliestLivingBirthYear, impossible } from './verify.js?v=55';
+import { openCorpus } from './corpus.js?v=55';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js?v=54';
+} from './shared.js?v=55';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -1471,7 +1471,7 @@ async function loadSuppressed() {
 /* The corpus, which replaced the Vault.
 
    Three files used to be fetched from `vault/` — a summary, every closed
-   id as quoted JSON, and a decade at a time. At 120,556 closings the
+   id as quoted JSON, and a decade at a time. At 97,395 closings the
    second is a megabyte of quoted strings on every person page and the
    third is six megabytes for the 2010s. Neither survives the scale.
 
@@ -1546,7 +1546,7 @@ async function loadSummary() {
 
    Breadth is the best thing about this archive and also the problem: a
    column of Italian titles is unreadable noise unless you came for it,
-   and 120,556 closings is every column at once. */
+   and 97,395 closings is every column at once. */
 const vaultFilter = { region: 'all', genre: 'all' };
 
 /* The Vault, addressable. `#/archive/American/comedy film`, either side a
@@ -1603,6 +1603,7 @@ async function viewArchive(segments = []) {
    change exists to stop. */
 function renderArchive(summary) {
   setTitle(`The Vault — ${summary.total.toLocaleString('en')} pictures`);
+  const unclassifiedTotal = summary.unclassified ?? 0;
 
   /* The same ten genres and ten regions the landing's doors offer, drawn
      from the same precomputed table, for two reasons that are really one.
@@ -1673,7 +1674,148 @@ function renderArchive(summary) {
     </section>
     ${filters}
     ${sections}
+    ${/* The other archive. Placed at the foot rather than beside the
+          title because it is not a peer of the Vault — it is what the
+          Vault could not answer for, and a reader should meet it after
+          the thing it qualifies. */''}
+    ${unclassifiedTotal ? `<p class="prose-note vault-foot">
+      <a href="#/unclassified">${unclassifiedTotal.toLocaleString('en')} more pictures</a>
+      have nobody on record with a date, so this archive cannot say whether
+      they have wrapped.</p>` : ''}
   `);
+}
+
+/* --- the unclassified ---------------------------------------------------- */
+
+/* Pictures the archive cannot place.
+
+   Not closed and not running: no death is recorded for anyone credited on
+   them, and they are not old enough for arithmetic to settle it. The
+   Vault used to hold them, on the strength of a rule that says unrecorded
+   people never veto — which is right when a picture has thirty recorded
+   deaths and two blanks, and produces a claim out of nothing when every
+   single person is a blank.
+
+   Browsed by RELEASE year, newest first. Every other surface on this site
+   is ordered by a closing and these have none, so borrowing that axis
+   would have meant inventing a date. The right-hand column is the release
+   year, and there is nothing on the page that could be mistaken for a
+   wrap.
+
+   It is deliberately not ranked, not scored and not sorted by how close
+   anything is to closing. Those would all be the same claim wearing a
+   different hat. */
+async function viewUnclassified(segments = []) {
+  const c = await corpus();
+  const summary = await loadSummary();
+  const total = c?.counts?.unclassified ?? 0;
+
+  setTitle(`Unclassified — ${total.toLocaleString('en')} pictures`);
+
+  if (!total) {
+    show(`<section class="card"><h2>Unclassified</h2></section>
+      <p class="state">Nothing here.</p>`);
+    return;
+  }
+
+  const decades = summary.unclassifiedDecades ?? {};
+  const sections = Object.entries(decades)
+    .sort((a, b) => Number(b[0]) - Number(a[0]))
+    .map(([decade, n]) => `
+      <details class="decade" data-udecade="${esc(decade)}s">
+        <summary>
+          <span class="decade-label">${esc(decade)}s</span>
+          <span class="decade-count">${n.toLocaleString('en')}</span>
+        </summary>
+        <div class="decade-body"><p class="state">Opening&hellip;</p></div>
+      </details>`).join('');
+
+  show(`
+    <section class="card">
+      <h2>Unclassified</h2>
+      <p class="card-quote">&mdash; nobody on them has a date</p>
+    </section>
+    <p class="prose-note">
+      ${total.toLocaleString('en')} pictures where no death is recorded for
+      anyone credited, and which are too recent for age alone to settle.
+      They are neither wrapped nor known to be running. The date is the
+      year of release, which is the only date these have, and the count is
+      how many names are on record &mdash; none of them dated.
+      <a href="#/about">How a picture enters the Vault</a>.
+    </p>
+    ${sections}
+  `);
+  if (segments.includes('open')) document.querySelector('.decade')?.setAttribute('open', '');
+}
+
+/* Years inside an unclassified decade, from counts the summary holds, so
+   opening a drawer costs no request. */
+function fillUnclassifiedDecade(details) {
+  const key = details.dataset.udecade;
+  const body = details.querySelector('.decade-body');
+  if (!body || body.dataset.filled === key) return;
+
+  const decade = Number(key.replace(/s$/, ''));
+  const years = Object.entries(summaryCache?.unclassifiedYears ?? {})
+    .filter(([y]) => Math.floor(Number(y) / 10) * 10 === decade)
+    .sort((a, b) => Number(b[0]) - Number(a[0]));
+
+  if (!years.length) {
+    body.innerHTML = `<p class="state">Nothing from the ${esc(key)} here.</p>`;
+    return;
+  }
+
+  body.dataset.filled = key;
+  body.innerHTML = years.map(([y, n]) => `
+    <details class="yr" data-uyear="${esc(y)}">
+      <summary>
+        <span class="yr-label">${esc(y)}</span>
+        <span class="yr-count">${n.toLocaleString('en')}</span>
+      </summary>
+      <div class="yr-body"><p class="state">Opening&hellip;</p></div>
+    </details>`).join('');
+}
+
+/* One release year of unclassified pictures.
+
+   The row says what is missing rather than what is known, because what is
+   missing IS the content: how many names are on record, and that none of
+   them carries a date. */
+async function fillUnclassifiedYear(details) {
+  const y = details.dataset.uyear;
+  const body = details.querySelector('.yr-body');
+  if (!body) return;
+
+  const c = await corpus();
+  if (!c?.unclassified) {
+    body.innerHTML = `<p class="state">The archive didn&rsquo;t answer.</p>`;
+    return;
+  }
+
+  const films = await c.unclassified(y);
+  if (!films.length) {
+    body.innerHTML = `<p class="state">Nothing from ${esc(y)} here.</p>`;
+    return;
+  }
+
+  body.innerHTML = `<ul class="closing-films unclassified-list">${films.map(f => `
+    <li class="is-link" data-go="${esc(path(f.title, f.id))}">
+      <span class="closing-film">
+        <span class="who-name">${esc(f.title)}</span>
+        ${f.type ? `<span class="closing-kind">${esc(sentence(
+          [(f.countries || [])[0], f.type].filter(Boolean).join(' ')))}</span>` : ''}
+        ${/* Only what varies. The first draft of this row read "one name on
+              record, undated · one source" on every line, which is three
+              facts the page has already stated once at the top and which
+              are true of all 23,161 — a badge repeated that often stops
+              being information and becomes texture. What differs between
+              these pictures is how many names are on record, so that is
+              what the row says and nothing else. */''}
+        <span class="closing-missing">${
+          f.makers === 1 ? '1 name' : `${f.makers} names`}</span>
+      </span>
+      <span class="when-span">${esc(f.year || '')}</span>
+    </li>`).join('')}</ul>`;
 }
 
 /* Fill a drawer the first time it is opened.
@@ -1748,8 +1890,13 @@ async function fillYear(details) {
 document.addEventListener('toggle', e => {
   const details = e.target;
   if (!details.open) return;
-  if (details.matches?.('details.decade')) fillDecade(details);
-  if (details.matches?.('details.yr')) fillYear(details);
+  /* Same elements, different axis. The dataset key decides which archive
+     a drawer belongs to, so one handler serves both without either
+     needing to know the other exists. */
+  if (details.dataset.udecade) fillUnclassifiedDecade(details);
+  else if (details.matches?.('details.decade')) fillDecade(details);
+  if (details.dataset.uyear) fillUnclassifiedYear(details);
+  else if (details.matches?.('details.yr')) fillYear(details);
 }, true);
 
 /* One death can take several pictures over the line at once — Mary
@@ -1931,6 +2078,13 @@ function viewAbout() {
         A picture that meets both leaves the Vault again the moment either
         stops being true, and the withdrawal is recorded.
       </p>
+      <p>
+        A picture that meets neither &mdash; nobody on it recorded as
+        living, nobody recorded as dead &mdash; is neither wrapped nor
+        running. It is <a href="#/unclassified">unclassified</a>, and this
+        archive says so rather than guessing. Absence of a record is not
+        evidence of a death.
+      </p>
 
       <h3>5. Sources</h3>
       <p>
@@ -1970,9 +2124,8 @@ function viewAbout() {
           dozens who actually made it were never in any free database.
           This is the largest limit on this page and the count of names is
           stated on every picture.</li>
-        <li>Three closings in four are dated to the day. Of the rest, most
-          &mdash; 24,693 of 120,556 &mdash; have no recorded death at all
-          and are closed by the age rules above rather than by a date.</li>
+        <li>Nineteen closings in twenty are dated to the day. The
+          remainder carry a month, a year, or no usable date at all.</li>
         <li>Coverage varies by picture and is stated per entry. Where it
           can be measured, the median closing holds a third of the names
           TMDB does, and two in three rest on under half of TMDB&rsquo;s
@@ -1991,7 +2144,7 @@ function viewAbout() {
           3 August 2026 and opens with 138 withdrawals; nothing before that
           date was kept, so this archive cannot tell you what it took back
           in July.</li>
-        <li>Just under half of all closings &mdash; those marked
+        <li>Two closings in five &mdash; those marked
           <em>Wikidata alone</em> in the Vault &mdash; were never checked
           against a second database, almost always because the picture
           carries no TMDB identifier and there is nothing to ask. They are
@@ -2398,7 +2551,7 @@ async function route() {
      works, including #/person/Q807328/barbara-adolph and bare #/film/Q…. */
   const segments = location.hash.split('/').slice(1);
   const id = segments.find(s => /^Q\d+$/.test(s));
-  let kind = segments.find(s => ['film', 'person', 'archive', 'about'].includes(s));
+  let kind = segments.find(s => ['film', 'person', 'archive', 'about', 'unclassified'].includes(s));
   window.scrollTo(0, 0);
 
   try {
@@ -2406,6 +2559,7 @@ async function route() {
     wireColophon(kind === 'about');
 
     if (kind === 'archive') { await viewArchive(segments); return; }
+    if (kind === 'unclassified') { await viewUnclassified(segments); return; }
     if (kind === 'about') { viewAbout(); return; }
     if (!id) { await viewLanding(); return; }
 

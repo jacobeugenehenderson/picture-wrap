@@ -85,7 +85,7 @@ a researcher filter to *entries confirmed against both databases since
 undercounted, because it postdated most of the archive. It is now derived
 from `tested` at build time, published on every closing, carried as bit 4
 of the packed flags byte, and drawn in the Vault as **Wikidata alone**.
-55,610 of 120,556 closings, which is 46% and was never visible before.
+38,637 of 97,395 closings, which is 46% and was never visible before.
 The half of the fix above — `checkedAt` and a `checkedBy` that survives
 into the published record — is still open.
 

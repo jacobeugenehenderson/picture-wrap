@@ -196,7 +196,36 @@ const row = w => ({
   unknown: w.unknownCount ?? undefined,
 });
 
+/* What an unclassified picture shows, and what it deliberately cannot.
+
+   No `wrapped`, no `wrappedYear`, no `dateBasis`, no `last` — not set to
+   null, absent. A picture here has no closing and the shape of its record
+   should make it impossible to draw one by accident, rather than relying
+   on every view to remember. The fields it does carry are the ones that
+   say why we cannot answer: how many names are on record, how many of
+   them nobody could date, and how much of TMDB's credit list we hold.
+
+   The date is the RELEASE date, which these actually have. Every other
+   surface in this corpus is ordered by a closing, and reaching for the
+   same axis here would have meant inventing one. */
+const unclassifiedRow = w => ({
+  id: w.id,
+  title: w.title,
+  year: w.year,
+  type: w.type,
+  countries: w.countries?.length ? w.countries : undefined,
+  genres: w.genres?.length ? w.genres : undefined,
+  fame: w.fame || undefined,
+  makers: w.makerCount,
+  undated: w.unknownCount ?? undefined,
+  coverage: w.coverage ?? undefined,
+  /* Whether both databases were asked before we gave up. */
+  tested: w.tested || undefined,
+});
+
 const byYear = new Map();
+const byUnclassifiedYear = new Map();
+const unclassifiedRows = new Map();
 const byClosingYear = new Map();
 const byDay = new Map();
 const byMonth = new Map();
@@ -206,6 +235,7 @@ let closed = 0, duplicated = 0;
 /* Distinct pictures, by what became of them. */
 const running = new Set();
 const unchecked = new Set();
+const unclassified = new Set();
 
 /* Read once, before anything is filed: every picture some release year
    found a living person on.
@@ -274,10 +304,25 @@ for (const year of years) {
     /* Counted into sets, not incremented, for the same reason the
        closings are filed into one: a picture judged under two release
        years is one picture. Incrementing published a total that did not
-       add up — 120,567 + 229,628 + 1,386 against 329,957 actually
+       add up — 97,395 + 229,628 + 1,386 against 329,957 actually
        judged — and the count of what is still running is the second
        number this project quotes. */
     if (w.verdict === 'open') { running.add(w.id); continue; }
+    /* The third state. Nobody living and nobody dead: the record has
+       nothing to say about anyone credited, which is neither a closing
+       nor a picture we know to be running. Counted apart from
+       `unchecked`, which is a lookup that failed and will be retried —
+       this is the record's silence rather than our own. */
+    if (w.verdict === 'unclassified') {
+      /* Held, not filed. A picture unclassified under one release year may
+         be closed or running under another, and closed beats running beats
+         unclassified — but that is only knowable once every year has been
+         read. Emitting the row here put five pictures into the list that
+         the counts, resolved afterwards, correctly excluded. */
+      if (!unclassifiedRows.has(w.id)) unclassifiedRows.set(w.id, unclassifiedRow(w));
+      unclassified.add(w.id);
+      continue;
+    }
     if (w.verdict !== 'closed') { unchecked.add(w.id); continue; }
 
     /* One picture, one closing, however many times it was released.
@@ -360,6 +405,25 @@ const newestFirst = (a, b) =>
   (b.wrapped || b.wrappedYear || '0000').localeCompare(a.wrapped || a.wrappedYear || '0000')
   || a.title.localeCompare(b.title);
 
+/* Resolved now the years are all read. Closed beats running beats never
+   checked, so nothing is counted under two headings. */
+for (const id of filed) { running.delete(id); unchecked.delete(id); unclassified.delete(id); }
+for (const id of running) { unchecked.delete(id); unclassified.delete(id); }
+for (const id of unclassified) unchecked.delete(id);
+const stillRunning = running.size;
+const neverChecked = unchecked.size;
+const noRecord = unclassified.size;
+
+/* Now that the three states have settled, the unclassified list is built
+   from what actually survived, so the shards and the count cannot
+   disagree. */
+for (const [id, row] of unclassifiedRows) {
+  if (!unclassified.has(id)) continue;
+  const ry = Number(row.year) || 0;
+  if (!byUnclassifiedYear.has(ry)) byUnclassifiedYear.set(ry, []);
+  byUnclassifiedYear.get(ry).push(row);
+}
+
 for (const list of [...byYear.values(), ...byClosingYear.values(),
                     ...byDay.values(), ...byMonth.values()]) list.sort(newestFirst);
 
@@ -392,8 +456,10 @@ for (const list of [...byYear.values(), ...byClosingYear.values(),
      8  the version digest reads the whole published row, so a change to
         any field moves the URLs without FORMAT being touched
      9  the corpus carries `removed.json`, the retraction record
+    10  pictures nobody could date are `unclassified` rather than closed,
+        and are published by release year
 */
-const FORMAT = 9;
+const FORMAT = 10;
 
 /* The whole of each published row, not an id and a date.
 
@@ -419,6 +485,13 @@ digest.update(`format:${FORMAT}\n`);
 for (const year of [...byYear.keys()].sort((a, b) => a - b)) {
   digest.update(String(year));
   for (const e of byYear.get(year)) digest.update(JSON.stringify(e));
+}
+/* The unclassified are published too, so they version with everything
+   else. A reader holding an immutable URL must not keep a stale copy of
+   this list any more than of the Vault. */
+for (const year of [...byUnclassifiedYear.keys()].sort((a, b) => a - b)) {
+  digest.update(`u${year}`);
+  for (const e of byUnclassifiedYear.get(year)) digest.update(JSON.stringify(e));
 }
 const version = digest.digest('hex').slice(0, 12);
 
@@ -475,7 +548,13 @@ const departed = Object.keys(roll).filter(id => !filed.has(id));
 const departures = [];
 for (const id of departed) {
   const rows = (whatBecameOf.get(id) || []);
-  const openRow = rows.find(w => w.verdict === 'open');
+  /* Why it left, in the order that explains it best. A living person is
+     the strongest answer and the only one that makes the old claim WRONG;
+     unclassified means we withdrew it for want of evidence, which is a
+     different and weaker statement; absent means the picture is no longer
+     in the pass at all. */
+  const openRow = rows.find(w => w.verdict === 'open')
+    ?? rows.find(w => w.verdict === 'unclassified');
   const living = openRow?.heldOpenBy?.map(p => ({ name: p.name, wikidataId: p.wikidataId ?? null }))
     ?? livingFromEvidence.get(id)
     ?? [];
@@ -539,8 +618,9 @@ await mkdir(join(base, 'year'), { recursive: true });
 await mkdir(join(base, 'day'), { recursive: true });
 await mkdir(join(base, 'month'), { recursive: true });
 await mkdir(join(base, 'closed'), { recursive: true });
+await mkdir(join(base, 'unclassified'), { recursive: true });
 
-const written = { year: 0, closed: 0, day: 0, month: 0, bytes: 0 };
+const written = { year: 0, closed: 0, day: 0, month: 0, unclassified: 0, bytes: 0 };
 const put = async (path, body) => {
   await writeFile(path, body);
   written.bytes += body.length;
@@ -549,6 +629,18 @@ const put = async (path, body) => {
 for (const [year, list] of byYear) {
   await put(join(base, 'year', `${year}.json`), JSON.stringify(list));
   written.year++;
+}
+
+/* The unclassified, by release year — the only date they have.
+
+   Sorted within a year the way the Vault sorts within a closing year:
+   the most recent first, then by title. The list itself runs newest
+   release first, so it reads with the same grain as the Vault while
+   being about a different thing entirely. */
+for (const [year, list] of byUnclassifiedYear) {
+  list.sort((a, b) => a.title.localeCompare(b.title));
+  await put(join(base, 'unclassified', `${year}.json`), JSON.stringify(list));
+  written.unclassified++;
 }
 
 for (const [md, list] of byDay) {
@@ -578,8 +670,21 @@ await put(join(base, 'ids.bin'), Buffer.from(table.buffer, table.byteOffset, tab
    is small by construction — a corpus that retracts often is a corpus
    nobody should be citing — and a reader checking whether a claim still
    stands should not have to know which shard to ask for. */
+/* Only the ones where the archive said something and it was wrong.
+
+   The 3 August rule change moved 23,161 pictures out of the Vault because
+   a closing now needs a death on record. Those were never grounded rather
+   than mistaken, nobody had cited them, and publishing them as 23,161
+   individual retractions would have made this file 4.8 MB — downloaded by
+   every visitor to render one line on one page.
+
+   They stay in `pass/removed.jsonl`, which is free to keep and is where a
+   researcher would look. What ships is the small set: pictures we claimed
+   had wrapped while somebody credited on them was living. */
 await put(join(base, 'removed.json'), JSON.stringify(
-  [...ledger].sort((a, b) => String(b.left).localeCompare(String(a.left)))));
+  ledger
+    .filter(d => d.verdict === 'open')
+    .sort((a, b) => String(b.left).localeCompare(String(a.left)))));
 
 /* --- the packed table -------------------------------------------------- */
 
@@ -601,13 +706,6 @@ await put(join(base, 'removed.json'), JSON.stringify(
 
    Two 32-bit halves rather than one 64-bit field, so a browser reading
    this never needs BigInt for what is a set of checkboxes. */
-/* Resolved now the years are all read. Closed beats running beats never
-   checked, so nothing is counted under two headings. */
-for (const id of filed) { running.delete(id); unchecked.delete(id); }
-for (const id of running) unchecked.delete(id);
-const stillRunning = running.size;
-const neverChecked = unchecked.size;
-
 const ROW = 25;
 const BASIS = { none: 0, year: 1, month: 2, day: 3 };
 
@@ -780,7 +878,7 @@ const longestWait = bestOfEach(everyClosing
 
    A reader who likes pictures does not arrive wanting "the archive". They
    arrive as somebody who likes Russian horror, or Danish documentaries,
-   or Westerns, and the fastest way to make an archive of 120,556 closings
+   or Westerns, and the fastest way to make an archive of 97,395 closings
    legible is to let them say so in one click.
 
    Ten genres and ten regions, and **they cross**. "Russian horror" and
@@ -935,7 +1033,15 @@ for (const e of everyClosing) {
 const countries = Object.entries(countryCounts).sort((a, b) => b[1] - a[1]);
 
 await put(join(base, 'summary.json'), JSON.stringify({
-  closed, open: stillRunning, unchecked: neverChecked,
+  closed, open: stillRunning, unchecked: neverChecked, unclassified: noRecord,
+  /* Enough for the unclassified view to draw its drawers without fetching
+     a year at a time, exactly as the Vault's decades work. */
+  unclassifiedDecades: Object.fromEntries(
+    [...byUnclassifiedYear.entries()]
+      .reduce((m, [y, list]) => m.set(Math.floor(y / 10) * 10,
+        (m.get(Math.floor(y / 10) * 10) || 0) + list.length), new Map())),
+  unclassifiedYears: Object.fromEntries(
+    [...byUnclassifiedYear.entries()].map(([y, list]) => [y, list.length])),
   countries,
   years: [...byYear.keys()].sort((a, b) => a - b),
   decades,
@@ -985,16 +1091,19 @@ await put(join(OUT, 'manifest.json'), JSON.stringify({
   base: `v/${version}`,
   built: new Date().toISOString(),
   counts: { closed, open: stillRunning, unchecked: neverChecked,
-            pictures: closed + stillRunning + neverChecked,
-            /* Cumulative since the ledger opened on 3 August 2026, not a
-               count of what is missing today. */
-            removed: ledger.length,
+            unclassified: noRecord,
+            pictures: closed + stillRunning + neverChecked + noRecord,
+            /* Published retractions: closings that were wrong. Cumulative
+               since the ledger opened on 3 August 2026, not a count of
+               what is missing today. */
+            removed: ledger.filter(d => d.verdict === 'open').length,
             years: byYear.size, days: byDay.size },
   surfaces: {
     year: 'year/{year}.json',
     day: 'day/{MM-DD}.json',
     month: 'month/{YYYY-MM}.json',
     closed: 'closed/{YYYY}.json',
+    unclassified: 'unclassified/{YYYY}.json',
     ids: 'ids.bin',
     removed: 'removed.json',
     summary: 'summary.json',

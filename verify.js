@@ -80,6 +80,45 @@ export function beyondLiving(born, releaseYear) {
   return year > 0 && thisYear() - year > MAXIMUM_AGE;
 }
 
+/* Is there any evidence at all that this picture has closed?
+
+   A picture closes when nobody on it is living. The rule that unrecorded
+   people never veto is what makes that answerable: a picture with thirty
+   recorded deaths and two blanks is closed, because holding it open for
+   ever on two blanks would be a claim about the blanks that nothing
+   supports.
+
+   Run that rule on a picture where EVERYONE is a blank and it returns the
+   strongest claim on the site out of no evidence whatsoever. Nobody was
+   found living, so nothing vetoed; nobody was found dead, so nothing was
+   shown. 23,161 pictures — 19% of what was published as the Vault — were
+   in exactly that position, median release year 2007. Aanikoobijigan
+   (2026) was among them, with Zack Khalil, born 1991, credited on it.
+
+   This is the same shape as the worst bug this project has had, which the
+   README describes as asking only Wikidata and counting everyone it could
+   not place as dead. It survived because it was in the rule rather than
+   in a copy of the code.
+
+   So: a closing needs a death. One recorded death is enough — it is the
+   difference between a weak claim and an unfounded one. Failing that,
+   arithmetic will do, because nobody credited on a picture from before
+   `earliestLivingBirthYear` can still be alive whatever any database
+   holds.
+
+   A picture that has neither is not closed and is not running. It is
+   UNCLASSIFIED — a third state for pictures, mirroring the third state
+   this project has always given a person and never gave a picture.
+
+   The two words differ on purpose. A person with no dates is
+   *unrecorded*, which is a fact about them. A picture is *unclassified*,
+   which is a fact about us: the picture is recorded perfectly well, and
+   what is missing is our ability to say anything about it. */
+export function evidenced(judged, releaseYear) {
+  if (beyondLiving(null, releaseYear)) return true;
+  return (judged || []).some(p => p.status === 'dead' && !p.impossible);
+}
+
 /* The same line drawn as a year, for the places that have to ask it of
    Wikidata rather than of a person we already hold: born before this and
    there is no living to be beyond. Exported so no query hard-codes a
