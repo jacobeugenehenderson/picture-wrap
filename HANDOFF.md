@@ -16,7 +16,7 @@ counted twice.
 |---|---|
 | **The corpus** | 137 release years, 329,957 pictures — **120,567 closed**, 208,017 running, 1,373 unchecked |
 | Audit | **137 years, 0 failures**, re-run after every change below |
-| Built | `dist/`, 101.3 MB, version `7d5a418d0cc3`, gitignored |
+| Built | `dist/`, 101.3 MB, version `d8b9bfde96ff`, gitignored |
 | **Corpus hosted** | Cloudflare Pages, project `picture-wrap-corpus`, at `https://picture-wrap-corpus.pages.dev/` — 803 files |
 | **Site hosted** | GitHub Pages from `main`, at picture-wrap.com. **Two hosts. The site is not on Cloudflare** |
 | Live site | current with `main`, `?v=72` |
@@ -102,12 +102,13 @@ invisible from either side.
 
 **Bump both `?v=` numbers in `index.html` by hand** whenever `app.js` or
 `style.css` changes, and the `?v=` on the module imports at the top of
-`app.js` alongside. They stand at 73 and 51.
+`app.js` alongside. They stand at 74 and 52.
 
 **If you change what `build-corpus.js` writes, bump `FORMAT`.** It stands
-at 7. The version digest reads the closings and cannot see the shape they
-are written in, so without the bump the immutable URLs do not move and a
-returning reader keeps a year-stale file.
+at 8. Since format 8 the digest reads the whole of every published row,
+so a change to any field moves the URLs on its own; `FORMAT` is now only
+for the shape of the files themselves. Before that it hashed an id and a
+wrap date, and three changes in one day slipped past it.
 
 Pages was chosen over R2 because the corpus is 803 immutable static
 files: it bulk-uploads them, deploys atomically — so there is no

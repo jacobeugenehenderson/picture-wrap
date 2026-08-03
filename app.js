@@ -22,13 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear, impossible } from './verify.js?v=51';
-import { openCorpus } from './corpus.js?v=51';
+import { survivors, beyondLiving, earliestLivingBirthYear, impossible } from './verify.js?v=52';
+import { openCorpus } from './corpus.js?v=52';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js?v=51';
+} from './shared.js?v=52';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -1859,20 +1859,32 @@ function viewAbout() {
       <ul>
         <li>A picture may be shown as closed while somebody who was never
           recorded is living.</li>
-        <li>About one closing in ten has no day-precise date; roughly half of
-          those have no recorded death at all and are closed by the age
-          rules above.</li>
-        <li>Coverage varies by picture and is stated per entry. A third of
-          sampled entries rest on under half of TMDB&rsquo;s credit list.</li>
+        <li><strong>The median closing rests on two recorded names, and
+          41% of them rest on exactly one.</strong> A picture whose credit
+          list holds one name closes when that person dies, while the
+          dozens who actually made it were never in any free database.
+          This is the largest limit on this page and the count of names is
+          stated on every picture.</li>
+        <li>Three closings in four are dated to the day. Of the rest, most
+          &mdash; 24,698 of 120,567 &mdash; have no recorded death at all
+          and are closed by the age rules above rather than by a date.</li>
+        <li>Coverage varies by picture and is stated per entry. Where it
+          can be measured, the median closing holds a third of the names
+          TMDB does, and two in three rest on under half of TMDB&rsquo;s
+          credit list.</li>
         <li>The corpus is what Wikidata holds, which is overwhelmingly
           American and European. Of pictures released between 1930 and 1945,
-          it holds 9,948 American against 410 Japanese, from an industry then
+          it holds 9,520 American against 284 Japanese, from an industry then
           making around five hundred a year.</li>
         <li>Country is recorded as the state that existed at the time, so a
           search under a modern name misses everything before it. Of the same
-          period we hold 928 South Asian pictures &mdash; 895 filed under
-          British Raj and 33 under India. This site said &ldquo;37 Indian
+          period we hold 901 South Asian pictures &mdash; 869 filed under
+          British Raj and 32 under India. This site said &ldquo;37 Indian
           titles&rdquo; for months, having asked the wrong question.</li>
+        <li>A closing that is removed leaves no trace. On 3 August 2026,
+          136 pictures left the Vault because a repair found they had never
+          been checked against a second database and someone was living.
+          Nothing here records that they were ever in it.</li>
         <li>Just under half of all closings &mdash; those marked
           <em>Wikidata alone</em> in the Vault &mdash; were never checked
           against a second database, almost always because the picture

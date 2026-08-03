@@ -333,14 +333,35 @@ for (const list of [...byYear.values(), ...byClosingYear.values(),
      6  a closing can carry `unverified`, and flag bits 4-5 are written
      7  `open` and `unchecked` count pictures rather than rows, and the
         manifest carries `pictures` as their total
+     8  the version digest reads the whole published row, so a change to
+        any field moves the URLs without FORMAT being touched
 */
-const FORMAT = 7;
+const FORMAT = 8;
 
+/* The whole of each published row, not an id and a date.
+
+   This hashed `${id}:${wrapped}` and nothing else, which is a version
+   number that cannot see most of what it versions. Genre, country,
+   coverage, the disputed mark, whether TMDB was ever asked, which person
+   the closer links to — all of it could change while the digest sat
+   still, leaving the immutable URLs where they were and a returning
+   reader on a year-stale file.
+
+   It was not theoretical. Three changes in one day slipped past it:
+   `unverified` arriving on every closing, the counts learning to count
+   pictures, and 19,112 closers gaining the Wikidata id that lets a
+   closing link to a person. Each needed FORMAT bumped by hand, and
+   remembering by hand is the thing FORMAT was invented to stop needing.
+
+   `row()` builds its object from a fixed literal, so the key order is
+   stable and JSON.stringify is a faithful digest of what actually ships.
+   FORMAT now means what its name says — the shape of the files — and
+   content versions itself. */
 const digest = createHash('sha256');
 digest.update(`format:${FORMAT}\n`);
 for (const year of [...byYear.keys()].sort((a, b) => a - b)) {
   digest.update(String(year));
-  for (const e of byYear.get(year)) digest.update(`${e.id}:${e.wrapped ?? e.wrappedYear ?? ''}`);
+  for (const e of byYear.get(year)) digest.update(JSON.stringify(e));
 }
 const version = digest.digest('hex').slice(0, 12);
 

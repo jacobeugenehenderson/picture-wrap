@@ -11,10 +11,17 @@ Every threshold is named, every source is named, and every step at which a
 judgement is made rather than a fact retrieved is marked as such.
 Measurements are point-in-time and dated.*
 
-**Last revised 1 August 2026.** Figures for the published archive are
-measured at 11,457 entries on 29 July 2026. Figures for the full corpus
-pass (§15) are measured on 1 August 2026, with 94 release years judged and
-the pass still running.
+**Last revised 3 August 2026, and re-measured against the archive it now
+describes.** Every figure below is taken from the corpus of 120,567
+closings published on 3 August 2026, unless it names its own date.
+
+Until 3 August this document measured the 11,457-entry Vault that the
+corpus superseded on 2 August. That is worth recording rather than
+quietly correcting: for one day the citable account described an archive
+an order of magnitude smaller than the live one, and a reader checking the
+site against this document would have found neither wrong nor able to be
+reconciled. Where a superseded figure is instructive it is kept and marked
+as superseded; where it is merely stale it is gone.
 
 ---
 
@@ -289,9 +296,15 @@ asks whether Wikidata knew the whole cast.
 
 **A TMDB identifier for the picture is required.** Without one there is
 nothing to ask, and the procedure reports that it did not run rather than
-returning an empty result. **1,077 entries in the current archive have no
-such identifier and have been tested against Wikidata alone**; 599 of them
-are pre-1930 releases, where TMDB's coverage largely stops.
+returning an empty result. **55,612 closings — 46% — have been tested
+against Wikidata alone for want of one**, concentrated in early and
+non-English cinema where TMDB's coverage largely stops. They are marked
+as such wherever they appear; see §12.
+
+An identifier is not a guarantee that the test ran. TMDB answers for some
+pictures with an empty cast and crew, and an empty credit list is not a
+finding of nobody: the procedure reports that it did not run, and the
+verdict is left as it was rather than being strengthened by silence.
 
 Given an identifier, TMDB's full credits are retrieved — cast and crew
 both, and for series the aggregate credits across all seasons rather than
@@ -477,11 +490,12 @@ each picture's Wikidata item linked so the evidence can be opened. That
 approval is the only thing that publishes.
 
 **This describes the announcement path and not the bulk one, and the
-distinction is material.** A queue may also be filed into the archive
-without announcement. Of the 11,457 entries currently held, **37 were
-announced and 11,408 were filed without individual review.** The
-protection that a person reads every item is real for anything published
-and does not describe the archive at large.
+distinction is material — more so now than when it was written.** Of the
+**120,567 closings held, 37 were announced on Bluesky after a person read
+them.** Every other one was decided by the procedure in this document and
+published without individual review. The protection that a human reads
+each item is real for anything posted and describes essentially none of
+the archive.
 
 **Filing does not re-test.** Whatever the finder concluded at the moment
 of discovery is what enters the archive. If the procedure changed in the
@@ -503,6 +517,8 @@ archive but is not counted as verified, because nothing verified it.
 
 Anything that reopens is removed from the archive and cleared from the
 record of pictures already considered, so a later sweep can find it again.
+Removal leaves no trace in the published data, which §13 states as the
+largest gap on this page.
 
 Two limits of this loop should be understood. Re-checking detects
 **Wikidata** drift. There is no equivalent change feed for TMDB, so a
@@ -519,92 +535,145 @@ about which pictures have been asked, and those are separate facts.
 
 **The archive is not "every picture that has wrapped". It is every picture
 the project has got around to asking about.** A picture's absence
-therefore means one of two things, and the record cannot currently tell
-you which: it was tested and someone was found alive, or it was never
-tested. Only the first is a finding.
+therefore means one of three things: it was tested and someone was found
+alive, it was tested and the test could not run, or it was never asked.
+Only the first is a finding.
 
-As of 29 July 2026 the archive holds **11,457 entries**. The backfill has
-been run across **every release year from 1900 to 2026 — 127 years, no
-gaps.** Before this month it had covered only 1930–1945, and any analysis
-resting on a snapshot earlier than 29 July 2026 inherits that much
-narrower shape.
+As of 3 August 2026 the pass has judged **every release year from 1890 to
+2026 — 137 years, no gaps — and 329,957 pictures**, of which **120,567
+have closed**, 208,017 are still running, and 1,373 could not be checked
+because TMDB did not answer.
 
-Release years present in the archive run from **1901 to 2012**, and three
-entries carry no release year at all:
+Each of those is a count of pictures, not of records. A picture with
+release dates in two years was judged under both until 3 August, and was
+counted twice for as long as that was true; 3,253 such duplicates were
+removed that day, which is why a figure of 123,956 appears in documents
+written before it.
 
-| Release decade | Entries |
+### By release decade
+
+| Release decade | Closings |
 |---|---|
-| 1900s | 18 |
-| 1910s | 1,160 |
-| 1920s | 2,189 |
-| 1930s | 2,362 |
-| 1940s | 2,330 |
-| 1950s | 2,549 |
-| 1960s | 700 |
-| 1970s | 115 |
-| 1980s | 25 |
-| 1990s | 4 |
-| 2000s | 1 |
-| 2010s | 1 |
+| 1890s | 589 |
+| 1900s | 3,223 |
+| 1910s | 24,457 |
+| 1920s | 12,936 |
+| 1930s | 14,245 |
+| 1940s | 11,800 |
+| 1950s | 11,408 |
+| 1960s | 9,108 |
+| 1970s | 7,644 |
+| 1980s | 5,333 |
+| 1990s | 3,566 |
+| 2000s | 4,684 |
+| 2010s | 9,081 |
+| 2020s | 2,493 |
 
-The steep decline after the mid-1960s now reflects the world rather than
-the scan: those years have been asked about, and few of their pictures
-have closed. The decline before 1910 is a property of how much of early
-cinema was recorded at all.
+The 1910s are the largest decade and this is a fact about mortality rather
+than about cinema: a picture from 1915 has had a century in which every
+person on it could die, and the credit lists of the period are short.
+The rise again after 2000 is the opposite effect and a caution — those are
+overwhelmingly pictures with one or two recorded names, closed by a single
+death, not the wrapping of major features.
 
-By *closing* date — the date the last credited person died, which is the
-event this archive is actually about — the distribution runs 1940s 10,
-1950s 63, 1960s 344, 1970s 870, 1980s 1,557, 1990s 2,080, 2000s 2,190,
-2010s 2,558, 2020s 1,785. The earliest closing held is *Lattermaskinen*
-(1910), which wrapped on 10 April 1942.
+### By closing date
 
-Fifty-seven countries are represented, but coverage is heavily American
-and European, and this is a property of the sources rather than of cinema.
-For pictures released between 1930 and 1945 the corpus holds 9,948
-American titles, 1,938 British, 1,758 French and 1,653 German, against 410
-Japanese from an industry then producing roughly five hundred pictures a
-year.
+The date the last credited person died, which is the event this archive is
+actually about: 1900s 5, 1910s 280, 1920s 1,770, 1930s 2,852, 1940s 4,628,
+1950s 4,777, 1960s 7,510, 1970s 9,185, 1980s 11,047, 1990s 12,085, 2000s
+14,276, 2010s 15,859, 2020s 11,595.
 
-**The figure this section used to give for India was wrong, and wrong in a
-way worth recording.** It said 37 titles across the sixteen years, which
+The earliest closing held is *William McKinley Inauguration Footage*
+(1897), which wrapped on 14 September 1901. The most recent at the time of
+writing is *The Sundial* (1997), on 30 July 2026.
+
+This distribution rises steadily and that shape is the archive working
+correctly: more pictures have had time to close, and the databases record
+recent deaths better than old ones. **It is not evidence that more
+pictures are closing than used to.** Any reading of the recent end as a
+trend is reading the sources.
+
+### By country
+
+**279 country labels are represented**, and coverage is heavily American
+and European. This is a property of the sources rather than of cinema.
+The largest are American 44,170, German 8,624, French 8,130, British
+7,655, Danish 5,482, Australian 4,309, Indian 4,209 and Italian 3,654.
+
+For pictures released between 1930 and 1945 the corpus holds 21,549
+closings: 9,520 American, 1,845 British, 1,688 French, 1,586 German and
+**284 Japanese**, from an industry then producing roughly five hundred
+pictures a year.
+
+**A figure this section once gave for India was wrong, and the mechanism
+is worth keeping.** It said 37 titles across those sixteen years, which
 was a count of pictures labelled *India* — and Wikidata labels a picture
 with the state that existed when it was released, so almost every South
-Asian picture from that period is filed under *British Raj*. The true
-figure is **928: 895 under British Raj and 33 under India.** British Raj is
-the fifth largest country label of the period, ahead of Italy and the
-Soviet Union.
+Asian picture of the period is filed under *British Raj*. The true figure
+is **901: 869 under British Raj and 32 under India.** British Raj is the
+fifth largest country label of the period, ahead of Italy.
 
 The imbalance the sentence was describing is real and roughly ten to one.
-The number it gave was out by a factor of twenty-five, and the mechanism
+The number it gave was out by a factor of twenty-four, and the mechanism
 was the archive's own: asking a question in present-day terms of a record
 kept in period terms. §8 of `FINDINGS.md` states the general form.
+
+### How much of this rests on one database
+
+**55,612 closings — 46% — were never checked against TMDB**, almost
+always because the picture carries no TMDB identifier and there is
+therefore nothing to ask. These are the archive's weakest claims, they are
+marked *Wikidata alone* on the site, and the reason they are published
+rather than withheld is that the pictures without an identifier are
+overwhelmingly the obscure and the non-English, which is most of what
+closes.
+
+The remaining 64,955 were tested against both databases.
+
+Of the 96,402 closings that name a closer, the date came from Wikidata for
+69,566, from both databases agreeing for 19,112, and from **TMDB alone for
+7,724 — 8.0%**. The middle figure is the work of `provenance.js`, which
+asks Wikidata whether it already holds a death first recorded from TMDB;
+it corroborates and never overwrites.
 
 ## 13. What the record does not currently state
 
 Set down because a reader assessing this dataset needs it, and because
 none of it is visible from the data.
 
-**Published entries do not record when they were verified, or against
-which sources.** An entry confirmed this morning under the current
-procedure is not distinguishable in the data from one filed under an
-earlier and less careful version of it. Records produced by the full
-corpus pass (§15) do carry both, and are intended to replace them.
+**A published closing does not record when it was verified.** It records
+*whether* it was checked against both databases — that is the *Wikidata
+alone* mark, added 3 August — but not the date of the check, so a closing
+confirmed under the current procedure is not distinguishable in the
+published data from one decided under an earlier version of it. The
+underlying records (§15) carry `checkedAt` and the code revision that
+decided them; the published shards do not, and should.
 
-**Most of the archive has not been re-checked since it was filed.** Every
-entry was verified minutes before filing by the procedure described here,
-but a full pass over the whole archive under the current logic has not yet
-been completed at the time of writing.
+**Re-checking is not continuous.** Every closing was verified at the
+moment it was judged, and the whole corpus has been re-decided offline
+from its own evidence since — but a picture only re-contacts the databases
+when something asks it to. A living person added to Wikidata today will
+not reopen a closed picture until the next pass over that year. Film pages
+are computed live and will show it immediately; the Vault will not. That
+disagreement is visible on the site and is the honest state of it.
 
-**Removals leave no trace.** Entries reopened by a re-check are deleted.
-Two passes removed 278 and 65 entries respectively, and neither left a
-record of what was removed, when, or on whose account. A reader who cited
-an entry that later reopened has at present no way to discover that.
+**Removals leave no trace, and this is the largest gap on this page.**
+A picture that reopens is simply absent from the next corpus. On 3 August
+**136 closings were removed** after a repair found the survivor test had
+never actually run on them — among them *Gidget* (1959), which had been
+published as closed while Jo Morrow, who played Mary Lou, was alive and
+credited on TMDB. Nothing in the published data records that those 136
+were ever there, what removed them, or who was found living. A reader who
+cited one has no way to discover it. `FORTIFYING.md` §1 specifies the
+retraction record that would fix this; it is not built.
 
-**1,077 entries have no TMDB identifier** and were therefore tested
-against Wikidata alone. A stored flag intended to mark these appears on
-only 964 entries, because the flag postdates part of the archive;
-filtering on that flag returns a wrong answer, and the absence of an
-identifier is the reliable test.
+**Superseded, 3 August 2026.** This section previously reported that
+1,077 entries had no TMDB identifier and that a stored flag marking them
+was unreliable because it postdated part of the archive. Both facts
+belonged to the 11,457-entry Vault. In the corpus the flag is no longer
+stored at all: it is derived at build time from whether the survivor test
+ran, published on every closing, and drawn on the site. The quantity is
+**55,612 closings, 46%** — see §12.
 
 **Upstream sourcing is uneven, and is not currently published.** Wikidata
 death dates carry their own references. Across a sample of 40 pictures
@@ -706,14 +775,34 @@ at all. And every wrap date must belong to a named person in the evidence
 whose death is recorded to the day. A year that fails any of these has
 kept too little.
 
-As of 1 August 2026 the pass has judged **94 release years, 160,222
-pictures**: 99,151 closed, 60,222 still running, 849 it could not check.
-Of the closings, 87,723 are dated to the day, 5,041 to the year only, and
-6,387 carry no recorded death at all. 40,921 were tested against Wikidata
-alone for want of a TMDB identifier. Release years 1890 to 1913 are
-complete and will not be revisited: nobody credited on a picture from
-those years can be living, so the arithmetic of §8 settles them
+As of 3 August 2026 the pass has judged **137 release years, 1890 to 2026,
+with no gaps: 329,957 pictures**, of which 120,567 are closed, 208,017
+still running and 1,373 could not be checked. Of the closings, **91,184
+are dated to the day** (75.6%), 488 to a month, 4,197 to a year only, and
+**24,698 carry no recorded death at all** (20.5%) — those are closed by
+the arithmetic of §8 rather than by a date, and the record says so rather
+than inventing one.
+
+Release years 1890 to 1913 are complete and will not be revisited: nobody
+credited on a picture from those years can be living, so §8 settles them
 permanently.
+
+**What a closing actually rests on.** The median closing rests on **two
+recorded names**, and 49,612 of them — 41% — rest on exactly one. This is
+the single most important caveat in this document and §3 states it in
+full: a picture whose credit list holds one name closes when that person
+dies, and the sixty people who actually made it were never in any free
+database. Fourteen thousand closings rest on ten names or more.
+
+**Coverage against TMDB is measurable on 59,634 closings**, being those
+where the test ran and TMDB returned a credit list. The median is **0.33**
+— Wikidata holds a third of the names TMDB does — and 66% of them rest on
+under half of TMDB's list. Coverage is stated per closing so that a reader
+can weigh one without taking the average on trust.
+
+**The closer was in front of the camera** on 30,490 closings and behind it
+on 39,732. On 26,180 neither database said, and those were judged before
+the field existed rather than being genuinely unknown.
 
 **None of this is published.** It is a working artefact of roughly two
 gigabytes, a substantial part of it TMDB-derived, and the right to
