@@ -124,10 +124,6 @@ header and both cache policies.
    asset is not in this repository — it is a download from TMDB's
    logos-and-attribution page, left for its owner to make.
 
-1. **Add the TMDB logo** to the colophon. The terms require it and the
-   asset is not in this repository — it is a download from TMDB's
-   logos-and-attribution page, left for its owner to make.
-
 2. **The link previews.** There are *no* `og:` or `twitter:` tags on this
    site at all, so iMessage has no image and shows the barest card it
    has. The cheap half is a site-wide card: an absolute `og:image` at
