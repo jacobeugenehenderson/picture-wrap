@@ -458,8 +458,11 @@ for (const list of [...byYear.values(), ...byClosingYear.values(),
      9  the corpus carries `removed.json`, the retraction record
     10  pictures nobody could date are `unclassified` rather than closed,
         and are published by release year
+    11  closing decades and years carry a `confirmed` count beside their
+        total, so the source filter changes the drawer numbers instead of
+        blanking them
 */
-const FORMAT = 10;
+const FORMAT = 11;
 
 /* The whole of each published row, not an id and a date.
 
@@ -805,12 +808,25 @@ for (const [year, list] of byYear) {
   decades[d] = (decades[d] || 0) + list.length;
 }
 
+/* Counts per closing decade and year, and the same again for closings
+   confirmed against both databases.
+
+   The Vault hides its drawer counts whenever a facet is on, because a
+   region or genre count would need every year file in the archive to be
+   honest — which is the download the drawers exist to avoid. That
+   reasoning does not hold for this one. Sources is a single flag on each
+   closing rather than a crossing, so the count is one more number per
+   decade and per year, and a filter that blanks every number it touches
+   is worse than one that changes them. */
 const closingDecades = {};
 for (const [y, list] of byClosingYear) {
   const d = Math.floor(Number(y) / 10) * 10;
-  closingDecades[d] ??= { total: 0, years: {} };
+  closingDecades[d] ??= { total: 0, years: {}, confirmed: 0, confirmedYears: {} };
+  const confirmed = list.filter(e => !e.unverified).length;
   closingDecades[d].total += list.length;
   closingDecades[d].years[y] = list.length;
+  closingDecades[d].confirmed += confirmed;
+  closingDecades[d].confirmedYears[y] = confirmed;
 }
 
 const recent = [...byDay.values()].flat()

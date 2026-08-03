@@ -1690,12 +1690,17 @@ function renderArchive(summary) {
      facet is on they are not shown at all. A number that says 12,142
      above a drawer holding four French silents is worse than no number —
      it is the wrong answer to the question the reader is asking. */
-  const counted = vaultFilter.region === 'all' && vaultFilter.genre === 'all'
-    && vaultFilter.sources === 'all';
+  /* Region and genre still blank the counts, because an honest one would
+     need every year file in the archive. Sources does not: it is a flag
+     rather than a crossing, so the count is precomputed and the filter
+     changes the number instead of removing it. A filter that blanks every
+     number it touches makes the archive look like it lost count. */
+  const counted = vaultFilter.region === 'all' && vaultFilter.genre === 'all';
+  const confirmedOnly = vaultFilter.sources === 'both';
 
   const sections = Object.entries(summary.closingDecades ?? {})
     .sort((a, b) => Number(b[0]) - Number(a[0]))
-    .map(([decade, d]) => [`${decade}s`, d.total])
+    .map(([decade, d]) => [`${decade}s`, confirmedOnly ? (d.confirmed ?? d.total) : d.total])
     .map(([label, n]) => `
     <details class="decade" data-decade="${esc(label)}">
       <summary>
@@ -1733,6 +1738,75 @@ function renderArchive(summary) {
       whether they have wrapped.` : ''}
       <a href="#/about">How a picture enters the Vault</a>.
     </p>
+  `);
+}
+
+/* --- withdrawn ----------------------------------------------------------- */
+
+/* Everything this archive published and then took back.
+
+   A picture that reopens used to just stop being in the corpus, and
+   nothing anywhere said it had ever been in it. That is the difference
+   between a website and a record: an archive that only shows its current
+   answers is asking to be trusted, while one that shows what it withdrew
+   can be checked.
+
+   Only claims that were WRONG are here — a picture published as wrapped
+   while somebody credited on it was living. Pictures withdrawn because
+   the evidence was never sufficient are a different statement and are not
+   retractions; they live in the pass output rather than on the site. */
+async function viewWithdrawn() {
+  const c = await corpus();
+  const all = c?.removed ? await c.removed() : [];
+
+  setTitle(`Withdrawn — ${all.length} closings`);
+
+  if (!all.length) {
+    show(`<section class="card"><h2>Withdrawn</h2></section>
+      <p class="state">Nothing has been withdrawn, or this corpus was built
+      before the record existed.</p>`);
+    return;
+  }
+
+  const byDay = new Map();
+  for (const r of all) {
+    if (!byDay.has(r.left)) byDay.set(r.left, []);
+    byDay.get(r.left).push(r);
+  }
+
+  show(`
+    <section class="card">
+      <h2>Withdrawn</h2>
+      <p class="card-quote">&mdash; what we said, and took back</p>
+    </section>
+    <p class="prose-note">
+      ${all.length} closings this archive published and later withdrew,
+      because somebody credited on the picture turned out to be living.
+      The record begins on 3 August 2026; nothing withdrawn before that
+      date was kept.
+    </p>
+    ${[...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([day, rows]) => `
+      <section class="withdrawn-day">
+        <h3 class="withdrawn-date">${esc(longDate(day))}</h3>
+        <ul class="closing-films">
+          ${rows.map(r => `
+            <li class="is-link" data-go="${esc(path(r.title, r.id))}">
+              <span class="closing-film">
+                <span class="who-name">${esc(r.title)}</span>
+                <span class="closing-missing">
+                  published as wrapped${r.published?.wrapped
+                    ? ` ${esc(longDate(r.published.wrapped))}` : ''}${
+                    r.published?.closer ? `, by ${esc(r.published.closer)}` : ''}
+                  &mdash; ${r.living?.length
+                    ? `${esc(r.living.map(p => p.name).join(', '))} ${
+                        r.living.length > 1 ? 'were' : 'was'} living`
+                    : 'the claim could not be supported'}
+                </span>
+              </span>
+              <span class="when-span">${esc(r.year || '')}</span>
+            </li>`).join('')}
+        </ul>
+      </section>`).join('')}
   `);
 }
 
@@ -1889,7 +1963,9 @@ function fillDecade(details) {
   if (!body || body.dataset.filled === stamp) return;
 
   const decade = summaryCache?.closingDecades?.[String(Number(key.replace(/s$/, '')))];
-  const years = Object.entries(decade?.years ?? {}).sort((a, b) => b[0].localeCompare(a[0]));
+  const confirmedOnly = vaultFilter.sources === 'both';
+  const counts = (confirmedOnly ? decade?.confirmedYears : decade?.years) ?? decade?.years ?? {};
+  const years = Object.entries(counts).sort((a, b) => b[0].localeCompare(a[0]));
 
   if (!years.length) {
     body.innerHTML = `<p class="state">Nothing from the ${esc(key)} here.</p>`;
@@ -1897,8 +1973,7 @@ function fillDecade(details) {
   }
 
   body.dataset.filled = stamp;
-  const counted = vaultFilter.region === 'all' && vaultFilter.genre === 'all'
-    && vaultFilter.sources === 'all';
+  const counted = vaultFilter.region === 'all' && vaultFilter.genre === 'all';
   body.innerHTML = years.map(([y, n]) => `
     <details class="yr" data-year="${esc(y)}">
       <summary>
@@ -2187,11 +2262,11 @@ function viewAbout() {
           period we hold 901 South Asian pictures &mdash; 869 filed under
           British Raj and 32 under India. This site said &ldquo;37 Indian
           titles&rdquo; for months, having asked the wrong question.</li>
-        <li>A closing that is withdrawn is recorded rather than deleted,
-          and the picture&rsquo;s own page says so. That record begins on
-          3 August 2026 and opens with 138 withdrawals; nothing before that
-          date was kept, so this archive cannot tell you what it took back
-          in July.</li>
+        <li>A closing that is withdrawn is recorded rather than deleted:
+          the picture&rsquo;s own page says so, and they are listed
+          together under <a href="#/withdrawn">Withdrawn</a>. That record
+          begins on 3 August 2026, so this archive cannot tell you what it
+          took back in July.</li>
         <li>Two closings in five were never checked against a second
           database, because TMDB has no record of the picture and there is
           nothing to ask. They are the archive&rsquo;s weakest claims, each
@@ -2218,6 +2293,12 @@ function viewAbout() {
         be made: it is fixed at the source and everyone benefits, and this
         site follows on its next pass.
       </p>
+      <p>
+        When a closing published here turns out to be wrong, it is withdrawn
+        and the withdrawal is kept. The picture&rsquo;s own page states what
+        was claimed and who turned out to be living, and
+        <a href="#/withdrawn">every withdrawal is listed together</a>.
+      </p>
 
       <h3>10. Privacy</h3>
       <p>
@@ -2243,6 +2324,12 @@ function viewAbout() {
         Picture Wrap, &ldquo;The Sawdust Trail&rdquo; (Q18153746), wrapped
         5 October 1974. Consulted 1 August 2026. Derived from Wikidata and
         TMDB.
+      </p>
+      <p>
+        <strong>No licence has been set for this archive yet.</strong>
+        Wikidata is CC0 and TMDB&rsquo;s terms are their own; what this
+        project adds on top of them has no stated terms, and until it does,
+        assume nothing about reuse beyond quotation.
       </p>
     </div>`);
   revealTmdb();
@@ -2598,7 +2685,8 @@ async function route() {
      works, including #/person/Q807328/barbara-adolph and bare #/film/Q…. */
   const segments = location.hash.split('/').slice(1);
   const id = segments.find(s => /^Q\d+$/.test(s));
-  let kind = segments.find(s => ['film', 'person', 'archive', 'about', 'unclassified'].includes(s));
+  let kind = segments.find(s =>
+    ['film', 'person', 'archive', 'about', 'unclassified', 'withdrawn'].includes(s));
   window.scrollTo(0, 0);
 
   try {
@@ -2608,11 +2696,12 @@ async function route() {
        Vault. Now it is the only way to reach the unclassified from the
        Vault — and hiding it on the Vault is hiding the door from the room
        you would look for it in. */
-    showNav(!!id || ['about', 'archive', 'unclassified'].includes(kind));
+    showNav(!!id || ['about', 'archive', 'unclassified', 'withdrawn'].includes(kind));
     wireColophon(kind === 'about');
 
     if (kind === 'archive') { await viewArchive(segments); return; }
     if (kind === 'unclassified') { await viewUnclassified(segments); return; }
+    if (kind === 'withdrawn') { await viewWithdrawn(); return; }
     if (kind === 'about') { viewAbout(); return; }
     if (!id) { await viewLanding(); return; }
 

@@ -1200,6 +1200,21 @@ main,
   vertical-align: 0.1em;
 }
 
+/* Withdrawals, grouped by the day they were withdrawn. The date is a
+   heading rather than a column because it is the event: several closings
+   usually go at once, when a repair finds a whole class of them. */
+.withdrawn-day { margin-bottom: 2rem; }
+
+.withdrawn-date {
+  margin-bottom: 0.5rem;
+  font-family: var(--font-ui);
+  font-size: var(--size-tiny);
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
 /* The source filter, set apart from the region and genre chips: those
    narrow WHAT you are looking at, this narrows how well it is evidenced,
    and running them together in one row would imply they are the same kind
