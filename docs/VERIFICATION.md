@@ -433,8 +433,12 @@ there was nothing to ask TMDB about. In the corpus that is 56,441 of
 archive was the old 11,457-entry Vault.
 
 Nothing on the page used to distinguish them from closings both databases
-agreed on. They now carry a **Wikidata alone** mark in the Vault, and
-section 7 of "Methods and sources" states the proportion. The fact travels
+agreed on. The Vault states the proportion once above the list and offers
+"checked against both databases" as a filter; a picture with no TMDB
+record says so in full on its own page. It was briefly a per-row badge
+reading "Wikidata alone", which at two rows in five was a column rather
+than an exception and was read as meaning the opposite — that Wikidata
+had been signal enough not to look further. The fact travels
 as `unverified` on each closing and as bit 4 of the packed flags byte —
 bits 4 and 5 were named in the manifest from the start and written by
 nothing until 3 August, so any reader of a corpus older than format 6 will

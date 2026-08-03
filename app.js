@@ -768,6 +768,7 @@ function renderRoster() {
     titleCard(filmMeta, wrapDate, lastOne) +
     shareControls(shareText, location.hash) +
     retractionNotice(retraction) +
+    sourcesNote(filmMeta) +
 
     /* The bar is under the title when the picture has wrapped, so nothing
        caps the roster any more. Still running: the crew card sits above,
@@ -911,6 +912,28 @@ function titleCard(meta, wrappedOn, lastOne) {
         ? `<p class="closing-line">${esc(lastOne.pLabel)} was the last of its makers.</p>`
         : ''}
     </section>`;
+}
+
+/* How many databases could be asked about this picture.
+
+   Derived from whether the picture has a TMDB record at all, not read off
+   a stored flag — this page already knows, and a fact computed where it is
+   shown cannot drift from one recorded somewhere else.
+
+   Only shown when the answer is one, and phrased as a limit on the check
+   rather than as a verdict on the picture. The Vault's version of this
+   was two words, "Wikidata alone", and it was read as meaning we were
+   confident enough not to look further. A sentence cannot be read that
+   way. */
+function sourcesNote(meta) {
+  if (meta.tmdbId) return '';
+  return `
+    <p class="sources-note">
+      TMDB has no record of this picture, so its cast list could not be
+      checked against a second source. Wikidata&rsquo;s cast lists are
+      routinely a fraction of the real cast, and anyone it has not
+      recorded is not counted here.
+    </p>`;
 }
 
 /* A correction, stated in the place the mistake was made.
@@ -1547,7 +1570,7 @@ async function loadSummary() {
    Breadth is the best thing about this archive and also the problem: a
    column of Italian titles is unreadable noise unless you came for it,
    and 97,395 closings is every column at once. */
-const vaultFilter = { region: 'all', genre: 'all' };
+const vaultFilter = { region: 'all', genre: 'all', sources: 'all' };
 
 /* The Vault, addressable. `#/archive/American/comedy film`, either side a
    bare `-`, so the landing can hand over what it was showing and a reader
@@ -1642,7 +1665,20 @@ function renderArchive(summary) {
     </div>`;
   };
 
-  const filters = chipRow('region') + chipRow('genre');
+  /* Stated as what was done, not as what was missing. "Checked against
+     both" is the same fact as "Wikidata alone" and reads as a standard met
+     rather than a shortfall confessed — which is the difference between a
+     reader understanding it and a reader thinking well of us for admitting
+     it. No count on the chip: an honest one would need every year file in
+     the archive, which is the download the drawers exist to avoid. */
+  const sourceRow = `<div class="vault-filters vault-sources">
+    <button data-vault="sources" data-label="all"${
+      vaultFilter.sources === 'all' ? ' aria-current="true"' : ''}>All</button>
+    <button data-vault="sources" data-label="both"${
+      vaultFilter.sources === 'both' ? ' aria-current="true"' : ''}>Checked against both databases</button>
+  </div>`;
+
+  const filters = chipRow('region') + chipRow('genre') + sourceRow;
 
   /* Closing decades, newest first — the axis the Vault has always
      browsed. `decades` in the corpus summary is by RELEASE year and is a
@@ -1653,7 +1689,8 @@ function renderArchive(summary) {
      facet is on they are not shown at all. A number that says 12,142
      above a drawer holding four French silents is worse than no number —
      it is the wrong answer to the question the reader is asking. */
-  const counted = vaultFilter.region === 'all' && vaultFilter.genre === 'all';
+  const counted = vaultFilter.region === 'all' && vaultFilter.genre === 'all'
+    && vaultFilter.sources === 'all';
 
   const sections = Object.entries(summary.closingDecades ?? {})
     .sort((a, b) => Number(b[0]) - Number(a[0]))
@@ -1673,6 +1710,14 @@ function renderArchive(summary) {
       <p class="card-quote">&mdash; it&rsquo;s full of stars</p>
     </section>
     ${filters}
+    ${/* The one place this is said, instead of on two rows in five. */''}
+    <p class="prose-note vault-head">
+      Every closing here is a picture where everyone on record has died.
+      Three in five were checked against both Wikidata and TMDB; the rest
+      against Wikidata alone, because TMDB has no record of the picture to
+      check against. Those are the archive&rsquo;s weakest closings and the
+      filter above will hide them.
+    </p>
     ${sections}
     ${/* The other archive. Placed at the foot rather than beside the
           title because it is not a peer of the Vault — it is what the
@@ -1834,7 +1879,7 @@ function fillDecade(details) {
   /* Stamped with the filter as well as the decade, because whether the
      year rows carry counts depends on it — cached on the decade alone,
      an open drawer kept the counts it was drawn with. */
-  const stamp = `${key}|${vaultFilter.region}|${vaultFilter.genre}`;
+  const stamp = `${key}|${vaultFilter.region}|${vaultFilter.genre}|${vaultFilter.sources}`;
   if (!body || body.dataset.filled === stamp) return;
 
   const decade = summaryCache?.closingDecades?.[String(Number(key.replace(/s$/, '')))];
@@ -1846,7 +1891,8 @@ function fillDecade(details) {
   }
 
   body.dataset.filled = stamp;
-  const counted = vaultFilter.region === 'all' && vaultFilter.genre === 'all';
+  const counted = vaultFilter.region === 'all' && vaultFilter.genre === 'all'
+    && vaultFilter.sources === 'all';
   body.innerHTML = years.map(([y, n]) => `
     <details class="yr" data-year="${esc(y)}">
       <summary>
@@ -1873,7 +1919,8 @@ async function fillYear(details) {
   const films = await c.closed(y);
   const shown = films.filter(f =>
     (vaultFilter.region === 'all' || (f.countries || []).includes(vaultFilter.region)) &&
-    (vaultFilter.genre === 'all' || (f.genres || []).includes(vaultFilter.genre)));
+    (vaultFilter.genre === 'all' || (f.genres || []).includes(vaultFilter.genre)) &&
+    (vaultFilter.sources === 'all' || !f.unverified));
 
   if (!shown.length) {
     body.innerHTML = `<p class="state">Nothing from ${esc(y)} here.</p>`;
@@ -1956,24 +2003,19 @@ function archiveRow(group) {
           <li class="is-link" data-go="${esc(path(f.title, f.id))}">
             <span class="closing-film">
               <span class="who-name">${esc(f.title)}</span>
-              ${/* TMDB was never asked about this one, so the closing rests
-                   on Wikidata's own view of itself — which the README calls
-                   this project's worst bug when it was the whole method.
-                   It is 45.6% of the Vault, and until now the page drew
-                   those exactly like a closing confirmed against both
-                   databases.
+              ${/* Whether a second database was asked used to be a
+                   "Wikidata alone" badge here, on two rows in five. At
+                   that frequency it is not an exception, it is a column —
+                   and two words could not carry what it meant. It was read
+                   as "the Wikidata signal was strong enough that we did
+                   not need to check elsewhere", which is the exact
+                   opposite: there was no TMDB record to check against.
 
-                   Marked, not hidden and not filtered. The reason is
-                   almost always that the picture carries no TMDB id, and
-                   refusing those would quietly drop the obscure and
-                   non-English end of cinema, which is most of what closes.
-                   Same instinct as `disputed` above: publish the weaker
-                   claim, and say that it is weaker. */''}
-              ${f.unverified
-                ? `<span class="closing-unverified"
-                         title="No TMDB record was checked for this picture; this closing rests on Wikidata alone"
-                   >Wikidata alone</span>`
-                : ''}
+                   So it is stated once above the list, offered as a filter
+                   so a reader can act on it rather than be reminded of it
+                   forty thousand times, and written out in full on the
+                   picture's own page where there is room for a sentence
+                   that cannot be misread. */''}
               ${[
                 f.type ? `<span class="closing-kind">${esc(sentence(
                   [(f.countries || [])[0], f.type].filter(Boolean).join(' ')))}</span>` : '',
@@ -2144,14 +2186,13 @@ function viewAbout() {
           3 August 2026 and opens with 138 withdrawals; nothing before that
           date was kept, so this archive cannot tell you what it took back
           in July.</li>
-        <li>Two closings in five &mdash; those marked
-          <em>Wikidata alone</em> in the Vault &mdash; were never checked
-          against a second database, almost always because the picture
-          carries no TMDB identifier and there is nothing to ask. They are
-          the archive&rsquo;s weakest claims, and asking only one database
-          was once its worst error. They are marked rather than withheld:
-          the pictures without an identifier are overwhelmingly the obscure
-          and the non-English, which is most of what closes.</li>
+        <li>Two closings in five were never checked against a second
+          database, because TMDB has no record of the picture and there is
+          nothing to ask. They are the archive&rsquo;s weakest claims, each
+          says so on its own page, and the Vault can filter them out. They
+          are kept rather than withheld: the pictures without a TMDB record
+          are overwhelmingly the obscure and the non-English, which is most
+          of what closes.</li>
         <li>A death date may simply be wrong, or entered in error.</li>
       </ul>
 

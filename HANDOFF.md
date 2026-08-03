@@ -104,7 +104,7 @@ invisible from either side.
 
 **Bump both `?v=` numbers in `index.html` by hand** whenever `app.js` or
 `style.css` changes, and the `?v=` on the module imports at the top of
-`app.js` alongside. They stand at 76 and 54.
+`app.js` alongside. They stand at 78 and 55.
 
 **If you change what `build-corpus.js` writes, bump `FORMAT`.** It stands
 at 9. Since format 8 the digest reads the whole of every published row,
@@ -120,22 +120,15 @@ header and both cache policies.
 
 ## What to do next, in order
 
-1. **Decide what the *Wikidata alone* mark should say, and how much room
-   it should take.** It is on 46% of Vault rows, which is too many for a
-   text badge, and on 3 August its own commissioner read it as meaning
-   *the Wikidata signal was strong enough that we did not need to check
-   elsewhere* — the exact opposite of what it means. A mark that is
-   misread by the person who asked for it is not a marginal wording
-   problem. The standing suggestion is to state the route into the Vault
-   positively — how many sources confirmed a closing — rather than badging
-   the ones that fall short. Section 4 of "Methods and sources" now states
-   the two conditions positively; the row mark does not yet match it.
-
-2. **Add the TMDB logo** to the colophon. The terms require it and the
+1. **Add the TMDB logo** to the colophon. The terms require it and the
    asset is not in this repository — it is a download from TMDB's
    logos-and-attribution page, left for its owner to make.
 
-3. **The link previews.** There are *no* `og:` or `twitter:` tags on this
+1. **Add the TMDB logo** to the colophon. The terms require it and the
+   asset is not in this repository — it is a download from TMDB's
+   logos-and-attribution page, left for its owner to make.
+
+2. **The link previews.** There are *no* `og:` or `twitter:` tags on this
    site at all, so iMessage has no image and shows the barest card it
    has. The cheap half is a site-wide card: an absolute `og:image` at
    1200×630 — the wordmark, the bar and the count would draw it — plus
@@ -151,19 +144,19 @@ header and both cache policies.
    to do it are bigger than previews, and after 3 August the two-host
    split has a name and a cost. `BACKLOG.md` has all three options.
 
-4. **Decide the licence.** CC0 with citation requested is the standing
+3. **Decide the licence.** CC0 with citation requested is the standing
    recommendation; `BACKLOG.md` has the clauses verbatim and the
    argument. It turns on how much of the corpus rests on TMDB, which is
    item 1.
 
-5. **Read `pass/provenance-disputes.tsv`.** 337 people. Where Wikidata
+4. **Read `pass/provenance-disputes.tsv`.** 337 people. Where Wikidata
    carries a reference it is a repair; where it does not it is a second
    opinion. Nothing should overwrite a date on a name match alone.
 
-6. **Copy the deduped `pass/` to the Desktop evidence archive.** The
+5. **Copy the deduped `pass/` to the Desktop evidence archive.** The
    3 August dedupe rewrote 131 years and the durable copy did not follow.
 
-7. **Delete `vault/*.json` and `archive.json`.** Nothing on the site
+6. **Delete `vault/*.json` and `archive.json`.** Nothing on the site
    reads them — but `poster/lib.js`, `review.js` and `backfill-tmdbids.js`
    still do, so this is a deletion with a small amount of code behind it.
 

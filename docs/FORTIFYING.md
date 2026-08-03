@@ -84,7 +84,8 @@ a researcher filter to *entries confirmed against both databases since
 **Related — DONE, 3 August.** `unverified` was a stored flag that
 undercounted, because it postdated most of the archive. It is now derived
 from `tested` at build time, published on every closing, carried as bit 4
-of the packed flags byte, and drawn in the Vault as **Wikidata alone**.
+of the packed flags byte, and stated once above the Vault, with a filter for closings checked
+against both.
 38,637 of 97,395 closings, which is 46% and was never visible before.
 The half of the fix above — `checkedAt` and a `checkedBy` that survives
 into the published record — is still open.

@@ -1198,88 +1198,23 @@ main,
   vertical-align: 0.1em;
 }
 
-/* A closing TMDB was never asked about. Deliberately the same treatment
-   as `.closing-disputed` above rather than a louder one — they are the
-   same kind of statement, a qualification on a published claim, and
-   giving the commoner of the two a stronger mark would say the archive
-   trusts it less, which is not what either mark means.
+/* The source filter, set apart from the region and genre chips: those
+   narrow WHAT you are looking at, this narrows how well it is evidenced,
+   and running them together in one row would imply they are the same kind
+   of question. */
+.vault-sources { margin-top: 0.2rem; }
 
-   Inline beside the title, above the kind line, because it qualifies the
-   picture and not the person: one closing can take four pictures and only
-   some of them lack a TMDB id. */
-.closing-unverified {
-  margin-left: 0.5rem;
-  padding: 0.05rem 0.32rem;
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  font-size: 0.58rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-quiet);
-  cursor: help;
-  vertical-align: 0.1em;
-  white-space: nowrap;
-}
+.vault-head { margin-top: 1.4rem; }
 
-/* The unclassified list. Same bones as a closing row, but the second line
-   states an absence rather than a fact, so it is set quieter than the
-   type line above it — a reader scanning for titles should not be caught
-   by "none dated" on every row. */
-.closing-missing {
-  display: block;
-  font-size: var(--size-tiny);
-  color: var(--ink-quiet);
-  font-style: italic;
-}
-
-.unclassified-list { border-left-color: var(--rule); }
-
-/* A note in the archive's own voice, set as prose rather than as a row.
-   Used at the foot of the Vault and the head of the unclassified. */
-.prose-note {
-  max-width: 34rem;
-  margin: 1.2rem 0 1.6rem;
+/* Said once, on the picture, instead of on two Vault rows in five. */
+.sources-note {
+  margin: 1.2rem 0 0.2rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--rule);
   font-size: var(--size-small);
-  line-height: 1.6;
-  color: var(--ink-soft);
-}
-
-.prose-note a { border-bottom: 1px solid var(--gold); }
-
-.vault-foot {
-  margin-top: 2.4rem;
-  padding-top: 1.2rem;
-  border-top: 1px solid var(--rule);
-}
-
-/* A withdrawn claim, stated above the picture it was made about.
-
-   Gold, like the bar, because this is the archive working rather than
-   failing: a claim was tested again and taken back. Red would read as an
-   error state and would make a retraction look like something to be
-   embarrassed about, which is how archives end up not publishing them.
-
-   The left rule rather than a full box: it is an aside on the page, not
-   a warning over it. */
-.retraction {
-  margin: 1.4rem 0 0.4rem;
-  padding: 0.85rem 0 0.85rem 1rem;
-  border-left: 3px solid var(--gold);
-  background: var(--paper-raised);
-}
-
-.retraction p { font-size: var(--size-small); color: var(--ink-soft); }
-
-.retraction-head {
-  margin-bottom: 0.3rem;
-  font-size: var(--size-tiny);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
   color: var(--ink-faint);
+  max-width: 34rem;
 }
-
-.retraction a { border-bottom: 1px solid var(--rule); }
-.retraction a:hover { border-bottom-color: var(--gold); }
 
 /* The TMDB notice, in their wording because the terms specify it. Set
    below everything else on the page: it is a legal obligation rather
