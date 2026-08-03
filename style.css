@@ -196,6 +196,8 @@ main,
 
 .nav { margin-top: 1.1rem; }
 
+.nav a + a { margin-left: 1.4rem; }
+
 .nav a {
   font-size: var(--size-tiny);
   letter-spacing: 0.16em;

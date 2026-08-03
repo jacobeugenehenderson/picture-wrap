@@ -1675,7 +1675,8 @@ function renderArchive(summary) {
     <button data-vault="sources" data-label="all"${
       vaultFilter.sources === 'all' ? ' aria-current="true"' : ''}>All</button>
     <button data-vault="sources" data-label="both"${
-      vaultFilter.sources === 'both' ? ' aria-current="true"' : ''}>Checked against both databases</button>
+      vaultFilter.sources === 'both' ? ' aria-current="true"' : ''}
+      title="Everyone credited was checked against Wikidata and TMDB, not Wikidata alone">Confirmed</button>
   </div>`;
 
   const filters = chipRow('region') + chipRow('genre') + sourceRow;
@@ -1710,23 +1711,28 @@ function renderArchive(summary) {
       <p class="card-quote">&mdash; it&rsquo;s full of stars</p>
     </section>
     ${filters}
-    ${/* The one place this is said, instead of on two rows in five. */''}
-    <p class="prose-note vault-head">
-      Every closing here is a picture where everyone on record has died.
-      Three in five were checked against both Wikidata and TMDB; the rest
-      against Wikidata alone, because TMDB has no record of the picture to
-      check against. Those are the archive&rsquo;s weakest closings and the
-      filter above will hide them.
-    </p>
     ${sections}
     ${/* The other archive. Placed at the foot rather than beside the
           title because it is not a peer of the Vault — it is what the
           Vault could not answer for, and a reader should meet it after
           the thing it qualifies. */''}
-    ${unclassifiedTotal ? `<p class="prose-note vault-foot">
-      <a href="#/unclassified">${unclassifiedTotal.toLocaleString('en')} more pictures</a>
-      have nobody on record with a date, so this archive cannot say whether
-      they have wrapped.</p>` : ''}
+    ${/* Both footnotes, at the foot. A paragraph above the drawers
+          explaining the filter was three lines of preamble in front of the
+          thing a reader came for, and the filter is legible without it:
+          "Confirmed" against "All" says which is the stronger claim. What
+          it means in full belongs where a reader goes looking, which is
+          the picture, and where it is already written out. */''}
+    <p class="prose-note vault-foot">
+      <strong>Confirmed</strong> closings were checked against both Wikidata
+      and TMDB. The rest were checked against Wikidata alone, because TMDB
+      has no record of the picture &mdash; three in five are confirmed, and
+      each picture says which it is.
+      ${unclassifiedTotal ? `<br>A further
+      <a href="#/unclassified">${unclassifiedTotal.toLocaleString('en')} pictures</a>
+      have nobody on record with a date at all, so this archive cannot say
+      whether they have wrapped.` : ''}
+      <a href="#/about">How a picture enters the Vault</a>.
+    </p>
   `);
 }
 
@@ -2596,7 +2602,13 @@ async function route() {
   window.scrollTo(0, 0);
 
   try {
-    showNav(!!id || kind === 'about');
+    /* Shown everywhere except the landing, which has its own way in.
+       It used to appear only on a picture, a person or the About page,
+       because it was one link and its whole job was getting back to the
+       Vault. Now it is the only way to reach the unclassified from the
+       Vault — and hiding it on the Vault is hiding the door from the room
+       you would look for it in. */
+    showNav(!!id || ['about', 'archive', 'unclassified'].includes(kind));
     wireColophon(kind === 'about');
 
     if (kind === 'archive') { await viewArchive(segments); return; }
