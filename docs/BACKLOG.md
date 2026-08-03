@@ -572,7 +572,7 @@ a share of all cinema.
 
 *Closed on the evening of 2 August. What remains of it is the upload.*
 
-The corpus pass produced 355,717 judged pictures and 123,956 closings,
+The corpus pass produced 357,510 judged pictures and 123,956 closings,
 audited, published as static shards by `build-corpus.js` and readable by
 `corpus.js`. All three call sites now go through it, the decade drawers
 open onto years, and the landing page reads its sorts and its doors out

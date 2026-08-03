@@ -245,16 +245,48 @@ evidence with no network. Then `enrich.js --countries`, then
 
 ### Deploying the corpus
 
-`dist/` is never committed. Everything under `v/<version>/` is immutable
-and `manifest.json` is the only mutable object, so **copy the tree first
-and the manifest last** — until the manifest names a version, that version
-is invisible, which makes a half-finished upload harmless.
+`dist/` is never committed. It is deployed to **Cloudflare Pages**, the
+project `picture-wrap-corpus`, and served at
+`https://picture-wrap-corpus.pages.dev/`:
 
-    rclone copy dist/v r2:picture-wrap/v
-    rclone copy dist/manifest.json r2:picture-wrap/
+    node poster/build-corpus.js
+    npx wrangler pages deploy dist --project-name picture-wrap-corpus --branch main
 
-Old versions can be deleted whenever nothing references them. Rollback is
-a one-file write.
+803 files, about eight seconds. The site needs no change: `CORPUS_BASE`
+names the host and everything under it is addressed through
+`manifest.json`, so a new corpus is this command and nothing else.
+
+**Pages rather than R2**, which earlier drafts of this file assumed. The
+corpus is immutable static files: Pages bulk-uploads them, deploys
+atomically, and reads the `_headers` file `build-corpus.js` writes, which
+carries `Access-Control-Allow-Origin: *` and both cache policies — a year
+and `immutable` for `v/*`, five minutes for `manifest.json`. R2 would
+have meant an API token and either `rclone` or 803 sequential object
+puts.
+
+**The "tree first, manifest last" rule still holds and is now free.**
+Everything under `v/<version>/` is immutable and `manifest.json` is the
+only mutable object; on a host that overwrites objects one at a time the
+order is what makes a half-finished upload invisible. A Pages deploy is
+atomic, so there is no partial state for the ordering to protect against
+— the requirement is met by the host rather than by the sequence.
+
+**Verify a deploy** against the live URLs rather than the local files:
+
+    curl -sI https://picture-wrap-corpus.pages.dev/manifest.json
+      → 200, cache-control: public, max-age=300, must-revalidate
+    curl -sI https://picture-wrap-corpus.pages.dev/v/<version>/summary.json
+      → 200, cache-control: public, max-age=31536000, immutable
+      → access-control-allow-origin: *
+
+The honest end-to-end check is to move the local `corpus/` directory
+aside first, so nothing can silently fall back to it.
+
+Old versions can be deleted whenever nothing references them; nothing in
+the client resolves a version it was not told about. Rollback is one
+`manifest.json`. **Expiring old versions is also how the six-month TMDB
+caching clause is met** — see `SOURCES.md` §6 — so it is a policy rather
+than housekeeping.
 
 ---
 

@@ -115,6 +115,21 @@ something*, not whether it is true. Publishing it as a quality score
 without that distinction would be dressing a proxy as a fact, which is the
 error this project spent 28 July undoing.
 
+**This now has a first concrete use, which it did not have on 29 July.**
+`provenance.js` found **337 people whose death date TMDB and Wikidata
+record differently**, across 1,061 published closings — see
+`FINDINGS.md` §7b. Nothing has adjudicated them, deliberately: the match
+is a name and a birth year, which `verify.js` says is not good enough to
+date a wrap.
+
+Whether Wikidata's side carries a reference is exactly what would settle
+them, one at a time and honestly. **Where it does, correcting our date is
+a repair with a citation attached; where it does not, the disagreement is
+two databases guessing and should stay published as a disagreement.**
+That turns the sourcing query from a quality signal into an editorial
+tool, and it is the cheapest route from 337 open questions to however
+many of them are actually answerable.
+
 ---
 
 ## The re-check loop, and why it is not an overnight job

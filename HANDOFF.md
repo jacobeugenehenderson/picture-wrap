@@ -13,14 +13,14 @@ this file named for two days is gone.
 
 | | |
 |---|---|
-| **The corpus** | 137 release years, **355,717 pictures** — 123,956 closed, 232,151 running, 1,403 unchecked |
+| **The corpus** | 137 release years, **357,510 pictures** — 123,956 closed, 232,151 running, 1,403 unchecked |
 | Audit | **137 years, 0 failures**, re-run after every change below |
 | Built | `dist/`, 104 MB, version `76641b1c66b7`, gitignored. `corpus/` is a copy for the local server |
 | **Hosted** | Cloudflare Pages, project `picture-wrap-corpus`, at `https://picture-wrap-corpus.pages.dev/` — 803 files, deployed in 8 seconds |
 | Sources | 19,614 closings re-sourced from TMDB to Wikidata on 2 August; TMDB-only dates fell from ~27% to ~8% |
 | Disputed | **1,061 closings** where two sources give different dates, published with the disagreement rather than adjudicated |
 | Evidence | 1.7 GB local; 130 MB gzipped per year on the Desktop, in iCloud, **and on an external drive as of 2 August** |
-| Live site | current with `main`, **serving the corpus**, `?v=69` |
+| Live site | current with `main`, **serving the corpus**, `?v=71` |
 | Bluesky | 26 posts; 37 entries survive |
 
 ## What happened on 2 August, evening
@@ -55,10 +55,11 @@ counts, and applies the same rules `verify.js` does. Rule 27.
    AI training. **Still open**, but much easier at 8% than at 27%.
 
 **A person's page now marks the pictures they were the last of** — a
-miniature of the gold bar beside the date, free, because the wrap date
-already *is* the last death and the comparison had never been made. Carla
-Laemmle closed eight of her nine; Hitchcock was the last maker of exactly
-two.
+gold dot in a gutter down the left of the filmography, free, because the
+wrap date already *is* the last death and the comparison had never been
+made. Carla Laemmle closed eight of her nine; Hitchcock was the last
+maker of exactly two, both wartime shorts thin enough in the credits that
+the director outlived the record.
 
 **The disagreements are the find nobody was looking for.** 337 people
 across 889 closings where TMDB and Wikidata give different dates. On the

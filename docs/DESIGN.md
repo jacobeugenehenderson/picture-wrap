@@ -224,14 +224,46 @@ dark are both defined; dark follows `prefers-color-scheme`.
 |---|---|
 | `--paper` | warm off-white / near-black |
 | `--ink` `--ink-soft` `--ink-faint` | three levels, used consistently |
+| `--ink-quiet` | a fourth, below `--ink-faint` and above `--rule`, for an index that must be findable without competing with what it indexes |
 | `--gold-dark` `--gold` `--gold-light` | three stops, so the bar has a sheen |
+| `--field-sheen` | bronze, the light the search field's hairline throws up into it |
 
 The gold is a three-stop gradient rather than a flat fill. That was to stop
 it reading as a CSS block; that it lands on Oscar statuette was luck, and
 worth keeping.
 
-Gold appears in exactly four places: the bar, the masthead rule, the crew
-hairline, and focus/hover accents. It is never decoration.
+### Where gold may appear, and what it costs
+
+This used to read "gold appears in exactly four places", which stopped
+being true on 2 August and was the wrong kind of rule anyway — a list
+goes stale, and it does not say what to do about the next case. The rule
+underneath it is about *meaning*, and it is worth stating because it had
+to be re-derived three times in one evening.
+
+**The gold bar is the only element on this site that means something:**
+the line between the makers still living and the rest. Every gold thing
+that is not that bar spends a little of its signal. So:
+
+**In content, gold is reserved.** Inside a list of pictures or people,
+gold says *nobody who made this is left* and nothing else. The closer dot
+on a person page qualifies — it marks a picture that person was the last
+of, which is the same claim about a different subject. It is a **dot**
+rather than a small bar precisely because a shrunk bar reads as a bar and
+the two were confused at a glance.
+
+**In the frame, gold is identity** — masthead rule, the hairline under
+the search field, the sheen it throws into that field, the mark above the
+colophon. These sit above or below everything, before any claim is made,
+and none of them takes the bar's shape at content scale.
+
+**A sharp full-width gold rule under content is refused.** It was
+proposed for the footer and declined: on a person's page it would sit a
+few rows below a real bar, and a reader would be right to ask what it
+divided. The footer carries the masthead's 54px mark instead — a bar
+spans the measure, and that deliberately does not.
+
+The test for anything new: *could a reader mistake this for the bar, and
+if they did, would they be wrong about something?*
 
 ---
 

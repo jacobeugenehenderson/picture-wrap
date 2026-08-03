@@ -7,9 +7,10 @@ the last person who made it is gone.*
 **[@picture-wrap.bsky.social](https://bsky.app/profile/picture-wrap.bsky.social)**
 
 > **Picking this up mid-flight? Read [HANDOFF.md](HANDOFF.md) first.**
-> It records the current state, what is unfinished, and the decision that
-> is currently blocking the Vault re-check. Do not run `recheck.js` or
-> `review.js --archive-only` before reading it.
+> It records the current state and what is unfinished. As of 2 August
+> 2026 the site serves a corpus of **123,956 closings** hosted on
+> Cloudflare Pages; `archive.json` and `vault/` are the superseded
+> 11,457-entry Vault and nothing reads them.
 
 A film's page is a single list of everyone credited on it, divided by a gold
 bar: the living above, the dead below. As people die the bar rises. When it
@@ -17,26 +18,34 @@ reaches the top, the picture has wrapped, and it enters the Vault.
 
 ---
 
-## The two halves
+## The three parts
 
-The project is deliberately two things that barely know about each other.
+The project is deliberately things that barely know about each other.
 
 | | | |
 |---|---|---|
-| **The site** | `index.html` `style.css` `app.js` `shared.js` `verify.js` | Static files. No backend, no build step, nothing shipped that it didn't write. The browser queries Wikidata and TMDB directly. |
-| **The poster** | `poster/` | Node scripts. Finds pictures that have closed, holds them for approval, posts approved ones to Bluesky. |
+| **The site** | `index.html` `style.css` `app.js` `corpus.js` `shared.js` `verify.js` | Static files. No backend, no build step, nothing shipped that it didn't write. The browser queries Wikidata and TMDB directly, and reads the corpus over HTTP. |
+| **The corpus** | built by `poster/build-corpus.js` into `dist/` | 123,956 closings as immutable, versioned, static shards. Hosted on Cloudflare Pages; `CORPUS_BASE` in `app.js` is the only thing that names where. |
+| **The poster** | `poster/` | Node scripts. Judges pictures, records the working, and posts approved closings to Bluesky. |
 
 They share two files, and the difference between them is the design.
-**`shared.js`** is what both halves must agree *about* — properties,
+**`shared.js`** is what all of them must agree *about* — properties,
 languages, pure helpers. **`verify.js`** is what they must agree *on*:
-whether anyone who made a picture is still alive.
+whether anyone who made a picture is still alive. If you find yourself
+writing a second copy of either, that is the mistake this structure
+exists to prevent.
 
-The poster writes **`archive.json`** for itself and **`vault/`** for the
-browser — a summary, an index of ids, and one file per decade. The site
-never fetches the archive; at 4.5 MB it would be a poor thing to hand
-somebody who wanted the front page.
+**Nothing fetches an archive whole.** Every surface is addressed by
+something the client already holds — a Wikidata id, a release year, a day
+of the year — so a page costs one small file rather than a download. The
+one mutable object is `manifest.json`; everything it points at may be
+cached for a year.
 
-Delete the poster and the site still works — it just has no Vault.
+Delete the poster and the site still works: the corpus is already built
+and hosted, and it simply stops gaining closings.
+
+`archive.json` and `vault/` are the old 11,457-entry Vault, superseded on
+2 August 2026 and read by nothing.
 
 ---
 
@@ -65,6 +74,23 @@ things done by hand: `picture-wrap-preview`, `picture-wrap-review`,
 ---
 
 ## The scripts
+
+**The corpus.** These built and maintain the 123,956 closings the site
+serves. None of them posts anything.
+
+| | |
+|---|---|
+| `pass.js` | One release year, judged, with the working written down beside it. |
+| `judge.js` | The judgement itself, shared by the pass and the repairs. |
+| `audit.js` | Re-decides a year from its own files with the network unplugged. The check that makes the rest citable. |
+| `rebuild.js` | Re-derives conclusions from stored evidence, offline, when a rule changes. |
+| `retest.js` | Repairs verdicts that predate a rule change. The one repair that needs the network. |
+| `provenance.js` | Asks Wikidata whether it already holds a death we recorded from TMDB. Corroborates; never overwrites. |
+| `enrich.js` | Genre, country and fame per year. `--countries` builds the label dictionary. |
+| `build-corpus.js` | Pass output → immutable versioned static shards + `manifest.json`. |
+| `../corpus.js` | The browser's client for those files. |
+
+**The poster.** Finds closings and puts them on Bluesky.
 
 | | |
 |---|---|

@@ -807,7 +807,7 @@ asks while there is still somebody to ask.
 
 *2 August 2026.*
 
-**Decision.** The archive is what the corpus pass produced — 355,717
+**Decision.** The archive is what the corpus pass produced — 357,510
 pictures judged across 136 release years, 122,839 of them closed. The
 11,457-entry Vault built by the queue path is superseded rather than
 merged.

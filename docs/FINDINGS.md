@@ -241,6 +241,59 @@ showing rather than hiding.
 
 ---
 
+## 7b. Where a closing date comes from, and where the two sources disagree
+
+*Measured 2 August 2026, by `provenance.js`.*
+
+`METHOD.md` §2 says Wikidata is the source and TMDB the check. That was
+not true of a quarter of this archive, and the reason is mechanical
+rather than editorial: the pass stops asking once TMDB answers *dead*, so
+a death TMDB happened to hold first was never checked against Wikidata,
+even where Wikidata held the same fact.
+
+| | closings |
+|---|---|
+| dated by a death **only TMDB** recorded, before | ~27% |
+| after asking Wikidata under the existing name-and-birth-year rule | **~8%** |
+| newly corroborated — Wikidata records the identical date | **19,614** |
+| Wikidata agrees on the year but records only a year | 318 |
+| the two sources give **different** dates | **1,061** (0.86%) |
+
+**No verdict or wrap date moved.** The rule that made the match — a name
+plus an exact birth year — is documented in `verify.js` as good enough to
+stop claiming somebody is alive and *not* good enough to date a wrap, and
+it was not relaxed for this. All 137 years still audit clean.
+
+### The disagreements are a finding in their own right
+
+337 people, 1,061 closings. Separating precision from contradiction
+matters: **1 January on one side with the years agreeing is one source
+recording only a year**, not two sources disagreeing, and 318 such cases
+were reclassified rather than flagged.
+
+Of the genuine disagreements, **43 people differ on the year, and almost
+all differ by a single digit with the day and month identical**:
+
+| | TMDB | Wikidata | closings dated |
+|---|---|---|---|
+| Zena Keefe | 197**7**-11-17 | 197**6**-11-17 | 40 |
+| Antonio Moreno | 19**8**7-02-15 | 19**6**7-02-15 | 20 |
+| Mary Stuart | 2**0**22-02-28 | 2**0**02-02-28 | 12 |
+| Alice Day | 199**9**-05-25 | 199**5**-05-25 | 11 |
+| Tanis Chandler | 2**0**16-05-07 | 2**0**06-05-07 | 8 |
+
+Antonio Moreno died in 1967 and Mary Stuart in 2002. **This archive
+publishes the other reading**, on 216 closings, and now says so beside
+each one rather than choosing.
+
+**For a graphic:** this is the cleanest available measurement of
+transcription error between two crowd-maintained databases, and the
+shape — same day, same month, one digit adrift in the year — is the
+finding. It is also the reason no chart here should be drawn to
+single-year precision without saying what its dates rest on.
+
+---
+
 ## 8. Country
 
 Period-accurate labels, so series break at every partition. Of 80 labels
