@@ -1198,6 +1198,29 @@ main,
   vertical-align: 0.1em;
 }
 
+/* A closing TMDB was never asked about. Deliberately the same treatment
+   as `.closing-disputed` above rather than a louder one — they are the
+   same kind of statement, a qualification on a published claim, and
+   giving the commoner of the two a stronger mark would say the archive
+   trusts it less, which is not what either mark means.
+
+   Inline beside the title, above the kind line, because it qualifies the
+   picture and not the person: one closing can take four pictures and only
+   some of them lack a TMDB id. */
+.closing-unverified {
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.32rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-quiet);
+  cursor: help;
+  vertical-align: 0.1em;
+  white-space: nowrap;
+}
+
 /* The TMDB notice, in their wording because the terms specify it. Set
    below everything else on the page: it is a legal obligation rather
    than something a reader came for, and it should read as the small

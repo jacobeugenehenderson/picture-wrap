@@ -85,6 +85,13 @@ function factsTable(buffer, dict, format) {
       wrapYear: view.getUint16(o + 6, true) || null,
       basis: dict.basis[flags & 0b11],
       onScreen: (flags & 0b100) ? Boolean(flags & 0b1000) : null,
+      /* Whether TMDB was asked. Both bits are read rather than one
+         inferred from the other, so a row from a corpus built before
+         either was written — where both are zero — comes back
+         `unverified: false, tested: false` and is visibly neither, rather
+         than silently claiming to have been tested. */
+      unverified: Boolean(flags & 0b10000),
+      tested: Boolean(flags & 0b100000),
       makers: view.getUint8(o + 9),
       coverage: coverage === 255 ? null : coverage / 100,
       type: type === 255 ? null : dict.types[type],

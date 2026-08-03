@@ -30,7 +30,7 @@ asserted rather than quietly implied to be safe.
 | 4 | A birth date is creditable if **precise to the day**, or if **both databases give one and agree on the year** | `verify.js` `statusOf` | reproduced |
 | 5 | Where the databases disagree on birth year, the **later** year is used — the reading most likely to keep a person alive | `verify.js` | asserted |
 | **Arithmetic, not judgement** | | | |
-| 6 | Nobody worked on a picture **released before they were born**; such credits vote on nothing and date nothing | `verify.js` `impossible`, `app.js` `readPeople` | reproduced |
+| 6 | Nobody worked on a picture **released before they were born**; such credits vote on nothing and date nothing | `verify.js` `impossible`, `app.js` `readPeople` **and `viewFilm`** | reproduced |
 | 7 | A picture **cannot close before it was released**; an earlier death cannot date it | `verify.js` `wrapDate`, `app.js` `readPeople` | integrity check |
 | 8 | Past 122 a person is dead whether or not a death was recorded — including via the release year, when no birth date exists | `verify.js` `beyondLiving`, `app.js` `readPeople` | reproduced |
 | **Dates** | | | |
@@ -413,9 +413,19 @@ when a picture is actually queued, and the sealed ids have been cleared.
 There is nothing clever to do about the cliff. It goes away by running the
 backfill over more years, and not otherwise.
 
-Separately, 113 entries have no TMDB id. They were tested by Wikidata
-alone, because there was nothing to ask TMDB about, and nothing on the
-page distinguishes them from entries both databases agreed on.
+Separately, entries with no TMDB id were closed by Wikidata alone, because
+there was nothing to ask TMDB about. In the corpus that is 56,441 of
+123,820 closings — 45.6%, not the 113 this paragraph counted when the
+archive was the old 11,457-entry Vault.
+
+Nothing on the page used to distinguish them from closings both databases
+agreed on. They now carry a **Wikidata alone** mark in the Vault, and
+section 6 of "Methods and sources" states the proportion. The fact travels
+as `unverified` on each closing and as bit 4 of the packed flags byte —
+bits 4 and 5 were named in the manifest from the start and written by
+nothing until 3 August, so any reader of a corpus older than format 6 will
+see both bits clear and must read that as "not stated" rather than as
+"tested".
 
 ## What this cannot know
 

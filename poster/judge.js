@@ -92,13 +92,38 @@ export function judgeRecorded(rows, releaseYear) {
   }));
 }
 
+/* A picture arrives here in one of two shapes and this is the only place
+   allowed to know that.
+
+   The pass hands over the row its SPARQL query built — `tmdb` and `tv`,
+   the two Wikidata properties, kept apart because they are different
+   numbering systems. retest.js hands over the record that went to disk,
+   where those two have already collapsed into `tmdbId` beside a `media`
+   saying which one it was.
+
+   Reading only the first pair is the worst bug this file has had. Both
+   fields came back undefined for every picture retest.js passed, every
+   one of them fell through to the no-id branch below, and 965 pictures
+   were closed on Wikidata's word alone with their TMDB id sitting in the
+   argument unread — 809 of them with an id that would have been answered.
+   Gidget (1959) went into the Vault that way while Jo Morrow, who played
+   Mary Lou, was alive and credited on TMDB.
+
+   The tell was in the run: 965 re-tested, 965 closed, none reopened. A
+   real test of that many pictures never comes back unanimous. */
+export function tmdbRef(work) {
+  if (work.tv) return { tmdbId: work.tv, media: 'tv' };
+  if (work.tmdb) return { tmdbId: work.tmdb, media: 'movie' };
+  if (work.tmdbId) return { tmdbId: work.tmdbId, media: work.media === 'tv' ? 'tv' : 'movie' };
+  return { tmdbId: null, media: 'movie' };
+}
+
 export async function judge(work, creditRows, { sparql, tmdb }) {
   const releaseYear = Number(work.year) || 0;
   const recorded = judgeRecorded(creditRows, releaseYear);
 
   const living = recorded.filter(p => p.status === 'alive' && !p.impossible);
-  const tmdbId = work.tv || work.tmdb || null;
-  const media = work.tv ? 'tv' : 'movie';
+  const { tmdbId, media } = tmdbRef(work);
 
   /* Someone Wikidata records as living settles it, and no second opinion
      can overturn a person who is simply here. Skipping the TMDB call in

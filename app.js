@@ -22,13 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear } from './verify.js?v=49';
-import { openCorpus } from './corpus.js?v=49';
+import { survivors, beyondLiving, earliestLivingBirthYear, impossible } from './verify.js?v=50';
+import { openCorpus } from './corpus.js?v=50';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js?v=49';
+} from './shared.js?v=50';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -399,11 +399,47 @@ async function viewFilm(id) {
      inferring a death does not produce a date and the rows below the bar
      are dates. The dash in the third zone is the whole disclosure: gone,
      and nobody wrote down when. */
+  /* Rule 6, which this page did not have. Nobody worked on a picture
+     released before they were born, and a credit that fails that test
+     votes on nothing.
+
+     It matters most exactly where it was missing. Someone dead is simply
+     a wrong row; someone LIVING vetoes the wrap for ever and the page
+     never says why. Gidget (1959) is the case: Wikidata's P58 points at
+     Q5516102, an Australian politician born in 1964, and not at the
+     Gabrielle Upton who wrote it and died in 2022. The Vault had the
+     rule and the film page did not, so the same picture read two ways on
+     one site — which is the disagreement this project keeps having, and
+     it is always about which code read the data rather than the data.
+
+     `impossible` takes a person shaped as verify.js shapes them; the
+     roster's rows are flat. Adapted here rather than loosening the
+     signature, because the poster passes real records and this is the
+     only caller that does not.
+
+     Same destination as the rule below, and for the same reason: they
+     were credited, so the record should show it, and they are outside
+     the reckoning, so they cannot sit above the bar. */
+  const misattributed = everyone.filter(
+    p => impossible({ wd: { born: p.dob } }, meta.year));
+
+  /* Nobody credited here can be alive, whatever the absence of a death
+     date suggests. This is the roster's own version of the rule the
+     survivor test applies to everyone else, and it had no version of it
+     at all: a missing P570 read as a pulse for ever. The Fortieth Door
+     was held open by Bruce Gordon, born 1850.
+
+     They leave the reckoning rather than move below the bar, because
+     inferring a death does not produce a date and the rows below the bar
+     are dates. The dash in the third zone is the whole disclosure: gone,
+     and nobody wrote down when. */
   const beyond = everyone.filter(p => !p.dod && beyondLiving(p.dob, meta.year));
-  if (beyond.length) {
-    const out = new Set(beyond);
+
+  const excluded = [...new Set([...misattributed, ...beyond])];
+  if (excluded.length) {
+    const out = new Set(excluded);
     everyone = everyone.filter(p => !out.has(p));
-    undated = undated.concat(beyond.map(p => ({
+    undated = undated.concat(excluded.map(p => ({
       id: p.tmdbPerson, name: p.pLabel, character: p.credits[0] || '',
       p: p.p, img: p.img,
     })));
@@ -1690,6 +1726,24 @@ function archiveRow(group) {
           <li class="is-link" data-go="${esc(path(f.title, f.id))}">
             <span class="closing-film">
               <span class="who-name">${esc(f.title)}</span>
+              ${/* TMDB was never asked about this one, so the closing rests
+                   on Wikidata's own view of itself — which the README calls
+                   this project's worst bug when it was the whole method.
+                   It is 45.6% of the Vault, and until now the page drew
+                   those exactly like a closing confirmed against both
+                   databases.
+
+                   Marked, not hidden and not filtered. The reason is
+                   almost always that the picture carries no TMDB id, and
+                   refusing those would quietly drop the obscure and
+                   non-English end of cinema, which is most of what closes.
+                   Same instinct as `disputed` above: publish the weaker
+                   claim, and say that it is weaker. */''}
+              ${f.unverified
+                ? `<span class="closing-unverified"
+                         title="No TMDB record was checked for this picture; this closing rests on Wikidata alone"
+                   >Wikidata alone</span>`
+                : ''}
               ${[
                 f.type ? `<span class="closing-kind">${esc(sentence(
                   [(f.countries || [])[0], f.type].filter(Boolean).join(' ')))}</span>` : '',
@@ -1819,6 +1873,14 @@ function viewAbout() {
           period we hold 928 South Asian pictures &mdash; 895 filed under
           British Raj and 33 under India. This site said &ldquo;37 Indian
           titles&rdquo; for months, having asked the wrong question.</li>
+        <li>Just under half of all closings &mdash; those marked
+          <em>Wikidata alone</em> in the Vault &mdash; were never checked
+          against a second database, almost always because the picture
+          carries no TMDB identifier and there is nothing to ask. They are
+          the archive&rsquo;s weakest claims, and asking only one database
+          was once its worst error. They are marked rather than withheld:
+          the pictures without an identifier are overwhelmingly the obscure
+          and the non-English, which is most of what closes.</li>
         <li>A death date may simply be wrong, or entered in error.</li>
       </ul>
 

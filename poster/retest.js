@@ -80,10 +80,12 @@ const tmdbGet = async path => {
 const lines = async path =>
   (await readFile(path, 'utf8')).trim().split('\n').filter(Boolean).map(l => JSON.parse(l));
 
-/* Open, never tested, and every living person it rested on has since been
+/* Two kinds of stale, and they arrive from opposite directions.
+
+   Open, never tested, and every living person it rested on has since been
    excluded. `heldOpenBy` makes this a lookup for anything judged after
    2 August; for older records the same question is asked of the evidence. */
-const isStale = (work, record) => {
+const heldOpenByNobody = (work, record) => {
   if (work.verdict !== 'open' || work.tested) return false;
   const releaseYear = Number(work.year) || 0;
   const alive = (record?.judged ?? []).filter(p => p.status === 'alive');
@@ -91,7 +93,27 @@ const isStale = (work, record) => {
   return alive.every(p => p.impossible ?? impossible(p, releaseYear));
 };
 
-let totalStale = 0, totalReopened = 0, totalClosed = 0, totalFailed = 0;
+/* And closed, never tested, with a TMDB id that was never asked.
+
+   This class exists because of a bug in this file: it handed judge.js the
+   stored record while judge.js read the query's field names, so the id
+   went unseen and every picture came back closed on Wikidata alone. See
+   `tmdbRef` in judge.js. Those verdicts are not wrong-in-principle — they
+   are unasked, and the question is still there to ask.
+
+   `wikidata-only` on a picture that HAS an id is the signature, and it is
+   one judge.js can no longer produce: with the id readable, a picture
+   with an id now goes to TMDB or comes back `unchecked`. So this clause
+   is self-clearing — it selects the wreckage and, once re-run, matches
+   nothing. Entries with no id are genuinely unverifiable and stay out. */
+const closedUnasked = work =>
+  work.verdict === 'closed' && !work.tested &&
+  work.reason === 'wikidata-only' && Boolean(work.tmdbId);
+
+const isStale = (work, record) =>
+  heldOpenByNobody(work, record) || closedUnasked(work);
+
+let totalStale = 0, totalReopened = 0, totalClosed = 0, totalUntested = 0, totalFailed = 0;
 
 for (const year of years) {
   const dir = join(OUT, String(year));
@@ -139,12 +161,18 @@ for (const year of years) {
 
   /* Merged in, never rewritten wholesale: every other picture in the year
      keeps the record it already had, including its checkedAt. */
-  let reopened = 0, closed = 0, failed = 0;
+  /* `untested` counted separately from `closed`, because the two were
+     indistinguishable in the log and that is how 965 unasked closings
+     went by unremarked. A re-test that asked nobody anything should say
+     so in the line it prints. */
+  let reopened = 0, closed = 0, untested = 0, failed = 0;
   const nextWorks = works.map(w => {
     const r = judged.get(w.id);
     if (!r) return w;
     if (!r.ok) { failed++; return w; }
-    if (r.verdict === 'open') reopened++; else closed++;
+    if (r.verdict === 'open') reopened++;
+    else if (r.tested) closed++;
+    else untested++;
 
     return {
       ...w,
@@ -196,14 +224,19 @@ for (const year of years) {
     await rename(target + '.part', target);
   }
 
-  totalReopened += reopened; totalClosed += closed; totalFailed += failed;
+  totalReopened += reopened; totalClosed += closed;
+  totalUntested += untested; totalFailed += failed;
   console.log(`${year}  ${stale.length} re-tested — ${closed} closed, ${reopened} still open` +
+    (untested ? `, ${untested} closed untested` : '') +
     (failed ? `, ${failed} could not be checked` : ''));
 }
 
 console.log(`\n${totalStale} stale verdicts${dryRun ? ' found' : ''}`);
 if (!dryRun) {
-  console.log(`  ${totalClosed} closed on re-testing`);
+  console.log(`  ${totalClosed} closed against TMDB`);
   console.log(`  ${totalReopened} genuinely still open`);
+  if (totalUntested) {
+    console.log(`  ${totalUntested} closed on Wikidata alone — no TMDB id to ask`);
+  }
   if (totalFailed) console.log(`  ${totalFailed} could not be checked — TMDB did not answer`);
 }

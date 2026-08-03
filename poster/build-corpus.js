@@ -175,6 +175,19 @@ const row = w => ({
      same way an undated closing and an unnamed maker are already told.
      See provenance.js. */
   disputed: w.disputed || undefined,
+  /* Whether TMDB was ever asked about this picture, which is the single
+     biggest thing a reader could not previously tell about a closing.
+     45.6% of them rest on Wikidata's own view of itself — usually because
+     the picture carries no TMDB id, and there is nothing to ask.
+
+     Derived from `tested` rather than copied from the stored `unverified`
+     flag. The flag postdates most of the archive and undercounts, which
+     FORTIFYING.md has said since 28 July: it records what we noticed, not
+     what is unverifiable. `tested` records what was done.
+
+     Present only when true, like `disputed`, so the common case costs
+     nothing on the wire. */
+  unverified: w.tested ? undefined : true,
   countries: w.countries?.length ? w.countries : undefined,
   type: w.type,
   genres: w.genres?.length ? w.genres : undefined,
@@ -270,8 +283,9 @@ for (const list of [...byYear.values(), ...byClosingYear.values(),
      3  the doors cross, and carry `picks`
      4  every crossing ranked three ways, over one film table
      5  a closing can carry `disputed`
+     6  a closing can carry `unverified`, and flag bits 4-5 are written
 */
-const FORMAT = 5;
+const FORMAT = 6;
 
 const digest = createHash('sha256');
 digest.update(`format:${FORMAT}\n`);
@@ -390,6 +404,17 @@ everyClosing.forEach((e, i) => {
     flags |= 1 << 2;
     if (e.last.onScreen) flags |= 1 << 3;
   }
+  /* Bits 4 and 5 have been in the manifest's field list since this file
+     was written and were never once set — the layout documented two
+     columns that were always zero, and `corpus.js` did not decode them,
+     so nothing noticed. A described field that is never written is worse
+     than an absent one: it reads as measured and says nothing.
+
+     They are complementary rather than redundant. `unverified` is the
+     claim a reader cares about; `tested` is its positive form, and
+     keeping both means a future third state — asked, and TMDB had no
+     credits — has somewhere to go without moving anybody's bits. */
+  if (e.unverified) flags |= 1 << 4; else flags |= 1 << 5;
   facts.writeUInt8(flags, at + 8);
   facts.writeUInt8(Math.min(255, e.makers ?? 0), at + 9);
   facts.writeUInt8(e.coverage == null ? 255 : Math.min(255, Math.round(e.coverage * 100)), at + 10);
