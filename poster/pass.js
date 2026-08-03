@@ -39,7 +39,7 @@ import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 
 import { sparql, qid, sleep, HERE } from './lib.js';
-import { WORK_CLASSES, IN_LIST, LANGS } from '../shared.js';
+import { WORK_CLASSES, IN_LIST, LANGS, mostSpecificType } from '../shared.js';
 /* The judgement itself lives in judge.js, shared with retest.js. A second
    copy of it is the mistake this project has made three times. */
 import { creditsQuery, judge } from './judge.js';
@@ -157,16 +157,43 @@ for (const path of [worksPath, evidencePath, failuresPath]) await writeFile(path
 
 console.log(`\n${YEAR} — asking what was released…`);
 const rows = await sparql(worksQuery(YEAR));
-const works = rows.slice(0, LIMIT === Infinity ? undefined : LIMIT).map(r => ({
-  id: qid(r.film),
-  title: r.filmLabel || qid(r.film),
-  type: r.typeLabel || null,
-  year: r.year || String(YEAR),
-  years: (r.years || '').split(',').filter(Boolean),
-  tmdb: r.tmdb || null,
-  tv: r.tv || null,
-}));
-console.log(`  ${works.length} pictures with at least one credited maker\n`);
+
+/* One row per picture, whatever Wikidata calls it.
+
+   The query groups by ?typeLabel, so a picture holding two of the classes
+   we ask about comes back twice — 1,166 are both "film" and "short film"
+   — and the pass judged each row as if it were a separate picture. Same
+   credits, so the same verdict, so the same closing filed twice: 1,302
+   doubled entries in the Vault, Casablanca and Attack among them.
+
+   Grouping by the label was the mistake, but SAMPLE would only replace a
+   duplicate with a coin toss. The classes are ranked general-to-specific
+   in shared.js and the most specific one wins, so the row that survives
+   is the one that says the most. Merged here rather than in the query
+   because the reason is a project rule, and it belongs where the rule
+   is written down. */
+const merged = new Map();
+for (const r of rows) {
+  const id = qid(r.film);
+  const seen = merged.get(id);
+  if (seen) { seen.types.push(r.typeLabel || null); continue; }
+  merged.set(id, { ...r, types: [r.typeLabel || null] });
+}
+const duplicated = rows.length - merged.size;
+
+const works = [...merged.values()]
+  .slice(0, LIMIT === Infinity ? undefined : LIMIT)
+  .map(r => ({
+    id: qid(r.film),
+    title: r.filmLabel || qid(r.film),
+    type: mostSpecificType(r.types),
+    year: r.year || String(YEAR),
+    years: (r.years || '').split(',').filter(Boolean),
+    tmdb: r.tmdb || null,
+    tv: r.tv || null,
+  }));
+console.log(`  ${works.length} pictures with at least one credited maker` +
+  (duplicated ? `  (${duplicated} extra rows merged on type)` : '') + '\n');
 
 /* Credits for everything first, in one batched sweep. Cheaper than a
    query per picture by a factor of twenty, and it means the expensive

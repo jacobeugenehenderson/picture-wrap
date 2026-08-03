@@ -116,6 +116,56 @@ export const WORK_CLASSES = [
   'Q117467246',  // animated television series
 ];
 
+/* The same classes as English labels, in the same order, which is
+   general to specific. Both facts matter.
+
+   Wikidata gives one picture several of these at once — 1,166 are both
+   "film" and "short film", 731 are both "film" and "television film" —
+   and the pass's query grouped by the label, so each one became a
+   separate row judged separately. Same verdict every time, because the
+   credits are the same; different type, and one picture in the Vault
+   twice. 1,302 closings were doubled that way.
+
+   Collapsing them needs a rule for which label survives, and the order
+   of this list IS the rule: later wins. "Animated short film" beats
+   "film" because it says more, and nothing has to guess. A string-length
+   heuristic would get the same answer for most of these and would be a
+   coincidence rather than a reason.
+
+   Kept beside WORK_CLASSES and asserted to line up, because the whole
+   value of this list is that its order matches. */
+export const WORK_CLASS_LABELS = [
+  'film',
+  'short film',
+  'silent film',
+  'animated film',
+  'animated short film',
+  'anime film',
+  'serial film',
+  'television film',
+  'television play',
+  'miniseries',
+  'television series',
+  'animated television series',
+];
+
+/* Which of several type labels to keep. Unknown labels are more specific
+   than anything we named — they came from Wikidata and we have no basis
+   to rank them — so they win over a known one, and ties fall to the
+   first seen so the answer never depends on iteration order. */
+export function mostSpecificType(labels) {
+  const rank = label => {
+    const i = WORK_CLASS_LABELS.indexOf(label);
+    return i === -1 ? WORK_CLASS_LABELS.length : i;
+  };
+  let best = null;
+  for (const label of labels) {
+    if (!label) continue;
+    if (best === null || rank(label) > rank(best)) best = label;
+  }
+  return best;
+}
+
 /* Occupations worth searching. Generous on purpose: Wikidata carries a
    dozen overlapping occupation items and tagging is inconsistent between
    them. Catherine Deneuve is "film actor" but NOT "actor", so a filter

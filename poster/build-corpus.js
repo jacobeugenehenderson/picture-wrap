@@ -201,7 +201,12 @@ const byClosingYear = new Map();
 const byDay = new Map();
 const byMonth = new Map();
 const ids = [];
-let closed = 0, open = 0, unchecked = 0;
+let closed = 0, open = 0, unchecked = 0, duplicated = 0;
+
+/* Every picture already filed, so a later release year cannot file it
+   again. Ids, not titles — two different pictures share a title all the
+   time, and one of them is usually a remake of the other. */
+const filed = new Set();
 
 for (const year of years) {
   let works;
@@ -210,6 +215,35 @@ for (const year of years) {
   for (const w of works) {
     if (w.verdict === 'open') { open++; continue; }
     if (w.verdict !== 'closed') { unchecked++; continue; }
+
+    /* One picture, one closing, however many times it was released.
+
+       The pass is a batch job over a release year, and Wikidata gives a
+       picture a release date per territory: Casablanca has four — the New
+       York premiere in 1942, the American general release in 1943, Sweden
+       in 1943, France in 1947. So the same item is judged under each year
+       it touches, reaches the same verdict from the same credits, and is
+       filed as many times as it was released. 1,557 pictures were doubled
+       that way, Attack (1956, and again 1957) among them.
+
+       A comment on `bestOfEach` below has said for weeks that Casablanca
+       is in Wikidata twice as two items and that merging them is a claim
+       about identity belonging upstream. That is not what this is. It is
+       one item, Q132689, and we filed it twice — ours to fix, and no
+       claim about anything.
+
+       The earliest release wins because it is the one the picture is
+       named by: Wikidata's own description of Q132689 is "1942 film". So
+       this is not only a de-duplication, it puts Casablanca in 1942.
+
+       Before the indexes rather than after, so the year lists, the Vault's
+       closing axis, the day and month files, ids.bin, facts.bin and every
+       count are all reading the same set. A dedupe applied to one of them
+       would leave the others disagreeing, which is the failure this whole
+       file is arranged to avoid. */
+    if (filed.has(w.id)) { duplicated++; continue; }
+    filed.add(w.id);
+
     closed++;
 
     const entry = row(w);
@@ -481,13 +515,25 @@ const recent = [...byDay.values()].flat()
    leans European, English-language and old. */
 /* One picture per title.
 
-   Wikidata holds duplicate items for some films — Casablanca is there
-   twice, dated 1942 and 1943, both closed, both with 107 sitelinks — and
-   a list of five that shows the same title twice reads as broken rather
-   than as a faithful report of the source. Deduplication here is
-   cosmetic; the duplicates are still in the corpus, still counted, and
-   still findable, because merging them is a claim about identity that
-   belongs upstream. */
+   This comment used to say that Wikidata holds Casablanca twice, as two
+   items dated 1942 and 1943, and that merging them was a claim about
+   identity belonging upstream. That was wrong, and wrong in the direction
+   that let it stand: it read the symptom as somebody else's problem.
+
+   There is one Casablanca, Q132689, with four release dates. We filed it
+   once per release year, and both copies carried 107 sitelinks because
+   they were the same item. Attack, 1956 and 1957, is the same story.
+   That is fixed where the closings are gathered, by id, so the whole
+   corpus counts each picture once.
+
+   What is left for this function is the genuine case: two DIFFERENT items
+   that happen to share a title — a remake, a re-registration, an actual
+   duplicate item somebody should merge on Wikidata. A door showing five
+   picks reads as broken if two of them say "Attack", whatever the reason.
+   So the title match stays, and it stays cosmetic and local to the picks:
+   the pictures are still in the corpus, still counted and still findable,
+   because deciding that two items are one work IS a claim about identity
+   and does belong upstream. */
 const bestOfEach = list => {
   const seen = new Set();
   return list.filter(e => {
@@ -766,7 +812,8 @@ const kb = n => `${(n / 1024).toFixed(0)} KB`;
 const dayBytes = [...byDay.values()].map(l => JSON.stringify(l).length).sort((a, b) => a - b);
 const yearBytes = [...byYear.values()].map(l => JSON.stringify(l).length).sort((a, b) => a - b);
 
-console.log(`\npublished ${closed} closings, version ${version}\n`);
+console.log(`\npublished ${closed} closings, version ${version}` +
+  (duplicated ? `  (${duplicated} re-releases of a picture already filed)` : '') + '\n');
 console.log(`  ${written.year} year files   median ${kb(yearBytes[yearBytes.length >> 1])}, largest ${kb(yearBytes.at(-1))}`);
 console.log(`  ${written.day} day files    median ${kb(dayBytes[dayBytes.length >> 1])}, largest ${kb(dayBytes.at(-1))}`);
 console.log(`  ${written.closed} closing years — the Vault's own axis`);
