@@ -254,23 +254,61 @@ exactly an entry someone could improve.
 
 ---
 
-## Link previews outside Bluesky
+## Link previews — iMessage, Slack, everywhere but Bluesky
 
-Hash routing means `picture-wrap.com/#/mildred-pierce/Q979726` never sends
-the id to a server, so a shared link gets the generic site metadata.
+*Raised earlier; re-diagnosed 2 August and the shape has changed. Named
+for tomorrow alongside the TMDB logo.*
 
-**Bluesky is solved** — posts carry the portrait and posters directly, so
-no card is needed. Everywhere else (Slack, iMessage, Mastodon, Discord)
-still shows one generic card for every page on the site.
+**There are no `og:` or `twitter:` tags on this site at all.** Not stale
+ones — none. `index.html` carries a `<title>` and a `description` and
+nothing else, so iMessage has no image to show and falls back to the
+barest card it has. That is why the preview looks the way it does, and
+it is also why the first fix is so cheap.
 
-The fix without a server: have the poster prerender a small static HTML
-file per Vault entry with real `og:` tags. GitHub Pages will serve them,
-and the site itself stays a single-page app — those files exist only to
-be scraped.
+**Bluesky is solved** and needs nothing: posts carry the portrait and
+poster directly.
 
-**`publishVault` in `lib.js` is now the hook.** It already writes derived
-files beside the archive on every save, so this is a function call in a
-place that exists rather than a new step anyone has to remember.
+### The part that is easy, and worth doing first
+
+A site-wide card: `og:title`, `og:description`, `og:image`,
+`og:url`, `og:type`, and `twitter:card=summary_large_image`. iMessage
+wants an **absolute** `og:image` URL at **1200×630**; give it
+`og:image:width`, `og:image:height` and `og:image:alt` too.
+
+The repository holds no image bigger than a 6.8 KB apple-touch icon, so
+the card has to be made. The obvious one draws itself: the wordmark, the
+gold bar, and the count — *123,956 pictures* — on the same near-black
+ground the site uses. Most links people paste are the front page anyway,
+so this alone fixes the common case.
+
+### The part that is no longer what the old entry said
+
+Hash routing means `picture-wrap.com/#/mildred-pierce/Q979726` never
+sends the id to a server, so a per-picture card cannot come from static
+metadata. The old plan — prerender one HTML file per entry and hook it to
+`publishVault` — is dead twice over: `publishVault` no longer builds
+anything, and the Vault has gone from 11,457 entries to **123,956**.
+That many files is not something to put in a git repository or serve off
+GitHub Pages.
+
+Three live options:
+
+1. **Move the site to Cloudflare Pages.** The corpus is already there,
+   and a Pages Function can answer crawler requests with real `og:` tags
+   read from the corpus while serving the app to everyone else. It also
+   collapses two hosts into one and gives `picture-wrap.com` and the
+   corpus a common origin, which would let CORS relax. The DNS lives at
+   Namecheap and the apex currently points at GitHub Pages, so this is a
+   DNS change plus a deploy, not a rewrite.
+2. **Prerender the few that get shared** — the posting queue, a few
+   hundred — rather than all 123,956. Cheap, and covers what actually
+   circulates.
+3. **Path routing instead of hash routing**, which would let a static
+   prerender work per URL, but is a change to every link the project has
+   ever published and should not be done for previews alone.
+
+Option 1 is the one to weigh first, because the reason to do it is
+bigger than previews.
 
 ---
 

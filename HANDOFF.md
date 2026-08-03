@@ -84,19 +84,38 @@ header and both cache policies.
 
 ## What to do next, in order
 
+**Named for tomorrow: the TMDB logo, and the link previews.**
+
 1. **Add the TMDB logo** to the colophon. The terms require it and the
-   asset is not in this repository. Two minutes once it is.
-2. **Decide the licence.** CC0 with citation requested is the standing
+   asset is not in this repository — it is a download from TMDB's
+   logos-and-attribution page, left for its owner to make.
+2. **The link previews, which are worse than they look.** There are *no*
+   `og:` or `twitter:` tags on this site at all, so iMessage has no image
+   and shows the barest card it has. The cheap half is a site-wide card:
+   an absolute `og:image` at 1200×630 — the wordmark, the bar and the
+   count would draw it — plus `og:title`, `og:description`, `og:url` and
+   `twitter:card=summary_large_image`. That alone fixes the common case,
+   since most pasted links are the front page.
+
+   The per-picture half is a real fork, and the old plan for it is dead:
+   hash routing sends no id to a server, `publishVault` no longer builds
+   anything, and prerendering one file per entry means 123,956 files
+   rather than the 11,457 that plan assumed. **Moving the site to
+   Cloudflare Pages** — where the corpus already lives — would let a
+   Function answer crawlers with real tags, collapse two hosts into one,
+   and let CORS relax. Weigh that first; the reasons to do it are bigger
+   than previews. `BACKLOG.md` has all three options.
+3. **Decide the licence.** CC0 with citation requested is the standing
    recommendation; `BACKLOG.md` has the clauses verbatim and the
    argument.
-3. **Delete `vault/*.json`.** Nothing reads them.
-4. **Read `pass/provenance-disputes.tsv`.** 337 people. Where Wikidata
+4. **Delete `vault/*.json`.** Nothing reads them.
+5. **Read `pass/provenance-disputes.tsv`.** 337 people. Where Wikidata
    carries a reference it is a repair; where it does not it is a second
    opinion. Nothing should overwrite a date on a name match alone.
-5. **Propagate the new `wikidataId`s into `works.jsonl`** with a
+6. **Propagate the new `wikidataId`s into `works.jsonl`** with a
    `rebuild.js` pass, so 19,614 closings can link their closer to the
    person's page.
-6. **Expire old corpus versions** once nothing references them — the
+7. **Expire old corpus versions** once nothing references them — the
    six-month caching clause below turns on it.
 
 Then the Desk, still the largest thing not built on the posting side.
