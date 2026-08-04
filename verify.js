@@ -120,6 +120,79 @@ export function evidenced(judged, releaseYear) {
     .some(p => p.status === 'dead' && !outsideReckoning(p, releaseYear));
 }
 
+/* THE ROSTER'S OWN VERDICT — the film page's, expressed once so that
+   something can check it.
+
+   Canon rule 27 says the film and person pages ask Wikidata directly and
+   apply the rules themselves, in the browser, in a second implementation
+   no audit reaches. That second implementation has to exist: a filmography
+   spans release years the pass may never have run, and the corpus is a
+   snapshot while Wikidata is live, so the page cannot read a verdict off
+   the corpus. It is a constraint, not a shortcut.
+
+   What was never true is that it had to be UNINSPECTABLE. The page worked
+   on flat SPARQL rows — `{dob, dod, credits}` — and did its classifying
+   inline, so nothing outside a browser could run it and nothing ever did.
+   It drifted three times: rule 6 missing on Gidget, the third state
+   missing on Women of the World, and Philip Glass held open by counting
+   instead of classifying.
+
+   So the shape stays and the code moves here. `poster/check-pages.js`
+   feeds it the corpus's own stored people and asks whether it reaches the
+   corpus's verdict — same input, so any disagreement is drift rather than
+   Wikidata having moved underneath.
+
+   A ROW IS NOT A JUDGED PERSON, and the difference is the point. The pass
+   has two databases, a precision and a status; the page has a birth date,
+   a death date and a character string. This says what the page can
+   conclude from what the page has. */
+export function classifyRoster(rows, releaseYear) {
+  const outside = [];
+  const inPlay = [];
+
+  for (const r of rows || []) {
+    /* Born after the picture came out — rule 6. */
+    const misattributed = impossible({ wd: { born: r.dob } }, releaseYear);
+    /* Past any human life with no death recorded — rule 8. Leaves the
+       reckoning rather than moving below the bar: inferring a death does
+       not produce a date, and the rows below the bar are dates. */
+    const beyond = !r.dod && beyondLiving(r.dob, releaseYear);
+    /* Neither date on record — rule 3. Not living, not dead. */
+    const unrecorded = !r.dod && !r.dob;
+    /* And the band between OLDEST and MAXIMUM_AGE, where a birth date and
+       no death stops being evidence in either direction — rule 2's ceiling.
+
+       The page had no version of this. It excluded only people past 122
+       and read everyone under that as living, so somebody aged 115 with no
+       recorded death vetoed a picture the corpus had closed on them being
+       'unknown'. 161 pictures disagreed that way, and the page was the one
+       out of step: it is the same fact `statusOf` reads, and this is the
+       file that is supposed to hold it once. */
+    const bornYear = Number(String(r.dob || '').slice(0, 4)) || 0;
+    const pastKnowing = !r.dod && bornYear > 0 && thisYear() - bornYear > OLDEST;
+    /* In the picture, and the picture did not credit them — rule 4b. */
+    const notCredited = uncredited({ roles: r.credits });
+
+    if (misattributed || beyond || unrecorded || pastKnowing || notCredited) outside.push(r);
+    else inPlay.push(r);
+  }
+
+  return {
+    outside,
+    living: inPlay.filter(r => !r.dod),
+    gone: inPlay.filter(r => r.dod),
+  };
+}
+
+/* And what that means for the picture. Deliberately the same three states
+   the corpus has, so the two can be compared at all. */
+export function rosterVerdict(rows, releaseYear) {
+  const { living, gone } = classifyRoster(rows, releaseYear);
+  if (living.length) return 'open';
+  if (!gone.length) return 'unclassified';
+  return 'closed';
+}
+
 /* The verdict itself, which until 4 August 2026 was written out four
    times in four files and was therefore wrong in one of them.
 

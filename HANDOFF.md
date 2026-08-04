@@ -175,12 +175,18 @@ two people."* 314 people remain disputed:
    inventory, and the mail-forwarding hazard that comes with a nameserver
    move. Do the routing first; the hosting can wait for an unhurried hour.
 
-2. **Something that checks the film and person pages** against
-   `verify.js`. Canon rule 27. The verdict is shared now, so what remains
-   is the part that genuinely cannot be: both surfaces gather their own
-   people, live from Wikidata, and always will. The test is not equality —
-   it is that every disagreement is explained by a credit added since the
-   pass ran.
+2. ~~Something that checks the film and person pages.~~ **Built —
+   `poster/check-pages.js`.** Rule 27 is checked rather than asserted:
+   259,773 of 260,112 pictures agree on identical input. It found and
+   fixed 161 where the page read 113-to-122-year-olds as living, a band
+   `statusOf` calls unknown.
+
+   **339 remain and they are one thing: the film page cannot draw a wrap
+   without a date.** The corpus closes old pictures by arithmetic and
+   records them undated; the page derives `wrapped` from having a date, so
+   an 1896 picture reads "Wikidata has no one credited on this one" while
+   the Vault lists it as wrapped. A design gap, not a drift — 1,362
+   closings carry no date, so it is wider than the 339 visible here.
 
 3. **The 256 real disputes**, if you want them. They are published with
    the disagreement, which is an honest resting state.
@@ -208,6 +214,7 @@ Then the Desk, still the largest thing not built on the posting side.
 | `poster/build-corpus.js` | pass output → static sharded files + `manifest.json` |
 | `corpus.js` | the browser client for those files |
 | `verify.js` | the single judgement, imported by the site, the poster and the pass |
+| `poster/check-pages.js` | does the film page agree with the corpus? Offline, canon rule 27 |
 | `make-card.py` | draws `card.png`, the link preview |
 
 ## Reproducing from what is on disk
@@ -221,9 +228,10 @@ node poster/build-corpus.js                 # → dist/
 
 ## Known and unfixed
 
-- **The audit does not reach the film page or the person page.** Rule 27.
-  They no longer draw their own verdict, but they still gather their own
-  people, and nothing checks that.
+- **The film page cannot draw a wrap without a date**, so 339 pictures
+  the corpus closed by arithmetic read as unclassified on their own page.
+  `check-pages.js` measures it. Rule 27's other half — that the pages
+  gather their own people live — no offline test can reach.
 - **37,765 closings (40%) rest on Wikidata alone**, almost all because the
   picture has no TMDB record. A floor, not a bug.
 - **7,069 closings rest on a date only TMDB recorded**, and 832 name no

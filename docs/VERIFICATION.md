@@ -74,7 +74,7 @@ asserted rather than quietly implied to be safe.
 | **People** | | | |
 | 26 | Withholding a name takes **the name and never the vote** | `pass.js`, `app.js` | asserted |
 | **Where the rules are applied** | | | |
-| 27 | A **person page and a film page ask Wikidata directly** and must apply rules 3, 6, 7 and 8 themselves; the audit reaches neither. They no longer draw their own VERDICT — that comes from `verify.js` — but they still gather their own people | `app.js` `readPeople`, `app.js` `viewFilm` | asserted |
+| 27 | A **person page and a film page ask Wikidata directly** and gather their own people, which no offline test can reach. What they CONCLUDE from those people is `verify.js`'s and is checked against the corpus on identical input | `verify.js` `classifyRoster`, `poster/check-pages.js` | **checked, 259,773 of 260,112** |
 | **Disagreement** | | | |
 | 28 | Where two sources give **different dates** for one death, neither is preferred: the published date stands and the disagreement is published beside it | `provenance.js` | asserted |
 | 29 | Agreement on the **year** where one source records only a year is **not** a disagreement — it is one source knowing less | `provenance.js` | asserted |
@@ -297,6 +297,51 @@ over everybody — so fourteen pictures whose only survivor was an
 uncredited extra sat open while the audit failed thirteen years pointing
 at them. The exemption now turns on `tested`, which is what rule 19
 actually says.
+
+---
+
+### Rule 27 is checked now, and it found two things
+
+*4 August 2026. `poster/check-pages.js`.*
+
+The backlog proposed sampling: run the page's logic over the LIVE
+filmography for a few hundred pictures and explain the differences away.
+That test cannot separate what it finds — Wikidata moves, so a
+disagreement is either drift in our code or a credit added last Tuesday,
+and telling those apart is a judgement about every result.
+
+So the question was narrowed until it had an exact answer: **given the
+same people, do the two implementations reach the same verdict?** The
+page's classifier is now `classifyRoster` in this file, and the checker
+feeds it the corpus's own stored evidence, shaped into the flat rows a
+roster works on. Same input, so a disagreement is drift and nothing else.
+Offline, complete rather than sampled, and it runs in the time it takes to
+read the evidence.
+
+**260,112 pictures could be compared** — the rest were skipped because the
+corpus used somebody the page cannot see, which is TMDB-resolved people, a
+death Wikidata asserts without dating, or a burial by name. Those are the
+irreducible half of rule 27 and no offline test reaches them.
+
+**161 disagreements were the page reading 113-to-122-year-olds as
+living.** `statusOf` calls that band *unknown* — a birth date and no death
+stops being evidence in either direction — and the page had no version of
+it, excluding only people past 122. So somebody aged 115 vetoed a picture
+the corpus had closed. Fixed: the band is in `classifyRoster`, and those
+pages stopped contradicting the Vault.
+
+**339 remain, and they are one thing.** The corpus can close a picture by
+arithmetic alone — `evidenced` returns true when the release year predates
+any possible living person — and it records that as a closing with no
+date. **The film page has no way to draw a wrap without a date**: `wrapped`
+is derived from having one. So an 1896 picture whose credits carry no
+dates reads "Wikidata has no one credited on this one" while the Vault
+lists it as wrapped.
+
+That is a design gap rather than a rule drift, and closing it means giving
+the page a wrapped-but-undated state — the title card, the bar's position
+and the closing line all assume a date. 1,362 closings in the corpus carry
+no date at all, so the gap is wider than the 339 the checker can see.
 
 ---
 

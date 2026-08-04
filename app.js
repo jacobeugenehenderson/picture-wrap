@@ -22,13 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear, impossible, evidenced, uncredited } from './verify.js?v=58';
-import { openCorpus } from './corpus.js?v=58';
+import { survivors, beyondLiving, earliestLivingBirthYear, evidenced, uncredited, classifyRoster } from './verify.js?v=59';
+import { openCorpus } from './corpus.js?v=59';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence, inCountry,
-} from './shared.js?v=58';
+} from './shared.js?v=59';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -409,84 +409,21 @@ async function viewFilm(id) {
      inferring a death does not produce a date and the rows below the bar
      are dates. The dash in the third zone is the whole disclosure: gone,
      and nobody wrote down when. */
-  /* Rule 6, which this page did not have. Nobody worked on a picture
-     released before they were born, and a credit that fails that test
-     votes on nothing.
+  /* Classified by `classifyRoster` in verify.js rather than here.
 
-     It matters most exactly where it was missing. Someone dead is simply
-     a wrong row; someone LIVING vetoes the wrap for ever and the page
-     never says why. Gidget (1959) is the case: Wikidata's P58 points at
-     Q5516102, an Australian politician born in 1964, and not at the
-     Gabrielle Upton who wrote it and died in 2022. The Vault had the
-     rule and the film page did not, so the same picture read two ways on
-     one site — which is the disagreement this project keeps having, and
-     it is always about which code read the data rather than the data.
+     The four rules this page applies — born after the picture, past any
+     human life, no dates at all, in it but uncredited — were four inline
+     filters that only a browser could run, which is how they drifted
+     three times: rule 6 missing on Gidget, the third state missing on
+     Women of the World, and Philip Glass held open by counting instead of
+     classifying.
 
-     `impossible` takes a person shaped as verify.js shapes them; the
-     roster's rows are flat. Adapted here rather than loosening the
-     signature, because the poster passes real records and this is the
-     only caller that does not.
-
-     Same destination as the rule below, and for the same reason: they
-     were credited, so the record should show it, and they are outside
-     the reckoning, so they cannot sit above the bar. */
-  const misattributed = everyone.filter(
-    p => impossible({ wd: { born: p.dob } }, meta.year));
-
-  /* Nobody credited here can be alive, whatever the absence of a death
-     date suggests. This is the roster's own version of the rule the
-     survivor test applies to everyone else, and it had no version of it
-     at all: a missing P570 read as a pulse for ever. The Fortieth Door
-     was held open by Bruce Gordon, born 1850.
-
-     They leave the reckoning rather than move below the bar, because
-     inferring a death does not produce a date and the rows below the bar
-     are dates. The dash in the third zone is the whole disclosure: gone,
-     and nobody wrote down when. */
-  const beyond = everyone.filter(p => !p.dod && beyondLiving(p.dob, meta.year));
-
-  /* Neither date on record. Not living, not dead — unrecorded, which is
-     the third state every other part of this project gives a person and
-     this page did not.
-
-     The page was binary: no death date meant living, so somebody Wikidata
-     holds no dates for at all sat above the bar as though we knew they
-     were alive. It is the failure the README calls this project's worst —
-     a missing P570 read as a pulse for ever — surviving in the one
-     surface no audit reaches. Women of the World (2001) is the case:
-     Nicholas Steele and one unlabelled item drawn as living, while the
-     Vault had the picture closed on Philip Adrian Booth, because
-     `statusOf` calls those two unknown and unknowns never veto.
-
-     A birth date with no death is untouched. That is a person who may
-     well be alive and is the claim this site exists to make; only a
-     complete absence of dates lands here. */
-  const undatedEntirely = everyone.filter(p => !p.dod && !p.dob);
-
-  /* In the picture, and the picture did not credit them for it.
-
-     TMDB lists everyone who appeared and marks the difference in the
-     character string — "Soldier (uncredited)". This archive's claim is
-     about people CREDITED on a picture, so an extra who was deliberately
-     not recorded is outside it: whether Bill Alcorn is alive says nothing
-     about whether the people who made Mildred Pierce are gone.
-
-     Both directions, which is the half that is easy to miss. They do not
-     hold a picture open and they do not date its wrap either — Intolerance
-     (1916) was dated on Peggy Cartwright, "Little Girl (uncredited)".
-
-     This page has the character strings live from TMDB, so it is right
-     from the moment it loads. The corpus only knows for the years passed
-     after `role` was stored, and catches up when those are re-fetched —
-     which is rule 27 again, in the one direction where the browser is
-     ahead of the pass rather than behind it.
-
-     `roles` is what verify.js calls the field; the roster calls it
-     `credits`. Adapted here for the same reason `impossible` is above. */
-  const notCredited = everyone.filter(p => uncredited({ roles: p.credits }));
-
-  const excluded = [...new Set([...misattributed, ...beyond,
-                                ...undatedEntirely, ...notCredited])];
+     They still take the roster's flat shape rather than a judged person,
+     because that is genuinely what this page has. What changed is that
+     something outside a browser can now run them: `check-pages.js` feeds
+     the same function the corpus's own people and asks whether it reaches
+     the corpus's verdict. Canon rule 27. */
+  const { outside: excluded } = classifyRoster(everyone, meta.year);
   if (excluded.length) {
     const out = new Set(excluded);
     everyone = everyone.filter(p => !out.has(p));

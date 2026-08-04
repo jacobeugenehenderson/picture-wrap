@@ -90,6 +90,7 @@ serves. None of them posts anything.
 | `pass.js` | One release year, judged, with the working written down beside it. |
 | `judge.js` | The judgement itself, shared by the pass and the repairs. |
 | `audit.js` | Re-decides a year from its own files with the network unplugged. The check that makes the rest citable. |
+| `check-pages.js` | Does the film page reach the corpus's verdict on identical people? Offline. Canon rule 27. |
 | `rebuild.js` | Re-derives conclusions from stored evidence, offline, when a rule changes. |
 | `retest.js` | Repairs verdicts that predate a rule change. The one repair that needs the network. |
 | `provenance.js` | Asks Wikidata whether it already holds a death we recorded from TMDB. Corroborates; never overwrites. |
