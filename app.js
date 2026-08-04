@@ -150,6 +150,16 @@ function setTitle(line) {
 }
 
 /* Named the same way in the tab as on the page and in the share text. */
+/* Small numbers as words, the rest as digits. Prose convention, and it
+   matters in the one place this is used: a share message is read as a
+   sentence in a message thread, and "2 of the 14 people" reads like a
+   spreadsheet where "Two of the fourteen" reads like somebody telling
+   you. Ten is the usual line and there is no reason to be cleverer. */
+const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five',
+               'six', 'seven', 'eight', 'nine', 'ten'];
+
+const count = n => (n >= 0 && n <= 10 ? WORDS[n] : n.toLocaleString());
+
 function filmName(meta) {
   return `${meta.label || ''}${meta.year ? ` (${meta.year})` : ''}`;
 }
@@ -695,9 +705,6 @@ function renderRoster() {
   const front = split(cast);
   const back  = split(crew);
 
-  const shareText = wrapDate
-    ? `Nobody who made ${filmName(filmMeta)} is left.`
-    : `Who is still with us from ${filmName(filmMeta)}.`;
 
   /* The one thing worth carrying into the tab: whether the bar is at the
      top. Appended rather than prefixed, so the title survives truncation
@@ -724,6 +731,43 @@ function renderRoster() {
     ? [front.dead[0], back.dead[0]].filter(Boolean)
         .sort((a, b) => (b.dod || '').localeCompare(a.dod || ''))[0] || null
     : null;
+
+  /* What goes into a text message, and it is not a caption for the page.
+
+     It used to be `Who is still with us from Gidget (1959).` — a question
+     set as a statement, ending in a full stop, saying nothing the link
+     did not already say. The wrapped half said `Nobody who made X is
+     left.`, which is at least a fact, and both were written before the
+     page knew how to count.
+
+     It knows now, so it says the thing worth knowing. A closed picture
+     names who closed it and when — that is the whole claim of this
+     archive in one line. A running one says how many are left out of how
+     many, which is the number a reader would have opened the page for.
+
+     Numbers as words up to ten. `2 of the 14 people` reads like a
+     spreadsheet; `Two of the fourteen` reads like somebody telling you.
+
+     It carries the year with the title, the same as the tab does, because
+     a title alone is not an identification — there are four Cleopatras. */
+  const livingNow = allLiving.length;
+  const credited = everyone.length;
+
+  const shareText = (() => {
+    const name = filmName(filmMeta);
+    if (wrapDate) {
+      const who = lastOne?.pLabel;   /* same field the closing line uses */
+      const when = year(wrapDate);
+      return who && when
+        ? `Everyone who made ${name} is gone. ${who} was the last, in ${when}.`
+        : `Everyone who made ${name} is gone.`;
+    }
+    if (!credited) return `${name}, and everyone who made it.`;
+    if (!livingNow) return `${name}, and everyone who made it.`;
+    return livingNow === 1
+      ? `One of the ${count(credited)} people who made ${name} is still living.`
+      : `${sentence(count(livingNow))} of the ${count(credited)} people who made ${name} are still living.`;
+  })();
 
   const bar =
     `<li class="bar" role="separator" aria-label="Above: living. Below: died."></li>`;
@@ -1142,12 +1186,11 @@ async function viewPerson(id) {
       </span>
     </section>`;
 
-  const share = shareControls(
-    `${meta.label} on Picture Wrap — which of their pictures still have someone.`,
-    location.hash);
-
+  /* Nothing is known yet but the name, and there is nothing to count. */
   if (!films.length) {
-    show(card + share + `<p class="state">No screen credits recorded.</p>`);
+    show(card
+      + shareControls(`${meta.label} on Picture Wrap.`, location.hash)
+      + `<p class="state">No screen credits recorded.</p>`);
     return;
   }
 
@@ -1302,6 +1345,30 @@ async function viewPerson(id) {
     }));
   }
   const closed = f => wikidataClosed(f) && inCorpus.has(qid(f.film));
+
+  /* Composed here rather than at the top of the view, because until this
+     line the page cannot count anything and the message was the poorer
+     for it. It used to read `X on Picture Wrap — which of their pictures
+     still have someone.`, which is a question with a full stop on the end
+     and tells a recipient nothing the link would not.
+
+     Closing a picture is the sharpest fact this archive holds about
+     anybody, so it leads when it is true: `Carla Laemmle was the last of
+     eight pictures.` Otherwise the shape of a body of work — how much of
+     it has gone — which is the thing the page is about to draw. */
+  const closedFilms = films.filter(closed).length;
+  const theyClosed = films.filter(f => f.closedIt_).length;
+  const plural = (n, one, many) => `${count(n)} ${n === 1 ? one : many}`;
+
+  const shareText = theyClosed
+    ? `${meta.label} was the last of ${plural(theyClosed, 'picture', 'pictures')}.`
+    : closedFilms
+      ? `${meta.label} made ${plural(films.length, 'picture', 'pictures')}; `
+        + `${count(closedFilms)} of them ${closedFilms === 1 ? 'has' : 'have'} wrapped.`
+      : `${meta.label} made ${plural(films.length, 'picture', 'pictures')}, `
+        + `and not one of them has wrapped yet.`;
+
+  const share = shareControls(shareText, location.hash);
 
   /* Newest first, both sides — which makes this bar mean what the bar
      means everywhere else. Running films newest-first put the OLDEST
