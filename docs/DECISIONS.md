@@ -1343,6 +1343,15 @@ A share scales without a second number, so the Vault and the unclassified
 get proportionate rows from one constant, and it is a sentence a reader
 can check.
 
+**It was also a sentence on the page, and that was the mistake.** Methods
+carried a paragraph saying the tiles were not a selection, what share
+earns one, and that 451 genres and 228 countries existed in all. Cut on
+4 August 2026: it answered an objection no reader had formed, and the two
+counts let nobody do anything. The field under each row says "another
+country…", which is the entire disclosure — there are more, and you can
+type them. The threshold is a real decision and belongs here; a reader
+needs the door, not the joinery.
+
 **Why not all of them.** 451 genres and 228 countries is not a filter row,
 and the crossings that let a tile carry an honest count would be 103,000
 entries in a file every visitor fetches.

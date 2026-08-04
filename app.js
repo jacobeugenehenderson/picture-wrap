@@ -2318,13 +2318,16 @@ function viewAbout() {
         because TMDB has no record of the picture. Three in five are
         confirmed, and each picture says which it is.
       </p>
-      <p>
-        The country and genre tiles are not a selection. A label earns a
-        tile by holding one picture in five hundred of the archive it
-        belongs to, and every other label &mdash; 451 genres and 228
-        countries in all &mdash; can be typed into the field beneath each
-        row.
-      </p>
+      <!-- A paragraph explaining that the tiles were not curated, what
+           share of the archive earns one, and how many labels exist in
+           all, stood here until 4 August 2026.
+
+           It answered an objection no reader had formed, and the two
+           counts let nobody do anything. The field under each row already
+           says "another country…", which is the whole disclosure: there
+           are more, and you can type them. A listing that needs a
+           paragraph underneath saying what it is should be fixed rather
+           than captioned, and this one did not even need fixing. -->
 
       <h3>9. Corrections</h3>
       <p>
