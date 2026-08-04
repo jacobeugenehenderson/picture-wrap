@@ -167,13 +167,13 @@ two people."* 314 people remain disputed:
 
 ## What to do next, in order
 
-1. **The per-picture link previews**, which is really the question of
-   **moving the site to Cloudflare Pages.** Hash routing means a crawler
-   asking for `/#/mildred-pierce/Q979726` never sends the id to a server,
-   so every card is the front-page card. Pages would let a Function answer
-   crawlers, collapse two hosts into one, and let CORS relax. DNS is at
-   Namecheap and the apex points at GitHub Pages, so it is a DNS change
-   plus a deploy, not a rewrite. `BACKLOG.md` has all three options.
+1. **The per-picture link previews — read `docs/HOSTING.md` first.**
+   Previews work; the exception is that every card is the front-page card.
+   It is **not** a hosting job: hash routing means a crawler never sends
+   the id to any server, so path routing is the prerequisite and it
+   touches no infrastructure. The brief has the three options, the DNS
+   inventory, and the mail-forwarding hazard that comes with a nameserver
+   move. Do the routing first; the hosting can wait for an unhurried hour.
 
 2. **Something that checks the film and person pages** against
    `verify.js`. Canon rule 27. The verdict is shared now, so what remains

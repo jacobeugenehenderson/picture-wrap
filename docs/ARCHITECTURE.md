@@ -25,10 +25,13 @@
               │                            │  agree ON
               │                            │
               │   reads                    │  writes
-              └──── vault/ ◄── archive.json ┘
-                    summary                 │
-                    ids                     └──► Bluesky
-                    <decade>
+              │                             │
+        ┌─────┴──────┐              ┌───────┴────────┐
+        │  the corpus │◄─────────────│  pass/         │
+        │  dist/ v/…  │ build-corpus │  evidence      │
+        │  Cloudflare │              └───────┬────────┘
+        └─────────────┘                      │
+                                             └──► archive.json ──► Bluesky
 ```
 
 Two shared files, and the distinction between them is the whole design.
@@ -36,9 +39,20 @@ Two shared files, and the distinction between them is the whole design.
 languages, pure helpers. `verify.js` holds what they must agree **on**:
 the single judgement of whether anyone who made a picture is still alive.
 
-The site no longer reads `archive.json`. The poster writes it, and writes
-`vault/` beside it in the same breath; the browser fetches only the piece
-its question needs.
+**The site reads the corpus, and nothing else the poster writes.**
+`build-corpus.js` turns the pass's evidence into immutable versioned
+shards under `dist/v/<version>/`, hosted on Cloudflare Pages, and
+`corpus.js` is the browser's client for them: one manifest, then files
+addressed by something the page already holds — a Wikidata id, a release
+year, a day of the year. Nothing fetches an archive whole.
+
+`archive.json` is the poster's own record of what it has **posted**, and
+the site has not read it since 2 August. `vault/` held nine decade files,
+`ids.json` and `summary.json` for the browser; they were deleted on
+4 August along with the `publishVault()` that rewrote them on every
+filing. **`vault/suppressed.json` survives** — a hand-edited list of
+Q-ids, fetched on every page load, which is how a name is withheld
+without removing its vote.
 
 The arrow from the poster to Bluesky passes through a human. Nothing posts
 automatically. See [DECISIONS.md](DECISIONS.md#the-approval-gate).
@@ -153,8 +167,11 @@ bar is not going to the top and no amount of TMDB agreement would move it,
 so the extra requests never happen.
 
 The person page no longer verifies anything. A filmography can hold sixty
-closed-looking pictures and the test is per-film; it reads `vault/ids.json`
-instead, which is the same test already run offline.
+closed-looking pictures and the test is per-film; it asks
+`corpus.has(qid)` instead — a binary search over `ids.bin`, sorted 32-bit
+Wikidata numbers, one fetch for the whole page — which is the same test
+already run offline. It read `vault/ids.json`, a megabyte of quoted
+strings, until the corpus replaced it.
 
 Nothing is cached between page loads. At this scale that's fine and it
 keeps the code honest.
@@ -199,7 +216,8 @@ A daily run is two query shapes and finishes in about a minute.
 | `state.backup.json` | The same, sorted one id per line, and committed. |
 | `queue.json` | Awaiting human approval. Gitignored. |
 | `archive.json` | Approved and filed. The poster's record; the site does not read it. |
-| `vault/` | What the site reads: `summary.json`, `ids.json`, and one file per decade. |
+| `vault/suppressed.json` | A hand-edited list of Q-ids whose names the site withholds. The **only** file left under `vault/`, and the only one the site fetches. |
+| `dist/` | The corpus the site actually reads. Built by `build-corpus.js`, hosted on Cloudflare Pages, gitignored. |
 
 `state.json` records a film when it is **queued**, and nothing earlier. It
 used to be stamped on the way in — before the name check, before the cast
@@ -283,8 +301,10 @@ launcher there. Every run this project has done was typed by hand.
 7. A human runs `preview.js` to see it, then `review.js` to approve.
 8. Two posts go to Bluesky as a thread — the person with their portrait,
    then the pictures with their posters — and each film is appended to
-   `archive.json`, which republishes `vault/` in the same call.
-9. `archive.json` and `vault/` are committed and pushed; the Vault picks
+   `archive.json`. It republished `vault/` in the same call until 4 August,
+   when `publishVault()` and the shards it wrote were removed — nothing
+   had fetched them since the corpus replaced them.
+9. `archive.json` is committed and pushed; the Vault picks
    it up.
 
 Latency from death to post is hours to days, dominated by how fast Wikidata
@@ -299,17 +319,36 @@ sub-second delivery would buy nothing. See
 The site is static: any host. The poster runs anywhere with Node and cron —
 it does not need to be the same machine, or the same host, as the site.
 
-The site is hosted on **GitHub Pages** from `main`, at
-**picture-wrap.com**, with HTTPS enforced. `CNAME` holds the domain and
-`.nojekyll` stops Pages processing the files.
+**Two hosts, and a change to what a closing says needs both.**
 
-The poster writes `archive.json` straight into the site root via
-`PW_ARCHIVE`, and `vault/` beside it. **Committing and pushing is manual**
-— nothing does that for you, and until you do, the Vault won't show what
-was posted.
+| | |
+|---|---|
+| the site | **GitHub Pages** from `main`, at picture-wrap.com, HTTPS enforced. `CNAME` holds the domain, `.nojekyll` stops Pages processing the files |
+| the corpus | **Cloudflare Pages**, project `picture-wrap-corpus`. `CORPUS_BASE` in `app.js` is the only thing that names where |
+
+```
+node poster/build-corpus.js
+npx wrangler pages deploy dist --project-name picture-wrap-corpus --branch main
+git push origin main
+```
+
+Forgetting the first is the easiest mistake this project offers: the site
+deploys, the corpus does not, and the page reads a manifest that no longer
+matches. Collapsing the two is scoped in [HOSTING.md](HOSTING.md), which
+also explains why it is a bigger job than it sounds.
+
+Everything under `v/<version>/` is immutable and served with a year's
+cache life; `manifest.json` is the one mutable object and revalidates
+every five minutes. The version is a digest of the published content, so
+the same corpus rebuilds to the same URLs.
+
+The poster writes `archive.json` into the site root via `PW_ARCHIVE`.
+**Committing and pushing is manual** — nothing does that for you.
 
 `?v=` on both tags in `index.html` must be bumped whenever `app.js` or
-`style.css` changes, or returning visitors keep the old files.
+`style.css` changes, and the module `?v=` at the top of `app.js` whenever
+`verify.js`, `shared.js` or `corpus.js` changes, or returning visitors
+keep the old files.
 
 ---
 

@@ -94,6 +94,8 @@ serves. None of them posts anything.
 | `retest.js` | Repairs verdicts that predate a rule change. The one repair that needs the network. |
 | `provenance.js` | Asks Wikidata whether it already holds a death we recorded from TMDB. Corroborates; never overwrites. |
 | `dedupe.js` | Collapses pictures a year's files hold more than once. Offline, idempotent. |
+| `correct-dates.js` | Applies `pass/date-corrections.tsv`, a reviewed list. **The only path that overwrites a date on evidence other than our own pass.** |
+| `archive-pass.js` | Re-seals finished years into the durable archive. Offline. Run it after any repair. |
 | `seed-removals.js` | Opened the retraction record with the departures already known. A one-off. |
 | `enrich.js` | Genre, country and fame per year. `--countries` builds the label dictionary. |
 | `build-corpus.js` | Pass output → immutable versioned static shards + `manifest.json`. |
@@ -126,6 +128,7 @@ serves. None of them posts anything.
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Every significant choice and why |
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Daily running, backfill, deployment, failure modes |
 | [docs/BACKLOG.md](docs/BACKLOG.md) | Deferred work, with enough context to pick it up cold |
+| [docs/HOSTING.md](docs/HOSTING.md) | Where the site is served from, and why per-picture previews are a routing job rather than a hosting one |
 | [docs/FORTIFYING.md](docs/FORTIFYING.md) | Making the Vault citable: errata, provenance, and the re-check loop |
 | [docs/VERIFICATION.md](docs/VERIFICATION.md) | **The canon** — every logic rule in force, where it lives, and whether the audit checks it — then the same in plain prose |
 | [docs/METHOD.md](docs/METHOD.md) | The same procedure written for citation — the source text for the site's "Methods and sources" |

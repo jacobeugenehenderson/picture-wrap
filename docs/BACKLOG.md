@@ -289,6 +289,24 @@ second, at two lines, beside an image already carrying the idea; a search
 result is read cold with nothing else beside it. The short line is for
 the first, the epigraph for the second.
 
+### The per-picture half — SCOPED 4 August, and it is not a hosting job
+
+**See [HOSTING.md](HOSTING.md).** The plan this entry carried — move to
+Cloudflare Pages and let a Function answer crawlers — does not work as
+written. `app.js` routes on `location.hash`, and a fragment is never sent
+to a server, so a crawler asking for `/#/mildred-pierce/Q979726` sends
+`GET /` and there is nothing for a Function to read. **Path routing is the
+prerequisite**, and it is the only part that touches no infrastructure.
+
+The DNS was inventoried the same day and the move is bigger than it looks:
+the nameservers are at Namecheap, an apex custom domain on Pages needs the
+zone on Cloudflare, and that means recreating five MX records and an SPF
+TXT by hand or mail to `@picture-wrap.com` stops forwarding silently.
+
+The three options, their costs and the order to do them in are all in
+`HOSTING.md`. The old text below is kept because the diagnosis of *why*
+the previews are hard is still right.
+
 ### The part that is no longer what the old entry said
 
 Hash routing means `picture-wrap.com/#/mildred-pierce/Q979726` never

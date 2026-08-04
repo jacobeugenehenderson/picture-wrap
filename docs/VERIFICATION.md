@@ -14,6 +14,15 @@ twice, and rules 32 and 33 followed from building the retraction record —
 32 because eleven pictures were closed under one release year while
 another year knew somebody living.
 
+**Last revised 4 August 2026, and it was the largest revision the canon
+has had.** Rule 4 was withdrawn and rewritten, 4b and 35 were added, and
+rule 2 changed — the canon now holds **36 rules**. Five rule changes moved
+closings from 97,395 to 95,567, every one of them away from claiming
+somebody is gone. The prose after the table carries the account of each,
+in the order they happened, and the entry that matters most is the first:
+for a day the audit was failing 123 of 137 years while this file recorded
+that it passed.
+
 ---
 
 ## The canon

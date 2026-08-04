@@ -1287,6 +1287,9 @@ the Vault instead. The bug was a missing state.
 are now dated to the day against 75.6%, and 1.6% carry no date at all
 against 20.5%. The imprecision was this class sitting inside it.
 
+*Measured 3 August. After 4 August the Vault is smaller again — 95,567 —
+and the same figures are 93.8% and 1.4%.*
+
 **Rejected: estimating.** Applying the mean release-to-wrap wait — 50.2
 years — to the unclassified was considered and dropped. The mean is an
 artifact of the observation window: pictures that have not closed are

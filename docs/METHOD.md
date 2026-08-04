@@ -11,17 +11,18 @@ Every threshold is named, every source is named, and every step at which a
 judgement is made rather than a fact retrieved is marked as such.
 Measurements are point-in-time and dated.*
 
-**Last revised 3 August 2026, and re-measured against the archive it now
-describes.** Every figure below is taken from the corpus of 97,395
-closings published on 3 August 2026, unless it names its own date.
+**Last revised 4 August 2026, and re-measured against the archive it now
+describes.** Every figure below is taken from the corpus of 95,567
+closings published on 4 August 2026, unless it names its own date.
 
-> **Figures on this page predate 4 August 2026.** On that day the rule
-> requiring a day-precise birth date before anyone could be called living
-> was withdrawn — it demanded precision to hold a picture open and none to
-> let one close. 9,220 pictures moved into *running*: the corpus is now
-> **95,567 closings and 16,201 unclassified**, from 97,395 and 23,161.
-> Every proportion below was measured against the larger figure and has
-> not been re-derived. `docs/VERIFICATION.md` carries the account.
+> **What changed on 4 August, because it changed the numbers on this
+> page.** Five rules moved, and every one of them moved pictures *out* of
+> the Vault: a birth year became enough to hold a picture open, a lone
+> imprecise TMDB date stopped placing anybody, uncredited people stopped
+> voting in either direction, and fifteen death dates were corrected
+> against sourced Wikidata values. Closings went 97,395 → 95,567.
+> Nothing moved into *dead*. `docs/VERIFICATION.md` carries the full
+> account and the canon it changed.
 
 Until 3 August this document measured the 11,457-entry Vault that the
 corpus superseded on 2 August. That is worth recording rather than
@@ -304,7 +305,7 @@ asks whether Wikidata knew the whole cast.
 
 **A TMDB identifier for the picture is required.** Without one there is
 nothing to ask, and the procedure reports that it did not run rather than
-returning an empty result. **38,637 closings — 46% — have been tested
+returning an empty result. **37,765 closings — 40% — have been tested
 against Wikidata alone for want of one**, concentrated in early and
 non-English cinema where TMDB's coverage largely stops. They are marked
 as such wherever they appear; see §12.
@@ -499,7 +500,7 @@ approval is the only thing that publishes.
 
 **This describes the announcement path and not the bulk one, and the
 distinction is material — more so now than when it was written.** Of the
-**97,395 closings held, 37 were announced on Bluesky after a person read
+**95,567 closings held, 37 were announced on Bluesky after a person read
 them.** Every other one was decided by the procedure in this document and
 published without individual review. The protection that a human reads
 each item is real for anything posted and describes essentially none of
@@ -546,9 +547,9 @@ therefore means one of three things: it was tested and someone was found
 alive, it was tested and the test could not run, or it was never asked.
 Only the first is a finding.
 
-As of 3 August 2026 the pass has judged **every release year from 1890 to
-2026 — 137 years, no gaps — and 329,957 pictures**, of which **97,395
-have closed**, 23,161 are unclassified, 208,028 are still running, and
+As of 4 August 2026 the pass has judged **every release year from 1890 to
+2026 — 137 years, no gaps — and 329,957 pictures**, of which **95,567
+have closed**, 16,201 are unclassified, 216,816 are still running, and
 1,373 could not be checked because TMDB did not answer.
 
 Each of those is a count of pictures, not of records. A picture with
@@ -627,10 +628,17 @@ kept in period terms. §8 of `FINDINGS.md` states the general form.
 
 ### The third state
 
-**23,161 pictures are neither closed nor running.** No death is recorded
+**16,201 pictures are neither closed nor running.** No death is recorded
 for anyone credited on them, nobody credited is recorded living, and they
 are not old enough for arithmetic to settle it. They are **unclassified**,
 and until 3 August 2026 they were in the Vault.
+
+It was 23,161 on 3 August. The difference is not a reclassification back
+into the Vault: 4 August established that a person with a birth year and
+no recorded death is *living*, which makes their picture **running**
+rather than unplaceable. Those pictures were never unclassified — the
+record held a name and a year, and calling it silence was its own small
+false claim.
 
 They were there because of the rule that unrecorded people never veto —
 correct when a picture has thirty recorded deaths and two blanks, and
@@ -654,7 +662,7 @@ those fields entirely rather than setting them empty.
 
 ### How much of this rests on one database
 
-**38,637 closings — 46% — were never checked against TMDB**, almost
+**37,765 closings — 40% — were never checked against TMDB**, almost
 always because the picture carries no TMDB identifier and there is
 therefore nothing to ask. These are the archive's weakest claims, they are
 marked *Wikidata alone* on the site, and the reason they are published
@@ -662,11 +670,11 @@ rather than withheld is that the pictures without an identifier are
 overwhelmingly the obscure and the non-English, which is most of what
 closes.
 
-The remaining 58,758 were tested against both databases.
+The remaining 57,810 were tested against both databases.
 
-Of the 96,396 closings that name a closer, the date came from Wikidata for
-69,564, from both databases agreeing for 19,111, and from **TMDB alone for
-7,721 — 8.0%**. The middle figure is the work of `provenance.js`, which
+Of the 94,743 closings that name a closer, the date came from Wikidata for
+69,069, from both databases agreeing for 18,605, and from **TMDB alone for
+7,069 — 7.4%**. The middle figure is the work of `provenance.js`, which
 asks Wikidata whether it already holds a death first recorded from TMDB;
 it corroborates and never overwrites.
 
@@ -713,8 +721,10 @@ is a rule this archive believed it already had and did not.
 
 A further **23,161 departures** are in the same file and are a different
 statement: those closings were not wrong so much as never grounded, and
-they left because a closing now requires a recorded death. They are the
-unclassified — see §12.
+they left because a closing now requires a recorded death. Most became
+the unclassified — see §12 — and on 4 August about seven thousand of
+those moved again, to *running*, once a birth year was enough to hold a
+picture open.
 
 **The limits of that record should be read with it.** It begins on
 3 August 2026; nothing before that date was kept and nothing can
@@ -729,7 +739,7 @@ was unreliable because it postdated part of the archive. Both facts
 belonged to the 11,457-entry Vault. In the corpus the flag is no longer
 stored at all: it is derived at build time from whether the survivor test
 ran, published on every closing, and drawn on the site. The quantity is
-**38,637 closings, 46%** — see §12.
+**37,765 closings, 40%** — see §12.
 
 **Upstream sourcing is uneven, and is not currently published.** Wikidata
 death dates carry their own references. Across a sample of 40 pictures
@@ -831,11 +841,11 @@ at all. And every wrap date must belong to a named person in the evidence
 whose death is recorded to the day. A year that fails any of these has
 kept too little.
 
-As of 3 August 2026 the pass has judged **137 release years, 1890 to 2026,
-with no gaps: 329,957 pictures**, of which 97,395 are closed, 208,028
-still running and 1,373 could not be checked. Of the closings, **91,178
-are dated to the day** (93.6%), 488 to a month, 4,197 to a year only, and
-**1,532 carry no recorded death at all** (1.6%) — those are closed by
+As of 4 August 2026 the pass has judged **137 release years, 1890 to 2026,
+with no gaps: 329,957 pictures**, of which 95,567 are closed, 216,816
+still running and 1,373 could not be checked. Of the closings, **89,607
+are dated to the day** (93.8%), 471 to a month, 4,135 to a year only, and
+**1,362 carry no recorded death at all** (1.4%) — those are closed by
 the arithmetic of §8 rather than by a date, and the record says so rather
 than inventing one.
 

@@ -279,7 +279,10 @@ it was not relaxed for this. All 137 years still audit clean.
 
 ### The disagreements are a finding in their own right
 
-337 people, 1,034 closings. Separating precision from contradiction
+337 people, 1,034 closings when this was written on 2 August; 314 people
+and 927 closings after 4 August, when fifteen of them were corrected and
+the rest were re-counted against a corpus that had moved. Separating
+precision from contradiction
 matters: **1 January on one side with the years agreeing is one source
 recording only a year**, not two sources disagreeing, and 318 such cases
 were reclassified rather than flagged.

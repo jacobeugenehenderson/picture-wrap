@@ -90,7 +90,8 @@ undercounted, because it postdated most of the archive. It is now derived
 from `tested` at build time, published on every closing, carried as bit 4
 of the packed flags byte, and stated once above the Vault, with a filter for closings checked
 against both.
-38,637 of 97,395 closings, which is 46% and was never visible before.
+37,765 of 95,567 closings, which is 40% and was never visible before.
+(38,637 of 97,395, 46%, when this was written on 3 August.)
 The half of the fix above — `checkedAt` and a `checkedBy` that survives
 into the published record — is still open.
 

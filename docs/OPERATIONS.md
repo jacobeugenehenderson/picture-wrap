@@ -231,6 +231,49 @@ because a finished year is a sealed `.gz` and the runner's only state is
 which of those exist. On a laptop add `caffeinate -ims -w <pid>`, which
 releases when the run does.
 
+## Repairs, and the order they must run in
+
+Nothing enforces this and every layer of it was learned by breaking it.
+
+```
+retest.js        network   re-judges stale verdicts — and DROPS corroboration
+  provenance.js  network   re-corroborates TMDB dates against Wikidata
+    rebuild.js   offline   re-derives verdicts and dates from the evidence
+      audit.js   offline   re-decides every year and checks it reproduces
+        build-corpus.js    pass output → dist/
+          archive-pass.js  re-seals the durable copy
+```
+
+**`retest.js` wipes what `provenance.js` did.** Corroboration is an
+annotation the judgement knows nothing about, so re-judging a picture
+rebuilds its people from scratch and drops it. On 4 August a retest of
+44,424 pictures took 19,614 corroborations down to 1,024. **Nothing
+failed. No audit caught it.** It surfaced only because a figure being
+gathered for the handoff disagreed with a figure in the docs. Re-running
+provenance restored it and moved the closer-dated-by-TMDB-alone count from
+25,509 back to 7,069.
+
+**`rebuild.js` re-derives; do not ask it to remember.** Six bugs in one
+day were the same shape — something stored being carried through instead
+of re-derived. If a value is a function of a date, and the date can move,
+re-derive it, and check both the decision path *and* whatever gets written
+to disk, which are different arrays.
+
+**`audit.js` is the gate.** Run it before `build-corpus.js`, always, and
+before `archive-pass.js` especially — that script copies the working tree
+over the durable copy, so a wrong working tree overwrites a right archive.
+
+    for y in $(seq 1890 2026); do node audit.js --year $y; done
+
+Individual years, because it takes `--year` and not `--years`.
+
+**`correct-dates.js` is outside all of this.** It applies
+`pass/date-corrections.tsv`, a reviewed list, and is the only path that
+overwrites a date on evidence other than our own pass. Run `rebuild.js`
+after it; the verdicts and wrap dates come from the evidence.
+
+---
+
 **Timing.** Roughly 10 minutes a year averaged over the century, but the
 shape is counter-intuitive: the expensive years are the old small ones,
 not the huge modern ones. One living person on Wikidata short-circuits
