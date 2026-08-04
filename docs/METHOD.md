@@ -517,7 +517,7 @@ archive but is not counted as verified, because nothing verified it.
 
 Anything that reopens is removed from the archive and cleared from the
 record of pictures already considered, so a later sweep can find it again.
-Removal is recorded as a retraction; see §13.
+Removal is recorded in `pass/removed.jsonl`; see §13.
 
 Two limits of this loop should be understood. Re-checking detects
 **Wikidata** drift. There is no equivalent change feed for TMDB, so a
@@ -540,8 +540,8 @@ Only the first is a finding.
 
 As of 3 August 2026 the pass has judged **every release year from 1890 to
 2026 — 137 years, no gaps — and 329,957 pictures**, of which **97,395
-have closed**, 208,028 are still running, and 1,373 could not be checked
-because TMDB did not answer.
+have closed**, 23,161 are unclassified, 208,028 are still running, and
+1,373 could not be checked because TMDB did not answer.
 
 Each of those is a count of pictures, not of records. A picture with
 release dates in two years was judged under both until 3 August, and was
@@ -617,6 +617,33 @@ The number it gave was out by a factor of twenty-four, and the mechanism
 was the archive's own: asking a question in present-day terms of a record
 kept in period terms. §8 of `FINDINGS.md` states the general form.
 
+### The third state
+
+**23,161 pictures are neither closed nor running.** No death is recorded
+for anyone credited on them, nobody credited is recorded living, and they
+are not old enough for arithmetic to settle it. They are **unclassified**,
+and until 3 August 2026 they were in the Vault.
+
+They were there because of the rule that unrecorded people never veto —
+correct when a picture has thirty recorded deaths and two blanks, and
+productive of a claim from nothing when every single person is a blank.
+Median release year 2007, median one name on record. *Aanikoobijigan*
+(2026) was published as wrapped with Zack Khalil, born 1991, credited on
+it.
+
+**A closing now requires a recorded death**, or a release year old enough
+that §8 settles it regardless. Only two pictures reach the Vault by that
+second route, so in practice every closing rests on a death.
+
+The word differs from the one used for a person on purpose. A person with
+no dates is *unrecorded*, which is a fact about them; a picture is
+*unclassified*, which is a fact about this project. The picture is
+recorded perfectly well. What is missing is our ability to say anything.
+
+The site browses them by release year, which is the only date they have.
+Nothing on that surface can carry a wrap date: the published rows omit
+those fields entirely rather than setting them empty.
+
 ### How much of this rests on one database
 
 **38,637 closings — 46% — were never checked against TMDB**, almost
@@ -656,27 +683,37 @@ not reopen a closed picture until the next pass over that year. Film pages
 are computed live and will show it immediately; the Vault will not. That
 disagreement is visible on the site and is the honest state of it.
 
-**Removals are recorded, since 3 August 2026.** A picture that reopens
-used to be simply absent from the next corpus, and nothing said it had
-ever been present. It is now a retraction: the corpus publishes
-`removed.json`, and a picture's own page states above its roster what was
-claimed, when the claim was withdrawn, and who turned out to be living.
+**Removals are recorded on disk and are not published as a surface.**
+A picture that reopens is absent from the next corpus. Since 3 August 2026
+`pass/removed.jsonl` records every departure — what was published, when it
+entered, when it left and who was found living — and the corpus carries
+the subset that were wrong as `removed.json`.
 
-The record opens with **138 retractions**, all dated 3 August 2026. 127
-are pictures the survivor test had never actually run on — among them
+The site does not show any of it. A banner on a picture saying the archive
+previously claimed otherwise, or a page listing every such picture, answers
+a question about this project rather than about film; the picture's own
+page already shows the living person and the bar in the right place. The
+record exists so a departure can be reconstructed, not so it can be
+displayed.
+
+The record opens with **138 wrong closings**, all dated 3 August 2026.
+127 are pictures the survivor test had never actually run on — among them
 *Gidget* (1959), published as closed while Jo Morrow, who played Mary Lou,
 was alive and credited on TMDB. The other 11 were closed under one release
 year while another release year's judgement named somebody living, which
 is a rule this archive believed it already had and did not.
 
+A further **23,161 departures** are in the same file and are a different
+statement: those closings were not wrong so much as never grounded, and
+they left because a closing now requires a recorded death. They are the
+unclassified — see §12.
+
 **The limits of that record should be read with it.** It begins on
 3 August 2026; nothing before that date was kept and nothing can
-reconstruct it, so the archive cannot tell you what it withdrew in July.
-Every one of the 138 opening entries carries no entry date, because those
-pictures were published across many builds before any roll of what-is-
-published existed. A retraction that guessed when the claim began would be
-worse than one that says it does not know, and the page says it does not
-know.
+reconstruct it, so the archive cannot say what it withdrew in July. Every
+one of the opening entries carries no entry date, because those pictures
+were published across many builds before any roll of what-is-published
+existed, and a guess at when a claim began would be worse than a blank.
 
 **Superseded, 3 August 2026.** This section previously reported that
 1,077 entries had no TMDB identifier and that a stored flag marking them

@@ -73,7 +73,7 @@ asserted rather than quietly implied to be safe.
 | 31 | A picture is **filed once**, under its earliest release year, however many release dates it has; the id decides, never the title | `build-corpus.js` | integrity check |
 | 32 | A living person found under **any** release year vetoes the picture under **all** of them; a second release year cannot outvote a survivor | `build-corpus.js` | integrity check |
 | **Retraction** | | | |
-| 33 | A closing that leaves the corpus is **recorded, not deleted**: what was published, when it entered, when it left, and who was found living | `build-corpus.js` | asserted |
+| 33 | A closing that leaves the corpus is **recorded, not deleted**: what was published, when it entered, when it left, and who was found living. The record is kept, not shown | `build-corpus.js` | asserted |
 | **Evidence** | | | |
 | 34 | A closing needs **at least one recorded death**, or a release year old enough that arithmetic settles it; nobody living and nobody dead is **unclassified**, not closed | `verify.js` `evidenced` | reproduced |
 

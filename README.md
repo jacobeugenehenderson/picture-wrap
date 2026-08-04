@@ -18,6 +18,11 @@ A film's page is a single list of everyone credited on it, divided by a gold
 bar: the living above, the dead below. As people die the bar rises. When it
 reaches the top, the picture has wrapped, and it enters the Vault.
 
+A picture has three states, not two. A closing needs a recorded death: a
+picture where nobody is recorded dead *and* nobody is recorded living is
+**unclassified** rather than wrapped, because an absence of evidence is
+not evidence. That is 23,161 of them, and they have their own list.
+
 ---
 
 ## The three parts
@@ -27,7 +32,7 @@ The project is deliberately things that barely know about each other.
 | | | |
 |---|---|---|
 | **The site** | `index.html` `style.css` `app.js` `corpus.js` `shared.js` `verify.js` | Static files. No backend, no build step, nothing shipped that it didn't write. The browser queries Wikidata and TMDB directly, and reads the corpus over HTTP. |
-| **The corpus** | built by `poster/build-corpus.js` into `dist/` | 97,395 closings as immutable, versioned, static shards, plus the retraction record. Hosted on Cloudflare Pages; `CORPUS_BASE` in `app.js` is the only thing that names where. |
+| **The corpus** | built by `poster/build-corpus.js` into `dist/` | 97,395 closings and 23,161 unclassified pictures, as immutable, versioned, static shards. Hosted on Cloudflare Pages; `CORPUS_BASE` in `app.js` is the only thing that names where. |
 | **The poster** | `poster/` | Node scripts. Judges pictures, records the working, and posts approved closings to Bluesky. |
 
 They share two files, and the difference between them is the design.

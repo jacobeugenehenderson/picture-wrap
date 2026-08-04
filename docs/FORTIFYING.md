@@ -48,9 +48,15 @@ record a rebuild can erase is not a record.
   was published, when it entered, when it left, the verdict that replaced
   it, and who was found living.
 
-`build-corpus.js` diffs the two on every build and publishes the ledger
-into the corpus as `removed.json`, so the retraction travels with the
-thing it retracts. A film page states it above the roster.
+`build-corpus.js` diffs the two on every build and publishes the wrong
+closings into the corpus as `removed.json`.
+
+**It is not shown anywhere, and that was decided the same day.** A banner
+on the picture and a page listing every departure were both built and both
+removed: a picture whose closing was withdrawn already reads correctly,
+and an account of what the archive got wrong is a question about the
+archive rather than about film. The record is for reconstructing a
+departure, not for displaying one.
 
 **It opened with 138 entries rather than empty**, seeded by
 `seed-removals.js` from a snapshot taken before the 3 August repair. An
@@ -66,9 +72,7 @@ says it in those words.
 
 **What is still missing.** `recheck.js` was never wired to the ledger —
 departures are detected at build time by diffing, which catches everything
-but attributes nothing to the run that caused it. And there is no page
-listing retractions; they are reachable from the picture, which is the
-case that matters, and not browsable.
+but attributes nothing to the run that caused it.
 
 ### 2. An entry does not say when it was checked
 

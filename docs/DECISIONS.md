@@ -1232,3 +1232,100 @@ credits are thin enough that the director outlived the record.
 were jointly the last of a picture. The corpus names one of them as its
 closer, and that is a presentation choice rather than a fact about who
 outlived whom, so both pages show the mark.
+
+---
+
+## A closing needs a death
+
+*3 August 2026.*
+
+**Decision.** A picture closes when a death is on record for someone
+credited, or when it was released before anyone now living could have
+worked on it. A picture where nobody is recorded dead and nobody is
+recorded living is **unclassified** — a third state — rather than wrapped.
+
+**Why.** The rule that unrecorded people never veto (rule 17) is right for
+the case it was written for: a picture with thirty recorded deaths and two
+blanks is closed, because holding it open forever on two blanks is a claim
+about the blanks that nothing supports. Run the same rule where *every*
+person is a blank and it returns the strongest claim on the site out of no
+evidence at all. 23,161 pictures were in that position — 19% of what was
+published as the Vault, median release year 2007, median one name on
+record. *Aanikoobijigan* (2026) was published as wrapped with Zack Khalil,
+born 1991, credited on it.
+
+**Why a state rather than a stricter rule.** Patching rule 17 would have
+fixed the false claim and left 23,161 pictures with nowhere to go. The
+project already gave a *person* three states — dead, living, unrecorded —
+and gave a picture two, so the pictures that fell into the third fell into
+the Vault instead. The bug was a missing state.
+
+**Cost.** The Vault is 21% smaller. It is also stronger: 93.6% of closings
+are now dated to the day against 75.6%, and 1.6% carry no date at all
+against 20.5%. The imprecision was this class sitting inside it.
+
+**Rejected: estimating.** Applying the mean release-to-wrap wait — 50.2
+years — to the unclassified was considered and dropped. The mean is an
+artifact of the observation window: pictures that have not closed are
+excluded from it by construction, so the apparent wait falls from 61 years
+in the 1930s to 7 in the 2010s. It would also have been applied hardest
+where the record is thinnest, since a one-name picture waits 37.9 years on
+average against 65.3 for ten names or more, and the unclassified have a
+median of one. And the site publishes that every date is copied from a
+database and none is inferred.
+
+---
+
+## The archive does not publish an account of itself
+
+*3 August 2026.*
+
+**Decision.** Departures are recorded in `pass/removed.jsonl` and the
+wrong ones are published in the corpus as `removed.json`. Nothing on the
+site shows either.
+
+**Why.** A per-picture banner and a page listing every withdrawal were
+both built and both removed the same day. A picture whose closing was
+withdrawn already reads correctly — the living person is listed and the
+bar is down — so a banner adds nothing about the picture and everything
+about this project. A list of every such picture answers "what has this
+archive got wrong", which is a question about the archive.
+
+**Cost.** A reader who cited a closing that later reopened is not told.
+Accepted: the picture's page shows the truth, and the record exists so a
+departure can be reconstructed on request.
+
+**The general form.** When the honest answer to "who is this for" is
+*someone auditing us*, it belongs in `pass/`, `docs/` or a commit message,
+not on the page.
+
+---
+
+## Tiles are earned by share, not by rank
+
+*3 August 2026.*
+
+**Decision.** A country or genre earns a filter tile by holding one
+picture in five hundred of the archive it belongs to. Every other label is
+reachable by name through a `datalist` carrying all of them with counts.
+
+**Why.** The rows were the top 23 genres and top 14 regions, and a rank
+cut is arbitrary wherever it lands. Where it landed: Japanese cinema, 822
+closings, had no tile — while §12 of `METHOD.md` names Japanese
+under-representation as a limit of the sources. Nor did Spanish, Polish,
+Hungarian, Czechoslovak, or science fiction. 214 omitted country labels
+covered 15,108 closings.
+
+A share scales without a second number, so the Vault and the unclassified
+get proportionate rows from one constant, and it is a sentence a reader
+can check.
+
+**Why not all of them.** 451 genres and 228 countries is not a filter row,
+and the crossings that let a tile carry an honest count would be 103,000
+entries in a file every visitor fetches.
+
+**Consequence.** The landing's doors and the Vault's filters had shared a
+label set and a precomputed table; deepening it took `summary.json` to
+438 KB. They are separate now — a door is a curated way in and carries
+film picks ranked three ways, a tile is a filter and carries a count —
+and the file is 283 KB.
