@@ -573,6 +573,17 @@ export async function deathsByName(people, sparql) {
         buried.set(person.id, {
           wikidataId: candidates[0].p ? String(candidates[0].p).split('/').pop() : null,
           died: day(candidates[0].dod),
+          /* The FULL birth date the match landed on, not only the year it
+             was matched by. The match is deliberately a year — that is
+             rule 14 and it is not being tightened here — but a caller
+             that wants to know how good the match was cannot ask without
+             this, and one of them does: the disputes file is read by a
+             person deciding whether to overwrite a date, and two people
+             who merely share a name and a birth YEAR produce a dispute
+             out of nothing. Paul J. Smith the animator, born 1906-03-15,
+             was recorded as disagreeing with Paul J. Smith the Disney
+             composer, born 1906-10-30. */
+          born: candidates[0].dob ? day(candidates[0].dob) : null,
           matchedOn: `${person.name}, born ${born}`,
         });
       }

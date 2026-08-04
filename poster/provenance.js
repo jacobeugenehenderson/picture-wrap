@@ -131,6 +131,29 @@ const wanted = function* (file) {
 
 const keyOf = person => `${person.name}|${person.tmdb.born.slice(0, 4)}`;
 
+/* How far apart the two birth dates are, in words a reader can act on. */
+const matchQuality = (ours, theirs) => {
+  if (!theirs) return 'no birth date on the item';
+  if (ours === theirs) return 'exact';
+
+  /* A date ending 1 January on one side only is a year wearing a date's
+     clothes, the same signal this file already reads on deaths. Measuring
+     the gap in days turns "Wikidata knows the year and no more" into "286
+     days apart", which reads as evidence of two people and is evidence of
+     one thin record. */
+  const yearOnly = d => /-01-01$/.test(d);
+  if (yearOnly(theirs) && !yearOnly(ours)) return 'wikidata records only a year';
+  if (yearOnly(ours) && !yearOnly(theirs)) return 'we record only a year';
+
+  const [a, b] = [Date.parse(ours), Date.parse(theirs)];
+  if (Number.isFinite(a) && Number.isFinite(b)) {
+    const days = Math.round(Math.abs(a - b) / 86400000);
+    if (days <= 7) return `${days} day${days === 1 ? '' : 's'} apart`;
+    return `${days} days apart — CHECK, may be two people`;
+  }
+  return 'year only';
+};
+
 /* ---- pass one: gather the distinct people, across every year --------- */
 
 const asking = new Map();   /* "name|1904" -> { name, tmdb } */
@@ -229,7 +252,26 @@ for (const year of present) {
         const row = disputes.get(keyOf(person)) || {
           name: person.name, born: person.tmdb.born,
           tmdb: person.tmdb.died, wikidata: hit.died,
-          wikidataId: hit.wikidataId, pictures: 0,
+          wikidataId: hit.wikidataId,
+          /* How good the identification is, which is a different question
+             from how good the date is, and the file could not previously
+             be read without it.
+
+             These people were matched on a name and a birth YEAR. Where
+             the two birth dates are the same day, that is one person with
+             two recorded death dates and a genuine dispute. Where they are
+             a month apart, it is probably two people and no dispute at
+             all — Paul J. Smith the animator, born 1906-03-15, was filed
+             as disagreeing with Paul J. Smith the Disney composer, born
+             1906-10-30, and a reader acting on that row would have
+             replaced a correct date with a stranger's.
+
+             Reported rather than filtered: Antonio Moreno is 09-24 to
+             TMDB and 09-26 to Wikidata, two days apart on one man, and a
+             hard exact-match rule would throw away a real correction. */
+          wikidataBorn: hit.born || '',
+          match: matchQuality(person.tmdb.born, hit.born),
+          pictures: 0,
         };
         row.pictures++;
         disputes.set(keyOf(person), row);
@@ -325,12 +367,14 @@ if (conflicts.length) {
 if (disputes.size) {
   const path = join(OUT, 'provenance-disputes.tsv');
   const rows = [...disputes.values()].sort((a, b) => b.pictures - a.pictures);
-  await writeFile(path, 'name\tborn\ttmdb\twikidata\twikidataId\tpictures\n' +
-    rows.map(r => [r.name, r.born, r.tmdb, r.wikidata, r.wikidataId, r.pictures].join('\t'))
+  await writeFile(path,
+    'name\tborn\twikidataBorn\tmatch\ttmdb\twikidata\twikidataId\tpictures\n' +
+    rows.map(r => [r.name, r.born, r.wikidataBorn ?? '', r.match ?? '',
+                   r.tmdb, r.wikidata, r.wikidataId, r.pictures].join('\t'))
       .join('\n') + '\n');
   console.log(`\n${disputes.size.toLocaleString('en')} disputed people written to ${path}`);
 }
 
 console.log(dryRun
-  ? '\nDry run. Nothing written.'
+  ? '\nDry run: the evidence was not touched. The disputes file WAS rewritten — it is the diagnostic, not a change to the corpus.'
   : '\nWritten. Nothing was re-judged: run audit.js to confirm every verdict still reproduces.');
