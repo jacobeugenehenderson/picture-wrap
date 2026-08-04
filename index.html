@@ -42,26 +42,33 @@
        large card. `card.png` is drawn by make-card.py, not edited.
 
        `twitter:` is still read by Slack and others despite the company it
-       is named after having changed its name; the tag did not follow. -->
+       is named after having changed its name; the tag did not follow.
+
+       The og/twitter description is deliberately NOT the same string as
+       `<meta name="description">` above. A card is read in a second, at
+       two lines, beside an image already carrying the idea; a search
+       result is read cold with nothing else to go on. The short line is
+       for the first and the epigraph is for the second. -->
+
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Picture Wrap">
   <meta property="og:url" content="https://picture-wrap.com/">
   <meta property="og:title" content="Picture Wrap">
-  <meta property="og:description" content="Every picture wraps twice: first when the shooting stops, and finally when the last person who made it is gone.">
+  <meta property="og:description" content="The picture wraps twice">
   <meta property="og:image" content="https://picture-wrap.com/card.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Picture Wrap — a gold bar across a dark field, the living above it and the dead below.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Picture Wrap">
-  <meta name="twitter:description" content="Every picture wraps twice: first when the shooting stops, and finally when the last person who made it is gone.">
+  <meta name="twitter:description" content="The picture wraps twice">
   <meta name="twitter:image" content="https://picture-wrap.com/card.png">
 
   <!-- Bump ?v= on BOTH tags whenever style.css or app.js changes. Browsers
        cache these hard; without a new URL, returning visitors keep the old
        version until they hard-refresh. The number is arbitrary — any change
        works — but keeping them in step makes it one edit to remember. -->
-  <link rel="stylesheet" href="style.css?v=95">
+  <link rel="stylesheet" href="style.css?v=96">
 </head>
 <body>
 
@@ -141,7 +148,7 @@
 
   <!-- type="module" so app.js can import shared.js, which the poster imports
        too. Native ES modules in both runtimes; still no build step. -->
-  <script type="module" src="app.js?v=95"></script>
+  <script type="module" src="app.js?v=96"></script>
   <script src="embed-height.js"></script>
 </body>
 </html>

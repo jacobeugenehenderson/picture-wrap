@@ -283,8 +283,11 @@ and filled the space better. A number baked into a committed PNG goes
 stale the next time the corpus moves and nothing would catch it — the card
 is not audited, not tested, and never looked at again once it works.
 
-`og:description` is the epigraph, which is already `<meta name=
-"description">` and the README's first line. Three places, one sentence.
+`og:description` is **"The picture wraps twice"**, and is deliberately
+not the same string as `<meta name="description">`. A card is read in a
+second, at two lines, beside an image already carrying the idea; a search
+result is read cold with nothing else beside it. The short line is for
+the first, the epigraph for the second.
 
 ### The part that is no longer what the old entry said
 
