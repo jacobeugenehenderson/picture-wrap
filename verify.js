@@ -149,6 +149,8 @@ export function evidenced(judged, releaseYear) {
 export function classifyRoster(rows, releaseYear) {
   const outside = [];
   const inPlay = [];
+  /* Dead by arithmetic: no date to show, but evidence all the same. */
+  const settled = [];
 
   for (const r of rows || []) {
     /* Born after the picture came out — rule 6. */
@@ -173,12 +175,29 @@ export function classifyRoster(rows, releaseYear) {
     /* In the picture, and the picture did not credit them — rule 4b. */
     const notCredited = uncredited({ roles: r.credits });
 
-    if (misattributed || beyond || unrecorded || pastKnowing || notCredited) outside.push(r);
-    else inPlay.push(r);
+    if (misattributed || beyond || unrecorded || pastKnowing || notCredited) {
+      outside.push(r);
+      /* But `beyond` is not "we cannot say" — it is rule 8 saying DEAD.
+         `statusOf` returns 'dead' for exactly this person, and the corpus
+         counts them as evidence that a picture has closed.
+
+         They leave the roster because there is no date to put below the
+         bar; inferring a death does not produce one. That is a fact about
+         where the row is DRAWN, and it was being read as a fact about what
+         the row COUNTS AS. 288 pictures the corpus had closed on somebody
+         born in 1880 read as unclassified on their own page.
+
+         The same mistake as deriving "has wrapped" from "has a date", one
+         level further down. */
+      if (beyond && !misattributed && !notCredited) settled.push(r);
+      continue;
+    }
+    inPlay.push(r);
   }
 
   return {
     outside,
+    settled,
     living: inPlay.filter(r => !r.dod),
     gone: inPlay.filter(r => r.dod),
   };
@@ -187,8 +206,17 @@ export function classifyRoster(rows, releaseYear) {
 /* And what that means for the picture. Deliberately the same three states
    the corpus has, so the two can be compared at all. */
 export function rosterVerdict(rows, releaseYear) {
-  const { living, gone } = classifyRoster(rows, releaseYear);
+  const { living, gone, settled } = classifyRoster(rows, releaseYear);
   if (living.length) return 'open';
+  /* Somebody past any human life is a death rule 8 infers, and it closes
+     a picture even though it can never date one. */
+  if (settled.length) return 'closed';
+  /* The same arithmetic `evidenced()` applies: a picture released before
+     anyone now living could have been born has closed, whether or not a
+     single death was written down. Without this the page could not draw
+     an 1896 picture as wrapped at all, and 339 of them contradicted the
+     Vault. */
+  if (beyondLiving(null, releaseYear)) return 'closed';
   if (!gone.length) return 'unclassified';
   return 'closed';
 }

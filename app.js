@@ -22,13 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear, evidenced, uncredited, classifyRoster } from './verify.js?v=59';
-import { openCorpus } from './corpus.js?v=59';
+import { survivors, beyondLiving, earliestLivingBirthYear, evidenced, uncredited, classifyRoster, rosterVerdict } from './verify.js?v=60';
+import { openCorpus } from './corpus.js?v=60';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence, inCountry,
-} from './shared.js?v=59';
+} from './shared.js?v=60';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -433,10 +433,31 @@ async function viewFilm(id) {
     })));
   }
 
+  /* Nobody left in the reckoning is not the same as nobody credited.
+
+     This said "Wikidata has no one credited on this one" whenever the
+     roster emptied — including when it emptied because every credit was
+     excluded, which is what happens on an 1896 picture whose people carry
+     no dates. The sentence was false, and the page contradicted the Vault,
+     which had the picture closed by arithmetic. 339 of them.
+
+     So the two cases separate. Genuinely no credits: say so. Credits that
+     all left the reckoning: draw the picture, wrapped if the arithmetic
+     settles it, with everyone in the third zone where a dash stands in for
+     the date nobody recorded. */
   if (!everyone.length) {
-    setTitle(filmName(meta));
-    show(titleCard(meta, null, null) +
-      `<p class="state">Wikidata has no one credited on this one.</p>`);
+    const settled = rosterVerdict([], meta.year) === 'closed';
+    setTitle(filmName(meta) + (settled ? ' — wrapped' : ''));
+    show(
+      titleCard(meta, settled, null, null)
+      + shareControls(
+        settled
+          ? `Everyone who made ${filmName(meta)} is gone.`
+          : `${filmName(meta)}, and everyone who made it.`,
+        location.hash)
+      + (undated.length
+        ? `<ul class="roster unlisted">${undated.map(undatedRow).join('')}</ul>`
+        : `<p class="state">Wikidata has no one credited on this one.</p>`));
     return;
   }
 
@@ -687,10 +708,36 @@ function renderRoster() {
      Survivors TMDB knows and Wikidata did not attach to the film are in
      `everyone` by the time this runs, so they hold the bar down by being
      in the list, the same way anybody else does. */
-  const allLiving = everyone.filter(p => !p.dod);
-  const wrapDate = allLiving.length === 0 && !tmdbFailed
-    ? everyone.map(p => p.dod).sort().pop()
+  /* Whether it wrapped, and separately whether we can say when.
+
+     These were one expression — the latest death date, or null — which
+     made "has wrapped" and "has a date" the same fact. They are not. A
+     picture whose credits carry no dates at all can still have closed, by
+     the arithmetic of rule 8: released before anyone now living could
+     have been born. The corpus closes 1,362 pictures that way and records
+     them undated; this page could not draw them at all.
+
+     `beyondLiving(null, …)` is the same call `evidenced()` makes in
+     verify.js, so the two agree on what arithmetic settles.
+
+     And the date only prints when it is precise to a day. A Wikidata
+     death of `1974-01-01` reaching this page is almost always a year
+     somebody recorded without a day — the page gets no precision from the
+     query, so the 1 January ending is the only signal, exactly as it is
+     for TMDB. Suppressing a real New Year's Day death is the safe error:
+     the picture still reads as wrapped, and no date is invented. */
+  const { living, gone } = classifyRoster(everyone, filmMeta.year);
+  const wrapped = !tmdbFailed
+    && rosterVerdict(everyone, filmMeta.year) === 'closed';
+
+  const latestDeath = gone.map(p => p.dod).filter(Boolean).sort().pop() || null;
+  const wrapDate = wrapped && latestDeath && !/-01-01$/.test(latestDeath)
+    ? latestDeath
     : null;
+
+  /* Kept under its old name for the share message below, which counts the
+     living rather than classifying them. */
+  const allLiving = living;
 
   const front = split(cast);
   const back  = split(crew);
@@ -699,13 +746,16 @@ function renderRoster() {
   /* The one thing worth carrying into the tab: whether the bar is at the
      top. Appended rather than prefixed, so the title survives truncation
      down to something still recognisable. */
-  setTitle(filmName(filmMeta) + (wrapDate ? ' — wrapped' : ''));
+  setTitle(filmName(filmMeta) + (wrapped ? ' — wrapped' : ''));
 
   /* When a picture has wrapped, the bar rises above everything — the crew
      card included, since everyone in it is gone too. Nothing should sit
      above the bar once there is nobody left; a collapsed card up there
-     softens the one moment the whole design exists to state. */
-  const wrapped = !!wrapDate;
+     softens the one moment the whole design exists to state.
+
+     `wrapped` is computed above, from the verdict rather than from having
+     a date. It was `!!wrapDate` here, which is the bug this whole section
+     is about. */
 
   /* The sentence the page was missing. The stamp gives a date and the
      roster gives an order, but nothing said the human thing: that one
@@ -799,7 +849,7 @@ function renderRoster() {
     </details>` : '';
 
   show(
-    titleCard(filmMeta, wrapDate, lastOne) +
+    titleCard(filmMeta, wrapped, wrapDate, lastOne) +
     shareControls(shareText, location.hash) +
     sourcesNote(filmMeta) +
 
@@ -909,7 +959,7 @@ async function repairNames(rows, idKey, labelKey) {
   return rows;
 }
 
-function titleCard(meta, wrappedOn, lastOne) {
+function titleCard(meta, wrapped, wrappedOn, lastOne) {
   /* Type and country first, because on an obscure or foreign title they're
      the difference between recognising what you're looking at and not.
      "1962 · Japanese television series" says more than a director's name
@@ -920,6 +970,17 @@ function titleCard(meta, wrappedOn, lastOne) {
     meta.directors,
   ].filter(Boolean).join(' &middot; ');
 
+  /* The stamp needs a date; the BAR needs only the verdict. They were one
+     argument, so a picture that had wrapped without a recorded date could
+     not be drawn as wrapped at all — 339 of them, mostly pre-1904, read
+     "Wikidata has no one credited on this one" while the Vault listed
+     them as closed.
+
+     Nothing replaces the stamp when there is no date. The bar under the
+     title is the reading, which is what this design has always claimed,
+     and a line saying "wrapped, date unknown" would be a caption for a
+     mark that already carries it. The third zone below shows the people
+     with a dash where a date would be. */
   const stamp = wrappedOn
     ? `<p class="card-wrapped">Final picture wrap &middot; ${esc(longDate(wrappedOn))}</p>`
     : '';
@@ -934,9 +995,9 @@ function titleCard(meta, wrappedOn, lastOne) {
      needs a badge, a legend or a sentence, and a reader who has seen one
      wrapped picture can read every other page at a glance. */
   return `
-    <section class="card${wrappedOn ? ' is-wrapped' : ''}">
+    <section class="card${wrapped ? ' is-wrapped' : ''}">
       <h2>${esc(meta.label || 'Untitled')}</h2>
-      ${wrappedOn
+      ${wrapped
         ? `<hr class="bar bar-title" aria-label="This picture has wrapped.">`
         : ''}
       ${bits ? `<p class="card-meta">${bits}</p>` : ''}

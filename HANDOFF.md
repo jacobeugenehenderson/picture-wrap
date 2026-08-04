@@ -181,12 +181,14 @@ two people."* 314 people remain disputed:
    fixed 161 where the page read 113-to-122-year-olds as living, a band
    `statusOf` calls unknown.
 
-   **339 remain and they are one thing: the film page cannot draw a wrap
-   without a date.** The corpus closes old pictures by arithmetic and
-   records them undated; the page derives `wrapped` from having a date, so
-   an 1896 picture reads "Wikidata has no one credited on this one" while
-   the Vault lists it as wrapped. A design gap, not a drift — 1,362
-   closings carry no date, so it is wider than the 339 visible here.
+   **All 260,112 comparable pictures now agree.** The remaining 339 were
+   the film page having no way to draw a wrap without a date, fixed in
+   three places: the bar and the stamp are separate arguments now (the bar
+   under the title is the statement), an all-excluded roster no longer
+   claims nobody was credited, and a person past any human life counts as
+   dead for the verdict while still leaving the roster. Rule 27's other
+   half — that the pages gather their own people live — no offline test
+   can reach.
 
 3. **The 256 real disputes**, if you want them. They are published with
    the disagreement, which is an honest resting state.
@@ -228,10 +230,10 @@ node poster/build-corpus.js                 # → dist/
 
 ## Known and unfixed
 
-- **The film page cannot draw a wrap without a date**, so 339 pictures
-  the corpus closed by arithmetic read as unclassified on their own page.
-  `check-pages.js` measures it. Rule 27's other half — that the pages
-  gather their own people live — no offline test can reach.
+- **Rule 27's other half is unreachable offline.** The film and person
+  pages gather their own people live from Wikidata; `check-pages.js`
+  proves they draw the same conclusions from the same people, and nothing
+  can prove they were handed the same people.
 - **37,765 closings (40%) rest on Wikidata alone**, almost all because the
   picture has no TMDB record. A floor, not a bug.
 - **7,069 closings rest on a date only TMDB recorded**, and 832 name no

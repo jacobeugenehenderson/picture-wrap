@@ -74,7 +74,7 @@ asserted rather than quietly implied to be safe.
 | **People** | | | |
 | 26 | Withholding a name takes **the name and never the vote** | `pass.js`, `app.js` | asserted |
 | **Where the rules are applied** | | | |
-| 27 | A **person page and a film page ask Wikidata directly** and gather their own people, which no offline test can reach. What they CONCLUDE from those people is `verify.js`'s and is checked against the corpus on identical input | `verify.js` `classifyRoster`, `poster/check-pages.js` | **checked, 259,773 of 260,112** |
+| 27 | A **person page and a film page ask Wikidata directly** and gather their own people, which no offline test can reach. What they CONCLUDE from those people is `verify.js`'s and is checked against the corpus on identical input | `verify.js` `classifyRoster`, `poster/check-pages.js` | **reproduced, 260,112 of 260,112** |
 | **Disagreement** | | | |
 | 28 | Where two sources give **different dates** for one death, neither is preferred: the published date stands and the disagreement is published beside it | `provenance.js` | asserted |
 | 29 | Agreement on the **year** where one source records only a year is **not** a disagreement — it is one source knowing less | `provenance.js` | asserted |
@@ -330,18 +330,31 @@ it, excluding only people past 122. So somebody aged 115 vetoed a picture
 the corpus had closed. Fixed: the band is in `classifyRoster`, and those
 pages stopped contradicting the Vault.
 
-**339 remain, and they are one thing.** The corpus can close a picture by
-arithmetic alone — `evidenced` returns true when the release year predates
-any possible living person — and it records that as a closing with no
-date. **The film page has no way to draw a wrap without a date**: `wrapped`
-is derived from having one. So an 1896 picture whose credits carry no
-dates reads "Wikidata has no one credited on this one" while the Vault
-lists it as wrapped.
+**339 were the page having no way to draw a wrap without a date**, and
+they took three fixes because the same mistake was made at three depths.
 
-That is a design gap rather than a rule drift, and closing it means giving
-the page a wrapped-but-undated state — the title card, the bar's position
-and the closing line all assume a date. 1,362 closings in the corpus carry
-no date at all, so the gap is wider than the 339 the checker can see.
+`wrapped` was `!!wrapDate` — so "has closed" and "has a date" were one
+fact. They are not: 1,362 closings in the corpus carry no date at all.
+The bar and the stamp now take separate arguments, and **the bar under the
+title is the whole statement**, which is what this design has always
+claimed. Nothing replaces the stamp when there is no date; a line reading
+"wrapped, date unknown" would be a caption for a mark that already carries
+it.
+
+Then the page said *"Wikidata has no one credited on this one"* whenever
+the roster emptied — including when it emptied because every credit was
+excluded, which is exactly what an 1896 picture does. False, and it is how
+the contradiction was visible.
+
+And 288 of the 339 survived both, because **`beyond` was being read as
+"we cannot say" when rule 8 says DEAD.** Somebody born in 1880 with no
+recorded death leaves the roster — there is no date to put below the bar —
+and that is a fact about where the row is drawn, not about what it counts
+as. `statusOf` returns 'dead' for that person and the corpus closes
+pictures on them.
+
+Three versions of one error: deriving what something MEANS from how it is
+DISPLAYED. **260,112 of 260,112 now agree.**
 
 ---
 
