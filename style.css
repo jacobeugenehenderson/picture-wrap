@@ -832,9 +832,13 @@ main,
 .vault-filters button[disabled] span { color: var(--rule); }
 .vault-filters button[disabled]:hover { background: none; border-color: transparent; }
 
-/* Two rows, and the second sits directly under the first: they are one
-   control with two axes, not two controls. */
-.vault-filters + .vault-filters { margin-top: 0; }
+/* `.vault-filters + .vault-filters { margin-top: 0 }` stood here, to sit
+   two chip rows directly under one another as one control with two axes.
+   It stopped matching anything when the type-a-label field was added
+   between them, and was removed on 4 August 2026 — measured, not assumed:
+   both chip rows compute the full 1.2rem top margin, so the rule had been
+   doing nothing. Kept as a note because the intent is still right, and
+   whoever removes the `.chip-find` rows will want it back. */
 
 
 /* Years nested inside decades. Quieter than the decade heading — a
@@ -1261,8 +1265,17 @@ main,
 /* The source filter, set apart from the region and genre chips: those
    narrow WHAT you are looking at, this narrows how well it is evidenced,
    and running them together in one row would imply they are the same kind
-   of question. */
-.vault-sources { margin-top: 0.2rem; }
+   of question.
+
+   It leads the stack rather than closing it. Last, with 0.2rem above it,
+   it read as an afterthought to two rows it is not the same kind of
+   question as — and it is the only one of the three that cannot carry a
+   count, which made it look like the runt rather than the frame.
+
+   The space is BELOW it now, not above: enough that the two tile rows
+   read as a group under it rather than a third sibling. Margins collapse,
+   so this is the gap, not an addition to the tiles' own 1.2rem. */
+.vault-sources { margin: 1.2rem 0 1.7rem; }
 
 /* Said once, on the picture, instead of on two Vault rows in five. */
 .sources-note {

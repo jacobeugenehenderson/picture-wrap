@@ -1688,9 +1688,15 @@ function renderArchive(summary) {
       title="Everyone credited was checked against Wikidata and TMDB, not Wikidata alone">Confirmed</button>
   </div>`;
 
-  const filters = chipRow('region') + findRow('region', summary.allCountries, vaultFilter, 'vault')
-    + chipRow('genre') + findRow('genre', summary.allGenres, vaultFilter, 'vault')
-    + sourceRow;
+  /* Sources first, under the heading and its count, because it is nearer
+     to "what am I looking at" than to a facet: it sets the scope, the
+     tiles narrow the subject. It was last until 4 August 2026 and got
+     lost there — at the foot of 39 country tiles and 30 genre tiles,
+     styled like a third row of the same kind, and the only one of the
+     three carrying no count. */
+  const filters = sourceRow
+    + chipRow('region') + findRow('region', summary.allCountries, vaultFilter, 'vault')
+    + chipRow('genre') + findRow('genre', summary.allGenres, vaultFilter, 'vault');
 
   /* Closing decades, newest first — the axis the Vault has always
      browsed. `decades` in the corpus summary is by RELEASE year and is a
