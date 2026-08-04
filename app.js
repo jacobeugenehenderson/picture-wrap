@@ -546,10 +546,11 @@ async function viewFilm(id) {
        it is why the picture is not in the Vault, and a person the page is
        about does not belong in a fold at the bottom. Nothing counts
        anything for you; the position of the bar is the reading. */
+    const notCreditedAlive = new Set();
     const listed = new Set(everyone.map(p => String(p.tmdbPerson || '')));
     for (const person of found.alive) {
       if (listed.has(String(person.tmdbId))) continue;
-      everyone.push({
+      const row = {
         p: person.wikidata || '',
         pLabel: person.name,
         img: person.img || '',
@@ -557,7 +558,27 @@ async function viewFilm(id) {
         dod: '',
         credits: person.role ? [person.role] : [],
         onScreen: person.onScreen,
-      });
+      };
+
+      /* A survivor the picture never credited is still not a survivor of
+         it. These arrive AFTER the exclusion above — they are found by the
+         TMDB test, which runs later — so they have to be tested again
+         here, or they walk straight past it into the reckoning.
+
+         Jaws is how that showed: nineteen uncredited people were moved out
+         correctly and three were not, because those three were living and
+         came back through this door. Ayn Ruymen as "Nurse (uncredited)"
+         was holding the picture open. */
+      if (uncredited({ roles: row.credits })) {
+        notCreditedAlive.add(String(person.tmdbId));
+        undated.push({
+          id: person.tmdbId, name: person.name,
+          character: person.role || '', p: person.wikidata || '', img: person.img || '',
+        });
+        continue;
+      }
+
+      everyone.push(row);
     }
 
     /* Not the same as finding nobody. Without an answer we decline to
@@ -591,8 +612,17 @@ async function viewFilm(id) {
       }
     }
 
-    /* Anyone now in the list is no longer unaccounted for. */
+    /* Anyone now in the list is no longer unaccounted for — which used to
+       be every survivor the test found, and is no longer. An uncredited
+       one was just put in the third zone deliberately, so taking it out
+       again on the strength of being alive deletes the row entirely.
+
+       Jaws lost three people that way: Ayn Ruymen, David Engelbach and
+       Beverly Powers stopped holding the picture open and stopped being
+       on the page at all, which is worse than the bug being fixed. They
+       were in the picture. */
     const shown = new Set(found.alive.map(a => String(a.tmdbId)));
+    for (const id of notCreditedAlive) shown.delete(id);
     undated = undated.filter(u => !shown.has(String(u.id)));
   }
 
