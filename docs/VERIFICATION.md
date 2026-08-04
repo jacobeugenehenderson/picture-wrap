@@ -32,7 +32,7 @@ asserted rather than quietly implied to be safe.
 | **What a person is** | | | |
 | 1 | **Dead** — a death date from either database, a death Wikidata asserts without dating, or an age past 122 | `verify.js` `statusOf` | reproduced |
 | 2 | **Living** — a creditable birth date, no death anywhere, age within 112 | `verify.js` `statusOf` | reproduced |
-| 3 | **Unrecorded** — anything else, including any age between 112 and 122, and any failed lookup | `verify.js` `statusOf` | reproduced |
+| 3 | **Unrecorded** — anything else, including any age between 112 and 122, and any failed lookup. Never drawn as living: a person with no dates at all leaves the reckoning rather than sitting above the bar | `verify.js` `statusOf`, `app.js` `viewFilm` | reproduced |
 | 4 | A birth date is creditable if **precise to the day**, or if **both databases give one and agree on the year** | `verify.js` `statusOf` | reproduced |
 | 5 | Where the databases disagree on birth year, the **later** year is used — the reading most likely to keep a person alive | `verify.js` | asserted |
 | **Arithmetic, not judgement** | | | |
@@ -64,7 +64,7 @@ asserted rather than quietly implied to be safe.
 | **People** | | | |
 | 26 | Withholding a name takes **the name and never the vote** | `pass.js`, `app.js` | asserted |
 | **Where the rules are applied** | | | |
-| 27 | A **person page and a film page ask Wikidata directly** and must apply rules 6, 7 and 8 themselves; the audit reaches neither | `app.js` `readPeople`, `app.js` `viewFilm` | asserted |
+| 27 | A **person page and a film page ask Wikidata directly** and must apply rules 3, 6, 7 and 8 themselves; the audit reaches neither | `app.js` `readPeople`, `app.js` `viewFilm` | asserted |
 | **Disagreement** | | | |
 | 28 | Where two sources give **different dates** for one death, neither is preferred: the published date stands and the disagreement is published beside it | `provenance.js` | asserted |
 | 29 | Agreement on the **year** where one source records only a year is **not** a disagreement — it is one source knowing less | `provenance.js` | asserted |

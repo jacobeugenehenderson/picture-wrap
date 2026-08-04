@@ -435,7 +435,25 @@ async function viewFilm(id) {
      and nobody wrote down when. */
   const beyond = everyone.filter(p => !p.dod && beyondLiving(p.dob, meta.year));
 
-  const excluded = [...new Set([...misattributed, ...beyond])];
+  /* Neither date on record. Not living, not dead — unrecorded, which is
+     the third state every other part of this project gives a person and
+     this page did not.
+
+     The page was binary: no death date meant living, so somebody Wikidata
+     holds no dates for at all sat above the bar as though we knew they
+     were alive. It is the failure the README calls this project's worst —
+     a missing P570 read as a pulse for ever — surviving in the one
+     surface no audit reaches. Women of the World (2001) is the case:
+     Nicholas Steele and one unlabelled item drawn as living, while the
+     Vault had the picture closed on Philip Adrian Booth, because
+     `statusOf` calls those two unknown and unknowns never veto.
+
+     A birth date with no death is untouched. That is a person who may
+     well be alive and is the claim this site exists to make; only a
+     complete absence of dates lands here. */
+  const undatedEntirely = everyone.filter(p => !p.dod && !p.dob);
+
+  const excluded = [...new Set([...misattributed, ...beyond, ...undatedEntirely])];
   if (excluded.length) {
     const out = new Set(excluded);
     everyone = everyone.filter(p => !out.has(p));

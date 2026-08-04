@@ -19,7 +19,7 @@ is not a loss, it is the removal of claims that were never supported.
 | Built | `dist/`, version `1656efddcc1e`, FORMAT 13, gitignored |
 | **Corpus hosted** | Cloudflare Pages, project `picture-wrap-corpus`, at `https://picture-wrap-corpus.pages.dev/` |
 | **Site hosted** | GitHub Pages from `main`, at picture-wrap.com. **Two hosts** |
-| Live site | current with `main`, `?v=86`, modules `?v=55` |
+| Live site | current with `main`, `?v=87`, modules `?v=55` |
 | Verified | 58,758 closings checked against both databases; **38,637 (40%) against Wikidata alone** and the Vault can filter them out |
 | The closer | 88,675 closings link to the person who closed them; 7,721 rest on a date only TMDB records |
 | Resolution | **93.6% of closings are dated to the day**; 1,532 carry no date at all |
@@ -71,6 +71,11 @@ person vetoes the picture; a second release year cannot outvote them.
 
 ### And on the site
 
+- **The third state reached the film page too.** It was binary — no
+  death date meant living — so somebody Wikidata holds no dates for at
+  all was drawn above the bar. *Women of the World* (2001) showed two
+  such people as living while the Vault had it closed. Canon rules 3
+  and 27.
 - A picture with no TMDB record says so once, in full, on its own page.
 - **The unclassified**, browsed by release year — the only date they have.
   Its own tiles, because it is a different population: documentary is
@@ -97,7 +102,7 @@ git push origin main          # the site; GitHub Pages serves from main
 
 **Bump both `?v=` numbers in `index.html`** whenever `app.js` or
 `style.css` changes, and the module `?v=` at the top of `app.js`. They
-stand at 86 and 55.
+stand at 87 and 55.
 
 **`FORMAT` is only for the shape of the files now.** It stands at 13.
 Since format 8 the version digest reads the whole of every published row,
