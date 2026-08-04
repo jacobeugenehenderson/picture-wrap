@@ -24,7 +24,7 @@ column that matters — **whether anything checks it**.
 A rule nobody checks is a rule that has already drifted from the code
 once, in this project, three times. The audit reproduces every verdict
 from stored evidence, so rules marked *reproduced* are verified against
-95,136 closings on every run. The rest are asserted, and are listed as
+95,151 closings on every run. The rest are asserted, and are listed as
 asserted rather than quietly implied to be safe.
 
 | # | rule | lives in | checked? |
@@ -35,6 +35,7 @@ asserted rather than quietly implied to be safe.
 | 3 | **Unrecorded** — anything else, including any age between 112 and 122, and any failed lookup. Never drawn as living: a person with no dates at all leaves the reckoning rather than sitting above the bar | `verify.js` `statusOf`, `app.js` `viewFilm` | reproduced |
 | 4 | A birth date **places** somebody if Wikidata holds one at any precision, if TMDB's is precise to the day, or if both agree on the year. A lone imprecise TMDB date does not: `1920-01-01` is a year in a date-shaped field, not a birthday | `verify.js` `statusOf` | reproduced |
 | 5 | Where the databases disagree on birth year, the **later** year is used — the reading most likely to keep a person alive | `verify.js` | asserted |
+| 4b | **Uncredited people are outside the reckoning.** TMDB lists everyone who appeared and marks the difference in the character string; a person the picture did not credit does not veto a closing and does not date one either | `verify.js` `uncredited` | reproduced |
 | **Arithmetic, not judgement** | | | |
 | 6 | Nobody worked on a picture **released before they were born**; such credits vote on nothing and date nothing | `verify.js` `impossible`, `app.js` `readPeople` **and `viewFilm`** | reproduced |
 | 7 | A picture **cannot close before it was released**; an earlier death cannot date it | `verify.js` `wrapDate`, `app.js` `readPeople` | integrity check |
@@ -85,7 +86,7 @@ circular rather than decorative:
 
 1. **Reproduction.** Re-decide every verdict and every wrap date from that
    year's own evidence, with the network unplugged. Any rule marked
-   *reproduced* above is exercised 95,136 times per run, because a
+   *reproduced* above is exercised 95,151 times per run, because a
    verdict that cannot be re-derived from the evidence means either the
    rule changed or the evidence is insufficient — and rule 19 is why those
    two are reported separately.
@@ -150,8 +151,8 @@ What it cost, offline, from evidence already on disk:
 
 | | before | after |
 |---|---|---|
-| closed | 97,395 | **95,136** |
-| unclassified | 23,161 | **16,200** |
+| closed | 97,395 | **95,151** |
+| unclassified | 23,161 | **16,203** |
 
 9,220 pictures moved, every one of them into *running*. Nothing moved
 into *dead*. The unclassified drop is the half nobody predicted: those
@@ -214,6 +215,57 @@ run. Sharing the verdict guarantees every surface draws the same
 conclusion from the people it has — not that they have the same people.
 The check described in `BACKLOG.md` is for that residue, and is the right
 tool for it precisely because its test is not equality.
+
+### Uncredited people stopped voting
+
+*4 August 2026, and it changes wrap dates rather than counts.*
+
+TMDB lists everyone who appeared in a picture, credited or not, and marks
+the difference only in the character string: `Soldier (uncredited)`. This
+archive's claim has always been about people **credited** on a picture —
+"everyone" means everyone recorded — so an extra the picture declined to
+record is outside it. Whether Bill Alcorn is alive says nothing about
+whether the people who made *Mildred Pierce* are gone.
+
+**Both directions, and the second is the one that moved things.** An
+uncredited person does not hold a picture open, and does not date its
+wrap either. *Intolerance* (1916) was closed on Peggy Cartwright, "Little
+Girl (uncredited)", in 2001; it now closes on **Lillian Gish in 1993**.
+*Some Like It Hot* was open on an uncredited survivor and now closes on
+**Nehemiah Persoff, 2022**.
+
+**The error runs against this project's grain, which is why the test is
+literal.** Everywhere else, being wrong costs a picture its wrap. Here a
+false match REMOVES a veto and can close a picture on somebody living. So
+it matches the exact parenthesised word TMDB uses, nothing inferred, and
+a person whose role was never stored is not uncredited — they are unknown
+and they keep their vote.
+
+**Which is the limit.** `role` was only written into the evidence for
+years passed after the field was added, the same gap that leaves 27% of
+closers without an on-screen flag. So this is complete on the film page,
+which reads TMDB live, and partial in the corpus:
+
+| | |
+|---|---|
+| pictures holding a TMDB-sourced person | 93,498 |
+| closings dated by a *known* uncredited person, now fixed | 47 |
+| closings dated by a TMDB person whose role was never stored | 7,325 |
+| opens held by TMDB people whose roles were never stored | 18,169 |
+
+About **25,500 pictures** would need their TMDB credits re-fetched before
+the corpus can answer this the way the film page already does.
+
+It also found a third bug in `rebuild.js`. The file refused to re-derive
+any `open` the pass had written, on the rule-19 argument that a
+short-circuited open never gathered its population. True of a
+short-circuit, false of a **tested** open, where the survivor test ran
+over everybody — so fourteen pictures whose only survivor was an
+uncredited extra sat open while the audit failed thirteen years pointing
+at them. The exemption now turns on `tested`, which is what rule 19
+actually says.
+
+---
 
 **Asserted means only that a human wrote it down.** Rules 5, 12, 13, 15,
 18, 20-30 and 33 are not checked by anything, and the honest reading of that

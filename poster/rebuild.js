@@ -30,7 +30,7 @@
 import { readFile, writeFile, rename, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { wrapDate, impossible, statusOf, verdictFor } from '../verify.js';
+import { wrapDate, impossible, statusOf, verdictFor, outsideReckoning } from '../verify.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -140,17 +140,27 @@ for (const year of years) {
        run over everybody. Re-reading it under a changed rule is the same
        re-decision that produced it.
 
-       `wikidata-living` and `tmdb-survivor` come from the pass, and a
-       short-circuited open never gathered its population at all (rule 19).
-       Re-deciding those offline would be inventing an answer, which is
-       what retest.js and the network are for.
+       A TESTED open is re-derivable for the same reason: `tested: true`
+       means the survivor test ran over the whole population, so the
+       evidence is as complete as a closing's. The exemption is not about
+       the verdict being `open`, it is about the population never having
+       been gathered — a SHORT-CIRCUITED open, `tested: false`, where
+       Wikidata showed a survivor and the expensive question was skipped
+       (rule 19). Re-deciding those offline would be inventing an answer,
+       which is what retest.js and the network are for.
+
+       Getting that distinction wrong left 13 years failing their audit
+       when uncredited people stopped voting: fourteen tested opens whose
+       only survivor was an uncredited extra should have closed, and this
+       file would not look at them because the pass had written `open`.
 
        Without this the reopening was one-way: 4 August moved Mildred
        Pierce to open, and the next rebuild — under a rule written to put
        exactly that picture back — skipped it, because it was no longer
        closed. The file's own comment above warns about this shape and it
        happened anyway, one branch further down. */
-    const reDerivableOpen = work.verdict === 'open' && work.reason === 'living-recorded';
+    const reDerivableOpen = work.verdict === 'open'
+      && (work.reason === 'living-recorded' || work.tested === true);
 
     if (!record || !(rederivable.includes(work.verdict) || reDerivableOpen)) {
       if (work.verdict === 'open') tally.open++;
@@ -178,7 +188,8 @@ for (const year of years) {
        statusOf's to decide. */
     const judged = record.judged.map(p => {
       const impossibleHere = p.impossible ?? impossible(p, record.releaseYear);
-      const status = impossibleHere ? 'excluded'
+      const status = outsideReckoning({ ...p, impossible: impossibleHere },
+                                      record.releaseYear) ? 'excluded'
         : p.buriedByName ? 'dead'
         : statusOf(p, record.releaseYear);
       return { ...p, impossible: impossibleHere, status };

@@ -36,7 +36,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { statusOf, wrapDate, impossible, verdictFor } from '../verify.js';
+import { statusOf, wrapDate, impossible, verdictFor, outsideReckoning } from '../verify.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -64,8 +64,9 @@ function decide(work, judged, ceiling) {
   const releaseYear = Number(work.year) || YEAR;
 
   const status = p => {
-    /* Could not have been on the picture, so gets no vote either way. */
-    if (p.impossible ?? impossible(p, releaseYear)) return 'excluded';
+    /* Outside the reckoning, so gets no vote either way: born after the
+       picture came out, or in it without being credited for it. */
+    if (outsideReckoning(p, releaseYear)) return 'excluded';
     /* Wikidata buried this person under their own name and birth year,
        which no amount of re-reading their dates can rediscover — the
        burial was a query, and the evidence records its result. Ignoring

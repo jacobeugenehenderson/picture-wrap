@@ -22,13 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear, impossible, evidenced } from './verify.js?v=57';
-import { openCorpus } from './corpus.js?v=57';
+import { survivors, beyondLiving, earliestLivingBirthYear, impossible, evidenced, uncredited } from './verify.js?v=58';
+import { openCorpus } from './corpus.js?v=58';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence, inCountry,
-} from './shared.js?v=57';
+} from './shared.js?v=58';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -463,7 +463,30 @@ async function viewFilm(id) {
      complete absence of dates lands here. */
   const undatedEntirely = everyone.filter(p => !p.dod && !p.dob);
 
-  const excluded = [...new Set([...misattributed, ...beyond, ...undatedEntirely])];
+  /* In the picture, and the picture did not credit them for it.
+
+     TMDB lists everyone who appeared and marks the difference in the
+     character string — "Soldier (uncredited)". This archive's claim is
+     about people CREDITED on a picture, so an extra who was deliberately
+     not recorded is outside it: whether Bill Alcorn is alive says nothing
+     about whether the people who made Mildred Pierce are gone.
+
+     Both directions, which is the half that is easy to miss. They do not
+     hold a picture open and they do not date its wrap either — Intolerance
+     (1916) was dated on Peggy Cartwright, "Little Girl (uncredited)".
+
+     This page has the character strings live from TMDB, so it is right
+     from the moment it loads. The corpus only knows for the years passed
+     after `role` was stored, and catches up when those are re-fetched —
+     which is rule 27 again, in the one direction where the browser is
+     ahead of the pass rather than behind it.
+
+     `roles` is what verify.js calls the field; the roster calls it
+     `credits`. Adapted here for the same reason `impossible` is above. */
+  const notCredited = everyone.filter(p => uncredited({ roles: p.credits }));
+
+  const excluded = [...new Set([...misattributed, ...beyond,
+                                ...undatedEntirely, ...notCredited])];
   if (excluded.length) {
     const out = new Set(excluded);
     everyone = everyone.filter(p => !out.has(p));

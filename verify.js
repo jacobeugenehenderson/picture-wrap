@@ -116,7 +116,8 @@ export function beyondLiving(born, releaseYear) {
    what is missing is our ability to say anything about it. */
 export function evidenced(judged, releaseYear) {
   if (beyondLiving(null, releaseYear)) return true;
-  return (judged || []).some(p => p.status === 'dead' && !p.impossible);
+  return (judged || [])
+    .some(p => p.status === 'dead' && !outsideReckoning(p, releaseYear));
 }
 
 /* The verdict itself, which until 4 August 2026 was written out four
@@ -152,7 +153,7 @@ export function evidenced(judged, releaseYear) {
 export function verdictFor(judged, releaseYear, { living } = {}) {
   const people = judged || [];
   const anyLiving = living
-    ?? people.some(p => p.status === 'alive' && !p.impossible);
+    ?? people.some(p => p.status === 'alive' && !outsideReckoning(p, releaseYear));
 
   if (anyLiving) return 'open';
   return evidenced(people, releaseYear) ? 'closed' : 'unclassified';
@@ -318,7 +319,7 @@ export function wrapDate(judged, releaseYear) {
   const floor = Number(String(releaseYear || '').slice(0, 4)) || 0;
 
   const dated = judged
-    .filter(p => p.status === 'dead' && !p.impossible)
+    .filter(p => p.status === 'dead' && !outsideReckoning(p, releaseYear))
     .map(p => ({ person: p, died: p.wd?.died || p.tmdb?.died }))
     .filter(d => d.died && (!floor || Number(d.died.slice(0, 4)) >= floor))
     .sort((a, b) => b.died.localeCompare(a.died));
@@ -632,6 +633,52 @@ export async function deathsByName(people, sparql) {
    more seriously, a *living* person misattributed to an old picture would
    veto it forever — the wrap could never happen, and nothing would ever
    explain why. */
+/* Was this person credited on the picture at all?
+
+   TMDB lists everyone who appeared, credited or not, and marks the
+   difference in the character string: "Soldier (uncredited)". It is a
+   convention rather than a field, which is worth saying plainly — there
+   is no boolean to read, so this is a string test on somebody else's
+   data.
+
+   Why it matters here. This archive's claim is about people CREDITED on a
+   picture: "everyone" has always meant everyone recorded, and an extra
+   who was deliberately not recorded is outside that by definition. Bill
+   Alcorn played a soldier in Mildred Pierce and was not credited for it;
+   whether he is alive says nothing about whether the people who made
+   Mildred Pierce are gone.
+
+   IT CUTS BOTH WAYS, WHICH IS THE POINT. An uncredited person does not
+   veto a closing and does not date one either. The second half is the
+   part that is easy to forget and the part that changes wrap dates: if an
+   uncredited extra outlived the cast, the picture closed when the last
+   CREDITED person died, not when they did.
+
+   And note the direction of the error, because it runs against this
+   project's usual grain. Everywhere else, being wrong costs a picture its
+   wrap. Here, a false match on "(uncredited)" REMOVES a veto and can
+   close a picture on somebody still living — the expensive mistake. So
+   the test is deliberately literal: the exact parenthesised word TMDB
+   uses, nothing inferred, no guessing from a blank role. A person whose
+   role we never stored is not uncredited, they are unknown, and they keep
+   their vote.
+
+   Crew are never matched: `job` carries "Director", not a credit
+   convention, and a crew job IS the credit. */
+export const uncredited = person =>
+  (person?.roles || []).some(r => /\(uncredited\)/i.test(String(r)))
+  || /\(uncredited\)/i.test(String(person?.role ?? ''));
+
+/* Outside the reckoning: in the list because they were in the picture,
+   but voting on nothing and dating nothing.
+
+   Two ways in, and they are the same kind of fact. Born after it came out
+   means they cannot have worked on it; uncredited means they did, and the
+   picture did not say so. Both were being tested separately in four
+   places, which is how one of them reached three of them. */
+export const outsideReckoning = (person, releaseYear) =>
+  (person?.impossible ?? impossible(person, releaseYear)) || uncredited(person);
+
 export function impossible(person, releaseYear) {
   if (!releaseYear) return false;
   const born = Number(String(person?.wd?.born || person?.tmdb?.born || '').slice(0, 4));
