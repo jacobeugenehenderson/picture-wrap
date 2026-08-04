@@ -22,13 +22,14 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear, evidenced, uncredited, classifyRoster, rosterVerdict } from './verify.js?v=60';
-import { openCorpus } from './corpus.js?v=60';
+import { survivors, beyondLiving, earliestLivingBirthYear, uncredited, classifyRoster, rosterVerdict } from './verify.js?v=61';
+import { openCorpus } from './corpus.js?v=61';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence, inCountry,
-} from './shared.js?v=60';
+  creditRows,
+} from './shared.js?v=61';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -1264,57 +1265,37 @@ async function viewPerson(id) {
      The wrap is the latest death that is not older than the picture. An
      earlier one belongs to a source author or a composer whose music
      predates the film: they are dead, and they are not what closed it. */
+  /* Every credit, classified by the same function the film page uses.
+
+     This built two maps and walked the union of their keys, so a credit
+     with neither date entered neither map and disappeared. The page then
+     compensated with a separate `credited` COUNT and asked "is everyone
+     accounted for" — a different rule from the corpus's, and one that
+     could not be reconciled with it because the missing people were never
+     in the list to be judged.
+
+     `creditRows` keeps them, `classifyRoster` knows an undated person is
+     unrecorded and never vetoes, and the two surfaces finally read the
+     same code. Canon rule 27; `check-pages.js` exercises this path. */
   const readPeople = f => {
-    const released = Number(String(f.year || '').slice(0, 4));
-    const born = new Map(), died = new Map();
+    const released = Number(String(f.year || '').slice(0, 4)) || null;
+    const rows = creditRows(f.people);
+    const { outside, living, gone } = classifyRoster(rows, released);
 
-    for (const record of String(f.people || '').split('|')) {
-      const [who, b, d] = record.split('#');
-      if (!who) continue;
-      if (b && Number(b)) born.set(who, Math.min(born.get(who) ?? Infinity, Number(b)));
-      if (d) died.set(who, d > (died.get(who) || '') ? d : died.get(who));
-    }
+    /* The wrap is the last death that is not older than the picture — an
+       earlier one belongs to a source author or a composer whose music
+       predates the film. Same rule as `wrapDate`, over the rows this page
+       has. */
+    const datable = gone
+      .map(r => r.dod)
+      .filter(d => d && (!released || Number(String(d).slice(0, 4)) >= released))
+      .sort();
 
-    /* The people, and not only the arithmetic over them. It used to
-       return three numbers, and the trouble with three numbers is that a
-       new rule cannot be applied to them — rules 6 and 7 are not
-       expressible as counts, which is how Philip Glass, born 1937 and
-       credited on Dracula (1931) for a 1999 score, held that picture open
-       on his co-workers' pages while the Vault had it closed on Carla
-       Laemmle in 2014.
-
-       Shaped as verify.js shapes people — `status` and `impossible` — so
-       the rule can come from there instead of being retyped here. The
-       counts are still returned, unchanged, because the closed test below
-       still wants them. */
-    let excluded = 0;
-    const dates = [];
-    const people = [];
-    for (const who of new Set([...born.keys(), ...died.keys()])) {
-      const b = born.get(who), d = died.get(who);
-      /* Born after it came out: they were not on it, and they vote on
-         nothing either way. */
-      if (b && released && b > released) {
-        excluded++;
-        people.push({ status: 'unknown', impossible: true });
-        continue;
-      }
-      if (d) { dates.push(d); people.push({ status: 'dead' }); continue; }
-      /* Past any human life. verify.js calls this dead, and it is what
-         rule 34 means by arithmetic settling it — so it is evidence of a
-         closing even though it produces no date. It stays in `excluded`
-         because the page still leaves it out of the reckoning. */
-      if (b && b < earliestLivingBirthYear()) {
-        excluded++;
-        people.push({ status: 'dead' });
-        continue;
-      }
-      people.push({ status: 'unknown' });
-    }
-
-    const datable = dates.filter(d => !released || Number(d.slice(0, 4)) >= released).sort();
     return {
-      excluded, dead: dates.length, people,
+      rows,
+      excluded: outside.length,
+      dead: gone.length,
+      living: living.length,
       wrapped: datable[datable.length - 1] || '',
     };
   };
@@ -1343,30 +1324,28 @@ async function viewPerson(id) {
       f.people_.wrapped === diedOn;
   }
 
-  /* Two conditions, and they are different questions.
+  /* Has this picture wrapped, as far as Wikidata alone can say?
 
-     The first is this page's own: is every credited person accounted for,
-     as a recorded death or as somebody outside the reckoning? It is
-     stricter than the corpus rule — one person with no dates at all holds
-     the picture back here, where the corpus would let unrecorded people
-     not veto — and it stays that way deliberately, because the claim we
-     must not make is the one that says everybody is gone.
+     This was two conditions and a count. The first asked whether every
+     credited person was accounted for — stricter than the corpus rule,
+     because one person with no dates held the picture back — and it was
+     stricter for a reason that turned out to be an accident: the people
+     with no dates were being DROPPED before the judgement, so counting
+     was the only way to notice them at all. `creditRows` keeps them now,
+     and an unrecorded person is judged rather than merely tallied.
 
-     The second is `evidenced`, from verify.js, and it is new on 4 August
-     2026. Without it the first condition returns TRUE when every credited
-     person is excluded and none is recorded dead: `0 + n === n`. That is
-     precisely the unclassified case — the thing the third state exists to
-     stop claiming — and this page would have called it closed. It never
-     fired, because the whole test is ANDed with corpus membership below
-     and `ids.bin` holds closings only, so the corpus said no on our
-     behalf. Safe by a second condition covering for it is not the same as
-     right, and it is the last of the four places that had its own idea of
-     what closed means. */
+     So it is the same call the film page makes. The two surfaces reach
+     the same verdict from the same rules, which is the whole of canon
+     rule 27, and `check-pages.js` runs this path against the corpus.
+
+     Note what did NOT loosen. A living person still returns `open` — the
+     guard against a picture the corpus closed before Wikidata gained a
+     survivor is `rosterVerdict` itself, not the counting. What changed is
+     that an unrecorded person no longer vetoes, which is what the corpus
+     has always said and what this page uniquely disagreed with. */
   const wikidataClosed = f =>
-    Number(f.credited) > 0 &&
-    (beyondLiving(null, f.year) ||
-      f.people_.dead + f.people_.excluded === Number(f.credited)) &&
-    evidenced(f.people_.people, f.year);
+    rosterVerdict(f.people_.rows, Number(String(f.year || '').slice(0, 4)) || null)
+      === 'closed';
 
   /* Below the bar means verified, and the Vault is what verification
      produces. A filmography can hold sixty closed-looking pictures, and

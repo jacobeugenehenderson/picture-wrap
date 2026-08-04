@@ -74,7 +74,7 @@ asserted rather than quietly implied to be safe.
 | **People** | | | |
 | 26 | Withholding a name takes **the name and never the vote** | `pass.js`, `app.js` | asserted |
 | **Where the rules are applied** | | | |
-| 27 | A **person page and a film page ask Wikidata directly** and gather their own people, which no offline test can reach. What they CONCLUDE from those people is `verify.js`'s and is checked against the corpus on identical input | `verify.js` `classifyRoster`, `poster/check-pages.js` | **reproduced, 260,112 of 260,112** |
+| 27 | A **person page and a film page ask Wikidata directly** and gather their own people, which no offline test can reach. What they CONCLUDE is `verify.js`'s, and BOTH surfaces are checked against the corpus on identical input | `verify.js` `classifyRoster`, `shared.js` `creditRows`, `poster/check-pages.js` | **reproduced, both pages, 260,112 of 260,112** |
 | **Disagreement** | | | |
 | 28 | Where two sources give **different dates** for one death, neither is preferred: the published date stands and the disagreement is published beside it | `provenance.js` | asserted |
 | 29 | Agreement on the **year** where one source records only a year is **not** a disagreement — it is one source knowing less | `provenance.js` | asserted |
@@ -355,6 +355,39 @@ pictures on them.
 
 Three versions of one error: deriving what something MEANS from how it is
 DISPLAYED. **260,112 of 260,112 now agree.**
+
+### And the person page, which was the one that had drifted twice
+
+*Also 4 August. It needed an extraction, not a checker.*
+
+`readPeople` built two maps — births and deaths — and walked the union of
+their keys. **A credit with neither date entered neither map and
+disappeared.** The page compensated with a separate `credited` COUNT and
+the test *is everyone accounted for*, which is a different rule from the
+corpus's and could not be reconciled with it, because the people it was
+counting were never in the list to be judged.
+
+That is also why rules 6 and 7 could not be expressed there. A count
+cannot say "born after the picture came out". Philip Glass, born 1937 and
+credited on *Dracula* (1931) for a 1999 score, held that picture open on
+his co-workers' pages while the Vault had it closed on Carla Laemmle in
+2014.
+
+`creditRows` in `shared.js` keeps every credit, including the dateless
+ones, and `classifyRoster` already knows an unrecorded person never
+vetoes. So `wikidataClosed` collapsed from two conditions and a count to
+one call, and the two surfaces read the same code.
+
+**Nothing loosened that guards a living person.** A living credit still
+returns `open`; the protection was `rosterVerdict` all along, not the
+counting. What changed is that an unrecorded person stopped vetoing —
+which is what the corpus has always said and what this page uniquely
+disagreed with.
+
+The only person-page-specific code left is the parse, so the checker
+exercises it directly: the corpus's people are rendered back into the
+`Qid#birthyear#death` string the query would produce, and the page's own
+path is run over it. **260,112 of 260,112.**
 
 ---
 

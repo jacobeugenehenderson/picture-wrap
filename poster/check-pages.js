@@ -60,6 +60,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { rosterVerdict } from '../verify.js';
+import { creditRows } from '../shared.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -113,7 +114,21 @@ const invisible = person =>
   || Boolean(person.buriedByName);
 
 let checked = 0, agreed = 0, unreachable = 0;
+let personChecked = 0, personAgreed = 0;
 const drift = [];
+const personDrift = [];
+
+/* The person page does not receive rows. It receives one string per
+   credit — `Qid#birthyear#death`, with empty parts where Wikidata holds
+   nothing — and parses it with `creditRows`. That parse is the only
+   person-page-specific code left, and therefore the only place its drift
+   could now live, so it is exercised rather than assumed: the corpus's
+   people are rendered back into the string the query would have produced
+   and the page's own path is run over it.
+
+   A birth YEAR, not a date, because a year is all the query asks for. If
+   the two surfaces ever disagree because one has a day and the other only
+   a year, that is a real difference and shows up here. */
 
 for (const year of years) {
   const dir = join(OUT, String(year));
@@ -138,9 +153,27 @@ for (const year of years) {
     const releaseYear = Number(work.year) || year;
     const mine = rosterVerdict(people.map(asRosterRow), releaseYear);
 
-    if (mine === work.verdict) { agreed++; continue; }
-    if (drift.length < SHOW) {
-      drift.push(`   ${work.title} (${work.year}): corpus ${work.verdict}, page ${mine}`);
+    if (mine === work.verdict) agreed++;
+    else if (drift.length < SHOW) {
+      drift.push(`   ${work.title} (${work.year}): corpus ${work.verdict}, film page ${mine}`);
+    }
+
+    /* And the same picture through the person page's path. Every credit
+       is distinct here — the string uses one id, so `creditRows` folds
+       them into a single row and the comparison would be meaningless.
+       Given distinct ids it is the same judgement, so what this actually
+       tests is the PARSE. */
+    const asStrings = people.map((p, i) => {
+      const born = (p.wd?.born || p.tmdb?.born || '').slice(0, 4);
+      const died = (p.wd?.died || p.tmdb?.died || '').slice(0, 10);
+      return `Q${i}#${born}#${died}`;
+    }).join('|');
+
+    personChecked++;
+    const theirs = rosterVerdict(creditRows(asStrings), releaseYear);
+    if (theirs === work.verdict) personAgreed++;
+    else if (personDrift.length < SHOW) {
+      personDrift.push(`   ${work.title} (${work.year}): corpus ${work.verdict}, person page ${theirs}`);
     }
   }
 }
@@ -152,7 +185,17 @@ console.log(`  ${disagreed.toLocaleString('en')} DISAGREE` +
   (disagreed ? ' — the two implementations differ on identical input' : ''));
 console.log(`\n${unreachable.toLocaleString('en')} skipped: the corpus used somebody the page cannot see`);
 if (drift.length) {
-  console.log('\nexamples:');
+  console.log('\nfilm page:');
   console.log(drift.join('\n'));
 }
-process.exit(disagreed ? 1 : 0);
+
+const personDisagreed = personChecked - personAgreed;
+console.log(`\nthe person page's own path, over the same pictures`);
+console.log(`  ${personAgreed.toLocaleString('en')} agree`);
+console.log(`  ${personDisagreed.toLocaleString('en')} DISAGREE`);
+if (personDrift.length) {
+  console.log('\nperson page:');
+  console.log(personDrift.join('\n'));
+}
+
+process.exit(disagreed || personDisagreed ? 1 : 0);

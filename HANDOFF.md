@@ -20,7 +20,7 @@ Two rules moved from *asserted* to *reproduced* in one night: 34 and 27.
 |---|---|
 | **The corpus** | 137 release years, 329,957 pictures — **95,567 closed**, **16,201 unclassified**, 216,816 running, 1,373 unchecked |
 | Audit | **137 years, 0 failures** — and it is a real check now; on 3 August it was silently failing 123 of them |
-| Pages checked | **260,112 of 260,112 agree** with the corpus on identical people — canon rule 27, `check-pages.js`, exits zero |
+| Pages checked | **both pages, 260,112 of 260,112 agree** with the corpus on identical people — canon rule 27, `check-pages.js`, exits zero |
 | Built | `dist/`, version `50ed51ad6729`, gitignored |
 | **Corpus hosted** | Cloudflare Pages, `picture-wrap-corpus`, at `https://picture-wrap-corpus.pages.dev/` |
 | **Site hosted** | GitHub Pages from `main`, at picture-wrap.com. **Two hosts** |
@@ -217,17 +217,16 @@ two people."* 314 people remain disputed:
    inventory, and the mail-forwarding hazard that comes with a nameserver
    move. Do the routing first; the hosting can wait for an unhurried hour.
 
-2. **The PERSON page has no checker.** `check-pages.js` covers the film
-   page; `readPeople` in `viewPerson` is still a second implementation
-   nothing reaches, and it is where two of the three historical drifts
-   happened — Philip Glass held *Dracula* (1931) open on his co-workers'
-   pages by counting credits instead of classifying people.
+2. ~~The person page has no checker.~~ **Done.** It needed an extraction
+   rather than a checker, as expected: `readPeople` was dropping every
+   credit with no dates, which is why it needed a `credited` count and why
+   rules 6 and 7 could not be expressed there. `creditRows` in `shared.js`
+   keeps them, and `wikidataClosed` collapsed to one call. Both pages now
+   read the same code and both check clean.
 
-   It should be the same shape: give it the corpus's own people and ask
-   whether it reaches the corpus's verdict. The hard part is that
-   `readPeople` folds credits into people and counts, rather than
-   returning them, so it needs the same extraction `classifyRoster` just
-   had. That extraction is the fix, not the checker.
+   **Every surface that has ever drifted is now checked.** What remains
+   unreachable is whether a page's live query gathers the same people the
+   pass did, and no offline test can answer that.
 
 3. **The 256 real disputes**, if you want them — 314 people, of which 256
    share an exact birth date with the Wikidata item and are therefore one
@@ -274,14 +273,10 @@ node poster/build-corpus.js                 # → dist/
 
 ## Known and unfixed
 
-- **Rule 27's other half is unreachable offline.** The pages gather their
-  own people live from Wikidata. `check-pages.js` proves the film page
-  draws the same conclusions from the same people; nothing can prove it
-  was handed the same people, and nothing checks the PERSON page at all.
-- **`viewPerson`'s `readPeople` returns counts, not people**, which is why
-  rules 6 and 7 could not be expressed there and Philip Glass held a 1931
-  picture open. It returns the people now, but its classification is still
-  its own — the film page's moved into `verify.js` and this did not.
+- **Rule 27's other half is unreachable offline.** Both pages gather their
+  own people live from Wikidata. `check-pages.js` proves they draw the
+  same conclusions from the same people; nothing can prove they were
+  handed the same people.
 - **37,765 closings (40%) rest on Wikidata alone**, almost all because the
   picture has no TMDB record. A floor, not a bug.
 - **7,069 closings rest on a date only TMDB recorded**, and 832 name no

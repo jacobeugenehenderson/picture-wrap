@@ -354,6 +354,52 @@ export const inCountry = (countries, label) => {
   return list.includes(label) || list.some(c => tileCountry(c) === label);
 };
 
+/* Every credit on a picture, as roster rows the judgement can read.
+
+   The filmography query returns one `Qid#birthyear#death` per credit,
+   with empty parts where Wikidata holds nothing — `Q123##` is a credited
+   person with no dates at all. It is a string per credit rather than four
+   integers per film because a COUNT cannot express rules 6 and 7, and
+   that is exactly how Philip Glass, born 1937 and credited on Dracula
+   (1931) for a 1999 score, held that picture open on his co-workers'
+   pages while the Vault had it closed on Carla Laemmle in 2014.
+
+   THE PART THAT WAS BEING DROPPED. The person page built two maps, one of
+   births and one of deaths, and then walked the union of their keys — so
+   a credit with neither date entered neither map and vanished. The page
+   compensated with a separate `credited` COUNT and the test "is everyone
+   accounted for", which is a different rule from the one the corpus
+   applies and could not be reconciled with it.
+
+   Keeping the dateless rows means the person page and the film page can
+   read the same function. A person the record cannot place is
+   `{ dob: null, dod: null }`, which `classifyRoster` already knows is
+   unrecorded and already knows never vetoes.
+
+   One row per PERSON, not per credit: somebody who wrote and directed
+   appears twice in the string and must count once. Where the same person
+   arrives with two birth years the earlier wins, which is the reading
+   most likely to keep somebody eligible; where they arrive with two
+   deaths the later wins, for the same reason the wrap takes the last. */
+export function creditRows(people) {
+  const seen = new Map();
+
+  for (const record of String(people || '').split('|')) {
+    const [who, b, d] = record.split('#');
+    if (!who) continue;
+    const row = seen.get(who) || { dob: null, dod: null, credits: [] };
+    const year = Number(b);
+    if (b && year) {
+      const had = Number(row.dob);
+      row.dob = !row.dob || year < had ? String(year) : row.dob;
+    }
+    if (d && (!row.dod || d > row.dod)) row.dod = d;
+    seen.set(who, row);
+  }
+
+  return [...seen.values()];
+}
+
 /* A readable tail on an otherwise opaque URL. The router reads only the
    first two hash segments, so anything after the Q-id is decoration —
    but it turns /#/person/Q807328 into something legible before a click.
