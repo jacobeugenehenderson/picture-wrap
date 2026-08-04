@@ -123,9 +123,12 @@ an id and a wrap date, and three changes in one day slipped past it.
    Function answer crawlers, collapse two hosts into one and let CORS
    relax. `BACKLOG.md` has all three options.
 
-3. **Decide the licence.** Methods now says there is none, which is
-   honest and is not a decision. CC0 with citation requested is the
-   standing recommendation; `BACKLOG.md` has the clauses.
+3. ~~Decide the licence.~~ **Done. CC0 for the corpus, MIT for the code**
+   — `LICENSE-CORPUS` and `LICENSE`, and Methods now states it. Reading
+   the terms in full turned up two clauses the summary had missed:
+   termination obliges us to purge cached TMDB content, which reaches
+   published `v/` shards on the CDN; and "destination website" sits among
+   the commercial-use examples. `SOURCES.md` §6 carries both.
 
 4. **Read `pass/provenance-disputes.tsv`.** 337 people. Nothing should
    overwrite a date on a name match alone.

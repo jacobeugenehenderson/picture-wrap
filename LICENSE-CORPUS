@@ -1,0 +1,74 @@
+# The corpus — CC0 1.0 Universal
+
+The data this project produces is dedicated to the public domain under
+**CC0 1.0 Universal**. The full legal code is at
+`licences/cc0-1.0-legalcode.txt`, or
+https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+To the extent possible under law, Jacob Henderson has waived all copyright
+and related or neighbouring rights — including any sui generis database
+right — to the Picture Wrap corpus. You may copy, modify, distribute and
+use it, including commercially, without asking and without attribution.
+
+## What that covers
+
+The judged pictures, closings, unclassified pictures and the evidence
+behind them: everything published under `v/` by `build-corpus.js` and
+served from `picture-wrap-corpus.pages.dev`, and everything the pass
+writes into `pass/`.
+
+The software is separately licensed under MIT — see `LICENSE`. The TMDB
+logos in `tmdb.svg` and `licences/logos/` are TMDB's and are not ours to
+dedicate, nor are the third-party terms kept in `licences/`.
+
+## Citation, requested and not required
+
+CC0 asks nothing of you. This does:
+
+> Picture Wrap, "The Sawdust Trail" (Q18153746), wrapped 5 October 1974.
+> Consulted 1 August 2026. Derived from Wikidata and TMDB.
+
+Cite the picture's Wikidata identifier and the date you consulted it. The
+underlying databases change, and a claim here is only as current as the
+day it was read.
+
+## What you should know before relying on it
+
+**A death date can be wrong, and roughly one closing in thirteen rests on
+a date only TMDB records.** Where Wikidata and TMDB disagree, the corpus
+publishes the disagreement rather than picking a winner; 1,034 closings
+carry a `disputed` mark and `pass/provenance-disputes.tsv` names the 337
+people behind them. In at least a few dozen cases the archive is known to
+carry a typo it inherited.
+
+**Cast lists are incomplete.** Below-the-line crew does not exist in any
+free database. A picture can read as closed while people who were never
+entered anywhere are alive. This is the project's central limitation and
+no licence changes it.
+
+**A closing needs a recorded death.** Pictures where nobody is recorded
+dead and nobody is recorded living are published as *unclassified* rather
+than wrapped, because an absence of evidence is not evidence.
+
+`docs/METHOD.md` is the full account of how a wrap is decided.
+
+## Why CC0 despite TMDB's terms
+
+TMDB's API terms forbid commercial use, derivatives and AI training, and
+CC0 grants all three. That looks like a conflict and mostly is not.
+
+A death date is a fact. TMDB holds no copyright in *"Auguste Lumière died
+on 10 April 1954"* and their terms claim none — the restriction is
+contractual, and a contract binds the party who agreed to it. That is this
+project, not you. So the realistic consequence of this reading being wrong
+is that TMDB revokes our key, not that a claim reaches anyone downstream.
+
+Two honest caveats. About 8% of published closings are dated by a death
+only TMDB records; `poster/provenance.js` corroborated the rest against
+Wikidata, which is CC0 already, and that share falls as more are matched.
+And TMDB's terms require us to purge cached content if our licence ends —
+an obligation we would honour, which is a reason to hold your own copy if
+you are relying on this.
+
+Nothing here is legal advice, and this dedication is made in good faith
+rather than on counsel's opinion.

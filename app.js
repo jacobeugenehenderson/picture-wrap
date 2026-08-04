@@ -2313,10 +2313,10 @@ function viewAbout() {
         TMDB.
       </p>
       <p>
-        <strong>No licence has been set for this archive yet.</strong>
-        Wikidata is CC0 and TMDB&rsquo;s terms are their own; what this
-        project adds on top of them has no stated terms, and until it does,
-        assume nothing about reuse beyond quotation.
+        The archive is <strong>CC0</strong>: public domain, free to copy,
+        change and use for anything, including commercially. No permission
+        is needed and no attribution is required &mdash; the citation above
+        is asked for, not imposed. The software behind it is MIT.
       </p>
     </div>`);
   revealTmdb();

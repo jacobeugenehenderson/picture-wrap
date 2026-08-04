@@ -132,7 +132,24 @@ serves. None of them posts anything.
 | [docs/SOURCES.md](docs/SOURCES.md) | What is read, what is kept, how it is treated — privacy, licensing and citation |
 | [docs/FINDINGS.md](docs/FINDINGS.md) | What the corpus says, what it only appears to say, and the rules for plotting it |
 | [poster/README.md](poster/README.md) | The poster in detail |
+| [licences/](licences/) | The third-party terms this project operates under, as downloaded |
 | [HANDOFF.md](HANDOFF.md) | Current state and what's unfinished — **read first** |
+
+---
+
+## Licence
+
+**The corpus is [CC0 1.0](LICENSE-CORPUS)** — public domain, no permission
+needed, no attribution required. The citation format in `docs/SOURCES.md`
+is requested rather than imposed.
+
+**The software is [MIT](LICENSE).**
+
+The TMDB marks in `tmdb.svg` and `licences/logos/` are TMDB's own and are
+reproduced under their attribution terms; they are not covered by either.
+`LICENSE-CORPUS` explains why CC0 is the right answer despite TMDB's terms
+forbidding what CC0 grants, and what you should know before relying on the
+data.
 
 ---
 

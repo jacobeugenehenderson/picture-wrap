@@ -807,7 +807,23 @@ condition should govern nothing, because the data is present either way.
 
 ---
 
-## A licence for the corpus
+## A licence for the corpus — DECIDED 3 August 2026
+
+**CC0 1.0 for the corpus, MIT for the code.** `LICENSE-CORPUS` and
+`LICENSE`. Methods no longer says a licence is unset; it says what the
+licence is. The citation format is requested, not required.
+
+Two clauses turned up on 3 August when the terms were downloaded and read
+in full rather than summarised, and both are recorded in `SOURCES.md` §6:
+termination obliges us to **purge cached TMDB content**, which reaches
+published `v/` shards on the CDN and not only local files; and
+**"destination website"** appears among the commercial-use examples in
+§2.A. Neither changed the decision. The second is the one to re-read if
+this site ever earns anything.
+
+The analysis that led there is kept below, unchanged.
+
+---
 
 *Open since 1 August. The `SOURCES.md` §6 question. The terms were read
 on 2 August; what they say is below.*

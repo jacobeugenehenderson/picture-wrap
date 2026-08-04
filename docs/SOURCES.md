@@ -193,12 +193,33 @@ The honest limits, which any citation of this work should carry with it:
 
 Marked open because they are decisions, not oversights.
 
-1. **A licence for our own output.** The corpus is a derived database.
-   CC0 matches Wikidata; CC-BY would ask for credit. Undecided, and now
-   gated on the entry below rather than on taste: TMDB's terms were read
-   on 2 August 2026 and forbid commercial use, derivatives, AI training
-   and caching beyond six months, none of which we can grant and CC0
-   purports to. See `BACKLOG.md`, *A licence for the corpus*.
+1. **Answered on 3 August 2026: CC0 for the corpus, MIT for the code.**
+   `LICENSE-CORPUS` carries the dedication and the reasoning; `LICENSE`
+   carries the software. The citation format in §11 of Methods is
+   requested rather than required.
+
+   The TMDB conflict is real and is decided rather than dissolved. Their
+   terms forbid commercial use, derivatives and AI training; CC0 grants
+   all three. The reasoning is that a death date is a fact, TMDB claims no
+   copyright in it, and a contractual restriction binds the party who
+   agreed to it — this project — rather than anyone downstream. So the
+   exposure is a revoked key, not a claim against a reuser. Entry 2 below
+   is what made this defensible rather than merely arguable: TMDB-only
+   dates are about 8% of closings, not 27%.
+
+   **Two clauses read in full on 3 August that the earlier summary
+   missed.** §1.D: if the licence ends, we must "promptly delete or
+   otherwise purge all TMDB Content, **including any cached content**" —
+   which reaches published `v/` shards on the CDN, not only local files.
+   And §2.A lists a "destination website... or interactive query-response
+   system" among its examples of *commercial* use. This site is a
+   destination website. It is read as aimed at revenue, since the clause
+   sits inside the commercial-use section and picture-wrap.com charges
+   nothing, carries no advertising and earns nothing — but it is the
+   sharpest sentence in the terms for this project and it should be
+   re-read if that ever changes.
+
+   The terms themselves are now kept in `licences/`, as downloaded.
 2. **Answered on 2 August.** A quarter of the corpus cited TMDB where
    Wikidata held the same fact, because the pass stops asking once TMDB
    answers *dead*. `poster/provenance.js` asked: 19,614 closings are now
