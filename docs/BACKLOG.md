@@ -268,18 +268,23 @@ it is also why the first fix is so cheap.
 **Bluesky is solved** and needs nothing: posts carry the portrait and
 poster directly.
 
-### The part that is easy, and worth doing first
+### The part that is easy — DONE, 4 August 2026
 
-A site-wide card: `og:title`, `og:description`, `og:image`,
-`og:url`, `og:type`, and `twitter:card=summary_large_image`. iMessage
-wants an **absolute** `og:image` URL at **1200×630**; give it
-`og:image:width`, `og:image:height` and `og:image:alt` too.
+The site-wide card ships: `og:` and `twitter:` tags in `index.html`, and
+`card.png` at 1200×630, 25 KB, drawn by `make-card.py` rather than edited.
 
-The repository holds no image bigger than a 6.8 KB apple-touch icon, so
-the card has to be made. The obvious one draws itself: the wordmark, the
-gold bar, and the count — *97,395 pictures* — on the same near-black
-ground the site uses. Most links people paste are the front page anyway,
-so this alone fixes the common case.
+It is favicon.svg's composition at card scale — the gold bar full bleed,
+the wordmark above it, the tagline below — because living above the bar
+and gone below is the idea rather than the logo. Blowing the favicon up as
+a *mark* was tried first and reads as a UI glyph; it is drawn for 16px.
+
+**No count on it.** An earlier version read *97,395 PICTURES HAVE WRAPPED*
+and filled the space better. A number baked into a committed PNG goes
+stale the next time the corpus moves and nothing would catch it — the card
+is not audited, not tested, and never looked at again once it works.
+
+`og:description` is the epigraph, which is already `<meta name=
+"description">` and the README's first line. Three places, one sentence.
 
 ### The part that is no longer what the old entry said
 

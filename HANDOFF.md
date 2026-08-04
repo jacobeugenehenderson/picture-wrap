@@ -116,10 +116,14 @@ an id and a wrap date, and three changes in one day slipped past it.
    `licences/` — TMDB's API and site terms, CC0, Wikidata, Wikimedia and
    Bluesky, as fetched on 3 August with their fingerprints.
 
-2. **The link previews.** There are no `og:` or `twitter:` tags at all.
-   The cheap half is a site-wide card. The per-picture half is a fork:
-   hash routing sends no id to a server, and **moving the site to
-   Cloudflare Pages** — where the corpus already lives — would let a
+2. **The link previews — half done, 4 August.** The site-wide card ships:
+   `og:`/`twitter:` tags and `card.png`, drawn by `make-card.py`. Every
+   pasted link now draws a real card.
+
+   **The per-picture half is still open, and is a fork.** Hash routing
+   sends no id to a server, so a crawler asking for a film gets the
+   front-page head — every card is the same card. **Moving the site to
+   Cloudflare Pages**, where the corpus already lives, would let a
    Function answer crawlers, collapse two hosts into one and let CORS
    relax. `BACKLOG.md` has all three options.
 

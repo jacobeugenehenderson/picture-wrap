@@ -24,11 +24,44 @@
   <meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#12100c" media="(prefers-color-scheme: dark)">
 
+  <!-- The card iMessage, Slack, WhatsApp and Bluesky draw when somebody
+       pastes a link. Nobody visiting the site ever sees these; without
+       them the link renders as a bare grey rectangle, which is what it did
+       until 4 August 2026.
+
+       SITE-WIDE, AND ONLY SITE-WIDE. Hash routing means
+       /#/mildred-pierce/Q979726 never sends the id to a server, so a
+       crawler asking for a film gets this same head. Every card is the
+       front-page card. Making it per-picture needs a server that can see
+       the path — see BACKLOG.md, which weighs moving to Cloudflare Pages
+       where the corpus already lives. Most links people paste are the
+       front page anyway.
+
+       og:image must be ABSOLUTE — a relative URL resolves against the
+       crawler, not the page — and 1200x630 is what iMessage wants for a
+       large card. `card.png` is drawn by make-card.py, not edited.
+
+       `twitter:` is still read by Slack and others despite the company it
+       is named after having changed its name; the tag did not follow. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Picture Wrap">
+  <meta property="og:url" content="https://picture-wrap.com/">
+  <meta property="og:title" content="Picture Wrap">
+  <meta property="og:description" content="Every picture wraps twice: first when the shooting stops, and finally when the last person who made it is gone.">
+  <meta property="og:image" content="https://picture-wrap.com/card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Picture Wrap — a gold bar across a dark field, the living above it and the dead below.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Picture Wrap">
+  <meta name="twitter:description" content="Every picture wraps twice: first when the shooting stops, and finally when the last person who made it is gone.">
+  <meta name="twitter:image" content="https://picture-wrap.com/card.png">
+
   <!-- Bump ?v= on BOTH tags whenever style.css or app.js changes. Browsers
        cache these hard; without a new URL, returning visitors keep the old
        version until they hard-refresh. The number is arbitrary — any change
        works — but keeping them in step makes it one edit to remember. -->
-  <link rel="stylesheet" href="style.css?v=90">
+  <link rel="stylesheet" href="style.css?v=91">
 </head>
 <body>
 
@@ -108,7 +141,7 @@
 
   <!-- type="module" so app.js can import shared.js, which the poster imports
        too. Native ES modules in both runtimes; still no build step. -->
-  <script type="module" src="app.js?v=90"></script>
+  <script type="module" src="app.js?v=91"></script>
   <script src="embed-height.js"></script>
 </body>
 </html>
