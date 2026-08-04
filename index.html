@@ -28,7 +28,7 @@
        cache these hard; without a new URL, returning visitors keep the old
        version until they hard-refresh. The number is arbitrary — any change
        works — but keeping them in step makes it one edit to remember. -->
-  <link rel="stylesheet" href="style.css?v=89">
+  <link rel="stylesheet" href="style.css?v=90">
 </head>
 <body>
 
@@ -84,25 +84,31 @@
          ships dates TMDB supplied whether or not this browser ever calls
          them, so the credit is owed on every page load.
 
-         The logo is required alongside the wording, and the terms ask
-         that it sit less prominently than our own branding — so it is
-         here, at the foot, under a wordmark that is larger and above it.
+         The logo is required alongside the wording. It closes the
+         sentence rather than sitting above it: the notice ends on the
+         word TMDB, so the mark can BE that word instead of repeating it.
+         Stacked above, it said TMDB four times in three lines and read as
+         a badge bolted to the foot of the page.
+
+         `alt="TMDB"` is load-bearing — it keeps the required wording
+         intact for a screen reader, which reads the sentence exactly as
+         the terms write it.
+
          `tmdb.svg` is their `blue_short` mark unaltered; it is a single
          path filled with one gradient and recolouring it is not ours to
-         do, which is why nothing here tries. -->
+         do, which is why nothing here tries. The nbsp keeps "by" and the
+         mark on one line, so a wrap can never strand it. -->
     <p class="colophon-tmdb">
-      <a href="https://www.themoviedb.org" rel="noopener">
-        <img src="tmdb.svg" alt="The Movie Database" class="tmdb-mark" width="273" height="36">
-      </a>
       This website uses TMDB and the TMDB APIs but is not endorsed,
-      certified, or otherwise approved by
-      <a href="https://www.themoviedb.org" rel="noopener">TMDB</a>.
+      certified, or otherwise approved&nbsp;by <a
+        href="https://www.themoviedb.org" rel="noopener"
+        ><img src="tmdb.svg" alt="TMDB" class="tmdb-mark" width="273" height="36"></a>.
     </p>
   </footer>
 
   <!-- type="module" so app.js can import shared.js, which the poster imports
        too. Native ES modules in both runtimes; still no build step. -->
-  <script type="module" src="app.js?v=89"></script>
+  <script type="module" src="app.js?v=90"></script>
   <script src="embed-height.js"></script>
 </body>
 </html>

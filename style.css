@@ -1256,24 +1256,27 @@ main,
 
 .colophon-tmdb a { color: inherit; border-bottom: 1px solid var(--rule); }
 
-/* The mark sits on its own line above the notice it belongs to, at a size
-   that reads as a logo and not as branding: the site's own wordmark is
-   several times this. `width`/`height` are on the element so the footer
-   does not reflow when it loads.
+/* The mark closes the notice as its last word. `width`/`height` are on
+   the element so the line does not reflow when it loads; the height here
+   overrides them and `width: auto` keeps the aspect.
 
-   The link around it must lose the underline every other colophon link
-   carries — a rule under an image reads as a box half-drawn.
+   0.64rem against a 0.7rem font because the logo's letterforms are all
+   caps and read optically larger than the sentence they end — matching
+   the declared sizes would make it the loudest thing in the footer.
+
+   The link must lose the underline every other colophon link carries; a
+   rule under an image reads as a box half-drawn.
 
    It is shown at full opacity on purpose. Dimming it to sit quieter
    against this palette would look better and is an alteration of somebody
    else's brand asset, which their terms do not permit. Prominence is
-   carried by size and position instead: 13px at the foot of the page,
-   under a 46px wordmark. */
+   carried by size and position instead: 10px at the foot of the page,
+   against a 46px wordmark. */
 .colophon-tmdb .tmdb-mark {
-  display: block;
+  display: inline-block;
   width: auto;
-  height: 0.85rem;
-  margin: 0 auto 0.6rem;
+  height: 0.64rem;
+  vertical-align: -0.02em;
 }
 
 .colophon-tmdb a:has(.tmdb-mark) { border-bottom: 0; }

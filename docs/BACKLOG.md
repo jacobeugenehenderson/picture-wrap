@@ -779,11 +779,22 @@ paragraph says what TMDB's role actually is: about one closing date in
 thirteen rests on a death only TMDB records.
 
 **The logo is in**, at Jacob's instruction on 3 August. `tmdb.svg` at the
-repository root is TMDB's `blue_short` mark, unmodified — 13px at the foot
-of the page, under a 46px wordmark, which is how the terms' *less
-prominent than your own branding* condition is met. It is shown at full
-opacity deliberately: dimming it to sit quieter against this palette would
-be an alteration of somebody else's brand asset.
+repository root is TMDB's `blue_short` mark, unmodified — 10px, against a
+46px wordmark, which is how the terms' *less prominent than your own
+branding* condition is met. It is shown at full opacity deliberately:
+dimming it to sit quieter against this palette would be an alteration of
+somebody else's brand asset.
+
+**It closes the notice rather than sitting above it.** Stacked, it read as
+a badge bolted to the foot of the page and said TMDB four times in three
+lines. The required sentence ends on the word TMDB, so the mark is that
+word — `alt="TMDB"` keeps the wording intact for a screen reader, which
+hears the notice exactly as the terms write it. A one-line variant was
+tried and rejected: it read better and it abbreviated their required
+wording, which is not ours to edit.
+
+On the light palette the gradient's green end goes pale against cream.
+Legible, and left alone for the same reason as the opacity.
 
 All five marks are kept in `licences/logos/` with the terms themselves.
 TMDB fingerprints its asset filenames with a SHA-256 of the contents and
