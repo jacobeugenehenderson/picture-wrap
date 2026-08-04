@@ -24,7 +24,7 @@ column that matters — **whether anything checks it**.
 A rule nobody checks is a rule that has already drifted from the code
 once, in this project, three times. The audit reproduces every verdict
 from stored evidence, so rules marked *reproduced* are verified against
-94,446 closings on every run. The rest are asserted, and are listed as
+95,136 closings on every run. The rest are asserted, and are listed as
 asserted rather than quietly implied to be safe.
 
 | # | rule | lives in | checked? |
@@ -33,7 +33,7 @@ asserted rather than quietly implied to be safe.
 | 1 | **Dead** — a death date from either database, a death Wikidata asserts without dating, or an age past 122 | `verify.js` `statusOf` | reproduced |
 | 2 | **Living** — a birth year from either database, no death anywhere, age within 112. Precision is not required and must not be: the claim it would guard is the safe one | `verify.js` `statusOf` | reproduced |
 | 3 | **Unrecorded** — anything else, including any age between 112 and 122, and any failed lookup. Never drawn as living: a person with no dates at all leaves the reckoning rather than sitting above the bar | `verify.js` `statusOf`, `app.js` `viewFilm` | reproduced |
-| 4 | ~~A birth date is creditable if precise to the day, or if both databases agree on the year.~~ **Withdrawn 4 August 2026** — it demanded precision to hold a picture OPEN and none to let it CLOSE, and 3,132 closings rested on somebody it had silenced | — | withdrawn |
+| 4 | A birth date **places** somebody if Wikidata holds one at any precision, if TMDB's is precise to the day, or if both agree on the year. A lone imprecise TMDB date does not: `1920-01-01` is a year in a date-shaped field, not a birthday | `verify.js` `statusOf` | reproduced |
 | 5 | Where the databases disagree on birth year, the **later** year is used — the reading most likely to keep a person alive | `verify.js` | asserted |
 | **Arithmetic, not judgement** | | | |
 | 6 | Nobody worked on a picture **released before they were born**; such credits vote on nothing and date nothing | `verify.js` `impossible`, `app.js` `readPeople` **and `viewFilm`** | reproduced |
@@ -85,7 +85,7 @@ circular rather than decorative:
 
 1. **Reproduction.** Re-decide every verdict and every wrap date from that
    year's own evidence, with the network unplugged. Any rule marked
-   *reproduced* above is exercised 94,446 times per run, because a
+   *reproduced* above is exercised 95,136 times per run, because a
    verdict that cannot be re-derived from the evidence means either the
    rule changed or the evidence is insufficient — and rule 19 is why those
    two are reported separately.
@@ -127,14 +127,33 @@ place you at all, rule 17 still holds — and must, because **49.3% of
 closings hold at least one person with no birth year anywhere**, and
 holding those open forever would be a claim about a blank.
 
+**And placement has to come from something that placed a person.** The
+first version of this went too far and was narrowed the same night. With
+precision dropped outright, *Mildred Pierce* (1945) reopened on Bill
+Alcorn — "Soldier (uncredited)", existing as `1920-01-01` in TMDB and
+nowhere else at all, holding the picture open at a notional 106. He is
+the case the withdrawn rule was written for; the comment defending it
+named him.
+
+So the test is not precision and not nothing: **a lone imprecise date
+from TMDB does not place anybody, and a Wikidata item at year precision
+does.** `1920-01-01` is what TMDB stores when it knows a year and no
+more — a year in a date-shaped field. A Wikidata item is somebody
+catalogued as a person with the day absent rather than invented, which is
+what Jenabi and Nik-Khah Azad are.
+
+That distinction is what the original rule failed to draw. It demanded
+day precision from everybody, so it silenced the two Iranian crewmen
+along with the uncredited extra.
+
 What it cost, offline, from evidence already on disk:
 
 | | before | after |
 |---|---|---|
-| closed | 97,395 | **94,446** |
-| unclassified | 23,161 | **16,069** |
+| closed | 97,395 | **95,136** |
+| unclassified | 23,161 | **16,200** |
 
-10,031 pictures moved, every one of them into *running*. Nothing moved
+9,220 pictures moved, every one of them into *running*. Nothing moved
 into *dead*. The unclassified drop is the half nobody predicted: those
 pictures were never unplaceable — they held a name and a year, and
 calling them unclassified was its own quiet false claim.

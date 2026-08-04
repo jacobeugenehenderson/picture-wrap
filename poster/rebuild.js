@@ -131,7 +131,28 @@ for (const year of years) {
        3 August before it was renamed; accepted here so no year has to be
        migrated by hand. */
     const rederivable = ['closed', 'unclassified', 'unrecorded'];
-    if (!record || !rederivable.includes(work.verdict)) {
+
+    /* An `open` this file wrote is re-derivable; an `open` the pass wrote
+       is not, and the difference is whether the population was gathered.
+
+       `living-recorded` means THIS file reopened the picture from complete
+       stored evidence — a closing's evidence, where the survivor test had
+       run over everybody. Re-reading it under a changed rule is the same
+       re-decision that produced it.
+
+       `wikidata-living` and `tmdb-survivor` come from the pass, and a
+       short-circuited open never gathered its population at all (rule 19).
+       Re-deciding those offline would be inventing an answer, which is
+       what retest.js and the network are for.
+
+       Without this the reopening was one-way: 4 August moved Mildred
+       Pierce to open, and the next rebuild — under a rule written to put
+       exactly that picture back — skipped it, because it was no longer
+       closed. The file's own comment above warns about this shape and it
+       happened anyway, one branch further down. */
+    const reDerivableOpen = work.verdict === 'open' && work.reason === 'living-recorded';
+
+    if (!record || !(rederivable.includes(work.verdict) || reDerivableOpen)) {
       if (work.verdict === 'open') tally.open++;
       return work;
     }
@@ -166,11 +187,19 @@ for (const year of years) {
     tally[dated.dateBasis]++;
     if ((work.wrapped ?? null) !== (dated.wrapped ?? null)) tally.changed++;
 
-    /* Evidence arrived for something previously unclassified: it is a
-       closing again, and says so rather than keeping the older label. */
-    const reopened = work.verdict !== 'closed'
-      ? { verdict: 'closed', reason: work.reason === 'nobody-dated' ? 'wikidata-only' : work.reason }
-      : {};
+    /* Evidence arrived for something previously unclassified, or the
+       person holding it open turned out not to place anybody: either way
+       it is a closing again, and says so rather than keeping the label it
+       carried while it was something else.
+
+       The reason has to be re-derived too. Carrying `work.reason` through
+       left `nobody-dated` on pictures that now had a death, which is why
+       that one was already special-cased — and reopening added a second
+       way to be wrong, since a picture closing out of `open` would have
+       kept `living-recorded`, a reason for the opposite verdict. So it is
+       stated from what the picture IS: tested against TMDB, or closed on
+       Wikidata's word alone. */
+    const reopened = { verdict: 'closed', reason: work.tested ? 'tested' : 'wikidata-only' };
     if (work.verdict !== 'closed') tally.reclassified++;
 
     /* Somebody in the stored evidence is now recorded living, so this is

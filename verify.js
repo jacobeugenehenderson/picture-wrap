@@ -424,6 +424,34 @@ export function statusOf(person, releaseYear) {
      blank that nothing supports. */
   if (!births.length) return 'unknown';
 
+  /* And a placement has to come from somewhere that placed a PERSON.
+     Where the only date is a lone imprecise one from TMDB, it does not.
+
+     `1920-01-01` is what TMDB stores when it knows a year and no more, so
+     it is not a birthday, it is a year in a date-shaped field. Bill
+     Alcorn — "Soldier (uncredited)" in Mildred Pierce, existing as that
+     string in TMDB and nowhere else at all — is the case, and he held
+     that picture open at a notional 106 for exactly as long as this test
+     was missing.
+
+     A Wikidata item at year precision is a different object. Somebody
+     catalogued a person and recorded the year they were born; the day is
+     absent rather than invented. Mehrdad Jenabi and Vahid Nik-Khah Azad
+     are that, born 1956, and they hold The Squeaking Shoes open
+     correctly.
+
+     Which is the distinction the rule that stood here until 4 August
+     failed to draw. It demanded day precision from everybody, so it
+     silenced Jenabi and Azad along with Alcorn, and 3,132 closings rested
+     on people it had silenced. Removing it outright brought Alcorn back.
+     The line is neither precision nor nothing: it is whether a source
+     that records people recorded this one. */
+  const placed = Boolean(person.wd?.born)
+    || (person.tmdb?.born && toTheDay(person.tmdb.born))
+    || births.length === 2 && births[0] === births[1];
+
+  if (!placed) return 'unknown';
+
   /* Old enough that neither 'alive' nor 'dead' is a claim we can make. */
   const age = thisYear() - youngest;
   return age > OLDEST ? 'unknown' : 'alive';
