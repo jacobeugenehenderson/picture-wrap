@@ -1,13 +1,18 @@
-# Handoff — 4 August 2026, small hours
+# Handoff — 4 August 2026, before dawn
 
 Read this before touching anything. Nothing is running. Every job this
 project has is finished, audited, and deployed to both hosts.
 
 ## The one sentence
 
-**The archive stopped claiming things it could not support.** Closings
-went 97,395 → 95,567 across five rule changes, and every one of them moved
-pictures *out* of the Vault. Nothing moved into *dead*.
+**The archive stopped claiming things it could not support, and then it
+started checking itself.** Closings went 97,395 → 95,567 across five rule
+changes, every one of them moving pictures *out* of the Vault and none
+into *dead*. Then the two surfaces that had never been checked against
+each other — the corpus and the film page — were made to agree on all
+260,112 pictures where the comparison is possible.
+
+Two rules moved from *asserted* to *reproduced* in one night: 34 and 27.
 
 ## Where things stand
 
@@ -15,10 +20,11 @@ pictures *out* of the Vault. Nothing moved into *dead*.
 |---|---|
 | **The corpus** | 137 release years, 329,957 pictures — **95,567 closed**, **16,201 unclassified**, 216,816 running, 1,373 unchecked |
 | Audit | **137 years, 0 failures** — and it is a real check now; on 3 August it was silently failing 123 of them |
+| Pages checked | **260,112 of 260,112 agree** with the corpus on identical people — canon rule 27, `check-pages.js`, exits zero |
 | Built | `dist/`, version `50ed51ad6729`, gitignored |
 | **Corpus hosted** | Cloudflare Pages, `picture-wrap-corpus`, at `https://picture-wrap-corpus.pages.dev/` |
 | **Site hosted** | GitHub Pages from `main`, at picture-wrap.com. **Two hosts** |
-| Live site | current with `main`, `?v=104`, modules `?v=58` |
+| Live site | current with `main`, `?v=107`, modules `?v=60` |
 | Verified | 57,810 closings (60%) checked against both databases; 37,765 (40%) against Wikidata alone |
 | The closer | 94,743 closings name one; **7,069 (7%) rest on a date only TMDB records** |
 | Undated | 5,968 closings carry no day-precise death |
@@ -75,6 +81,35 @@ passed after that field existed.
 here has overwritten a date on evidence other than its own pass. The
 rejections are the more interesting half — see *The corrections*.
 
+**And then rule 27 stopped being asserted.** It was the only rule whose
+subject was the code rather than the data: the film page applies the rules
+itself, in the browser, in a second implementation nothing reached. It had
+drifted three times.
+
+The backlog proposed sampling against live Wikidata and explaining the
+differences away — a test that cannot separate drift in our code from a
+credit added last Tuesday. So the question was narrowed until it had an
+exact answer: **given the same people, do the two implementations reach
+the same verdict?** The page's classifier moved into `verify.js` as
+`classifyRoster`, and `poster/check-pages.js` feeds it the corpus's own
+evidence. Offline, complete rather than sampled.
+
+It found 500 disagreements and all of them were the page's fault:
+
+- **161** — the page read 113-to-122-year-olds as living. `statusOf` calls
+  that band *unknown*; the page excluded only people past 122, so somebody
+  aged 115 vetoed a picture the corpus had closed.
+- **339** — the film page could not draw a wrap without a date, and that
+  took three fixes because the same error had been made at three depths.
+  `wrapped` was `!!wrapDate`. An emptied roster claimed nobody was
+  credited. And `beyond` was read as "we cannot say" when rule 8 says
+  *dead*. Every one of them was **deriving what something MEANS from how
+  it is DISPLAYED**.
+
+260,112 of 260,112 now agree, and the checker exits zero so it can gate a
+deploy. What it cannot see is whether the page's live query gathers the
+same people the pass did — rule 27's irreducible half.
+
 ### And on the site
 
 - **Licences**: the terms this project operates under are downloaded and
@@ -121,10 +156,17 @@ Three deep now, and every layer was learned by breaking it:
 retest.js        (network — re-judges, and DROPS corroboration)
   provenance.js  (network — re-corroborates)
     rebuild.js   (offline — re-derives verdicts from evidence)
-      audit.js   (offline — checks every year)
+      audit.js       (offline — does the corpus reproduce itself?)
+      check-pages.js (offline — does the film page agree with it?)
         build-corpus.js
           archive-pass.js   (re-seals the durable copy)
 ```
+
+The two checks answer different questions and both exit non-zero on
+failure. `audit.js` asks whether the corpus can be re-derived from its own
+evidence; `check-pages.js` asks whether the browser would reach the same
+verdict from the same people. Neither subsumes the other, and the second
+only exists because the first cannot reach the browser.
 
 **`retest.js` wipes what `provenance.js` did.** Corroboration is an
 annotation the judgement knows nothing about, so re-judging rebuilds a
@@ -175,23 +217,25 @@ two people."* 314 people remain disputed:
    inventory, and the mail-forwarding hazard that comes with a nameserver
    move. Do the routing first; the hosting can wait for an unhurried hour.
 
-2. ~~Something that checks the film and person pages.~~ **Built —
-   `poster/check-pages.js`.** Rule 27 is checked rather than asserted:
-   259,773 of 260,112 pictures agree on identical input. It found and
-   fixed 161 where the page read 113-to-122-year-olds as living, a band
-   `statusOf` calls unknown.
+2. **The PERSON page has no checker.** `check-pages.js` covers the film
+   page; `readPeople` in `viewPerson` is still a second implementation
+   nothing reaches, and it is where two of the three historical drifts
+   happened — Philip Glass held *Dracula* (1931) open on his co-workers'
+   pages by counting credits instead of classifying people.
 
-   **All 260,112 comparable pictures now agree.** The remaining 339 were
-   the film page having no way to draw a wrap without a date, fixed in
-   three places: the bar and the stamp are separate arguments now (the bar
-   under the title is the statement), an all-excluded roster no longer
-   claims nobody was credited, and a person past any human life counts as
-   dead for the verdict while still leaving the roster. Rule 27's other
-   half — that the pages gather their own people live — no offline test
-   can reach.
+   It should be the same shape: give it the corpus's own people and ask
+   whether it reaches the corpus's verdict. The hard part is that
+   `readPeople` folds credits into people and counts, rather than
+   returning them, so it needs the same extraction `classifyRoster` just
+   had. That extraction is the fix, not the checker.
 
-3. **The 256 real disputes**, if you want them. They are published with
-   the disagreement, which is an honest resting state.
+3. **The 256 real disputes**, if you want them — 314 people, of which 256
+   share an exact birth date with the Wikidata item and are therefore one
+   person with two recorded deaths. The tooling exists now: pull the
+   references, tier them by whether the source is a register or another
+   user-edited site, check the birth date, and feed
+   `pass/date-corrections.tsv`. Fifteen went through it tonight and three
+   were rejected as different people.
 
 4. **`vault/` is down to `suppressed.json`**, which stays — `app.js:1449`
    fetches it on every page load. `archive.json` stays too: it is the
@@ -230,10 +274,14 @@ node poster/build-corpus.js                 # → dist/
 
 ## Known and unfixed
 
-- **Rule 27's other half is unreachable offline.** The film and person
-  pages gather their own people live from Wikidata; `check-pages.js`
-  proves they draw the same conclusions from the same people, and nothing
-  can prove they were handed the same people.
+- **Rule 27's other half is unreachable offline.** The pages gather their
+  own people live from Wikidata. `check-pages.js` proves the film page
+  draws the same conclusions from the same people; nothing can prove it
+  was handed the same people, and nothing checks the PERSON page at all.
+- **`viewPerson`'s `readPeople` returns counts, not people**, which is why
+  rules 6 and 7 could not be expressed there and Philip Glass held a 1931
+  picture open. It returns the people now, but its classification is still
+  its own — the film page's moved into `verify.js` and this did not.
 - **37,765 closings (40%) rest on Wikidata alone**, almost all because the
   picture has no TMDB record. A floor, not a bug.
 - **7,069 closings rest on a date only TMDB recorded**, and 832 name no
