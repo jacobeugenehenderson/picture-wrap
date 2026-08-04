@@ -30,7 +30,7 @@
 import { readFile, writeFile, rename, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { wrapDate, impossible, statusOf, verdictFor, outsideReckoning } from '../verify.js';
+import { wrapDate, impossible, statusOf, verdictFor, outsideReckoning, datesAWrap } from '../verify.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -192,7 +192,13 @@ for (const year of years) {
                                       record.releaseYear) ? 'excluded'
         : p.buriedByName ? 'dead'
         : statusOf(p, record.releaseYear);
-      return { ...p, impossible: impossibleHere, status };
+      /* Re-derived for the same reason `status` is. It is a pure function
+         of the person's dates, and on 4 August a date CHANGED under it:
+         correcting Vladimir Strizhevsky to a year-precision death left
+         `datesAWrap: true` behind from the pass, so five pictures took a
+         wrap date off a death recorded only to the year. Anything derived
+         from a date has to be re-derived when the date can move. */
+      return { ...p, impossible: impossibleHere, status, datesAWrap: datesAWrap(p) };
     });
     const dated = wrapDate(judged, record.releaseYear);
     tally[dated.dateBasis]++;
@@ -282,6 +288,14 @@ for (const year of years) {
     judged: record.judged.map(p => ({
       ...p,
       impossible: p.impossible ?? impossible(p, record.releaseYear),
+      /* And re-derived here as well as in the decision above, because
+         these are two different arrays and only this one is written down.
+         The decision used a freshly derived `datesAWrap`; the evidence
+         kept the one the pass wrote, so after a date was CORRECTED the
+         two disagreed — the works file dated Engineer Kochin's Error to
+         the day while the evidence still said that death dates nothing.
+         The audit reads the evidence, and reported it, correctly. */
+      datesAWrap: datesAWrap(p),
     })),
   }));
   const evPath = join(dir, 'evidence.jsonl');
