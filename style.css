@@ -484,7 +484,20 @@ main,
 }
 
 /* The crew's own living/dead divider. Deliberately a hairline, not the
-   bar — there's only one gold bar per picture and it belongs to the cast. */
+   bar — there's only one gold bar per picture and it belongs to the cast.
+
+   `height: 1px` does not describe what renders, and that is fine. This is
+   a `.roster li`, so it carries `padding: var(--row-pad)` and inherits
+   `box-sizing: border-box`; a declared height under the padding is clamped
+   away and the box floors at 24px. What you see is a 24px band of the same
+   gradient as the bar, at 0.65 opacity, faded at both ends where the bar
+   runs full bleed.
+
+   Left exactly as it is, on 4 August 2026, after being changed twice and
+   put back. Making it a true 1px hairline made it vanish — every roster
+   row already carries a 1px bottom border, so a gold line of that weight
+   reads as one more of those. The opacity and the fade are what separate
+   this from the bar, not the height, and they are enough. */
 .hairline {
   height: 1px;
   margin: 0.5rem 0;

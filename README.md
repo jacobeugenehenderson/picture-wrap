@@ -8,7 +8,7 @@ the last person who made it is gone.*
 
 > **Picking this up mid-flight? Read [HANDOFF.md](HANDOFF.md) first.**
 > It records the current state and what is unfinished. As of 3 August
-> 2026 the site serves a corpus of **97,395 closings**: the corpus files
+> 2026 the site serves a corpus of **94,446 closings**: the corpus files
 > are on Cloudflare Pages, the site itself is on GitHub Pages, and a
 > change to what a closing says usually needs both deployed.
 > `archive.json` and `vault/` are the superseded 11,457-entry Vault and
@@ -21,7 +21,7 @@ reaches the top, the picture has wrapped, and it enters the Vault.
 A picture has three states, not two. A closing needs a recorded death: a
 picture where nobody is recorded dead *and* nobody is recorded living is
 **unclassified** rather than wrapped, because an absence of evidence is
-not evidence. That is 23,161 of them, and they have their own list.
+not evidence. That is 16,069 of them, and they have their own list.
 
 ---
 
@@ -32,7 +32,7 @@ The project is deliberately things that barely know about each other.
 | | | |
 |---|---|---|
 | **The site** | `index.html` `style.css` `app.js` `corpus.js` `shared.js` `verify.js` | Static files. No backend, no build step, nothing shipped that it didn't write. The browser queries Wikidata and TMDB directly, and reads the corpus over HTTP. |
-| **The corpus** | built by `poster/build-corpus.js` into `dist/` | 97,395 closings and 23,161 unclassified pictures, as immutable, versioned, static shards. Hosted on Cloudflare Pages; `CORPUS_BASE` in `app.js` is the only thing that names where. |
+| **The corpus** | built by `poster/build-corpus.js` into `dist/` | 94,446 closings and 16,069 unclassified pictures, as immutable, versioned, static shards. Hosted on Cloudflare Pages; `CORPUS_BASE` in `app.js` is the only thing that names where. |
 | **The poster** | `poster/` | Node scripts. Judges pictures, records the working, and posts approved closings to Bluesky. |
 
 They share two files, and the difference between them is the design.
@@ -82,7 +82,7 @@ things done by hand: `picture-wrap-preview`, `picture-wrap-review`,
 
 ## The scripts
 
-**The corpus.** These built and maintain the 97,395 closings the site
+**The corpus.** These built and maintain the 94,446 closings the site
 serves. None of them posts anything.
 
 | | |

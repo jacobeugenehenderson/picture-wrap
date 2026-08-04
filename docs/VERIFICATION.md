@@ -24,16 +24,16 @@ column that matters — **whether anything checks it**.
 A rule nobody checks is a rule that has already drifted from the code
 once, in this project, three times. The audit reproduces every verdict
 from stored evidence, so rules marked *reproduced* are verified against
-97,395 closings on every run. The rest are asserted, and are listed as
+94,446 closings on every run. The rest are asserted, and are listed as
 asserted rather than quietly implied to be safe.
 
 | # | rule | lives in | checked? |
 |---|---|---|---|
 | **What a person is** | | | |
 | 1 | **Dead** — a death date from either database, a death Wikidata asserts without dating, or an age past 122 | `verify.js` `statusOf` | reproduced |
-| 2 | **Living** — a creditable birth date, no death anywhere, age within 112 | `verify.js` `statusOf` | reproduced |
+| 2 | **Living** — a birth year from either database, no death anywhere, age within 112. Precision is not required and must not be: the claim it would guard is the safe one | `verify.js` `statusOf` | reproduced |
 | 3 | **Unrecorded** — anything else, including any age between 112 and 122, and any failed lookup. Never drawn as living: a person with no dates at all leaves the reckoning rather than sitting above the bar | `verify.js` `statusOf`, `app.js` `viewFilm` | reproduced |
-| 4 | A birth date is creditable if **precise to the day**, or if **both databases give one and agree on the year** | `verify.js` `statusOf` | reproduced |
+| 4 | ~~A birth date is creditable if precise to the day, or if both databases agree on the year.~~ **Withdrawn 4 August 2026** — it demanded precision to hold a picture OPEN and none to let it CLOSE, and 3,132 closings rested on somebody it had silenced | — | withdrawn |
 | 5 | Where the databases disagree on birth year, the **later** year is used — the reading most likely to keep a person alive | `verify.js` | asserted |
 | **Arithmetic, not judgement** | | | |
 | 6 | Nobody worked on a picture **released before they were born**; such credits vote on nothing and date nothing | `verify.js` `impossible`, `app.js` `readPeople` **and `viewFilm`** | reproduced |
@@ -85,7 +85,7 @@ circular rather than decorative:
 
 1. **Reproduction.** Re-decide every verdict and every wrap date from that
    year's own evidence, with the network unplugged. Any rule marked
-   *reproduced* above is exercised 97,395 times per run, because a
+   *reproduced* above is exercised 94,446 times per run, because a
    verdict that cannot be re-derived from the evidence means either the
    rule changed or the evidence is insufficient — and rule 19 is why those
    two are reported separately.
@@ -94,6 +94,59 @@ circular rather than decorative:
 3. **Integrity.** Every wrap date is day-precise, belongs to a named
    person in the evidence, and does not precede the release; unknown
    counts match the unknowns listed.
+
+### The day-precision rule, and why it was withdrawn
+
+*4 August 2026. The largest correction this archive has made to itself.*
+
+A picture on the front page said *The Squeaking Shoes* (2004) had wrapped.
+Its own page showed two men living: Mehrdad Jenabi and Vahid Nik-Khah
+Azad, both born 1956, credited on it, recorded nowhere as dead.
+
+Both are Wikidata precision 9 — a year, with `-01-01` standing in for a
+day nobody recorded. Rule 4 required a birth date to be day-precise, or
+corroborated by both databases on the year, before anyone could be called
+*living*. Neither qualified, both came back *unknown*, unknown never
+vetoes, and the picture closed on Akbar Abdi's death in July 2026.
+
+**The rule was asymmetric and that is the whole of it.** Precision was
+demanded to hold a picture OPEN — the safe direction, where being wrong
+costs a closing — and demanded nothing to let one CLOSE, which is the
+only claim on this site that can be wrong about a living person. The
+comment defending it argued that precision matters for *alive* and not
+for the line above it, which is true of the claim it was written for and
+was never tested against the claim it enabled.
+
+Measured before the change: **3,132 closings — 3.2% — rested on somebody
+with a birth year, no recorded death, and an age under 112. 846 rested on
+somebody who would be under 70 today.**
+
+The line is now placement, not precision. If the record can put you in
+time and shows no death, you are not evidence of a closing. If it cannot
+place you at all, rule 17 still holds — and must, because **49.3% of
+closings hold at least one person with no birth year anywhere**, and
+holding those open forever would be a claim about a blank.
+
+What it cost, offline, from evidence already on disk:
+
+| | before | after |
+|---|---|---|
+| closed | 97,395 | **94,446** |
+| unclassified | 23,161 | **16,069** |
+
+10,031 pictures moved, every one of them into *running*. Nothing moved
+into *dead*. The unclassified drop is the half nobody predicted: those
+pictures were never unplaceable — they held a name and a year, and
+calling them unclassified was its own quiet false claim.
+
+It also found a second bug, in the tool doing the correcting.
+**`rebuild.js` was carrying `p.status` through untouched** and re-deriving
+only the verdict over it, so it was a re-decision about pictures and not
+about people. The first run after the rule changed reported no reopenings
+at all. It now re-classifies every person in the same order `audit.js`
+does, and it can return a picture to *open*, which it never could before.
+
+---
 
 **And *reproduced* means only that the audit agrees, which is a claim
 about the audit as much as about the rule.** Rule 34 was marked

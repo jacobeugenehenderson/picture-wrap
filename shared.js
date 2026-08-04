@@ -274,6 +274,86 @@ export function pickDemonym(forms) {
     .reduce((a, b) => (b.length > a.length ? b : a));
 }
 
+/* Which states a browsing TILE folds together.
+
+   The tiles are a place to start, not a taxonomy. A picture keeps the
+   country its record gives it — a 1938 German film still says "Nazi
+   Germany film" on its own page, which is true and is the point — and
+   every exact label stays typeable in the field under the row with its
+   own count. This only decides what the row of chips offers.
+
+   THE LINE THIS DRAWS. A state that was RENAMED folds into the name it
+   is known by now; a state that DISSOLVED into several does not, because
+   folding it would mean choosing one successor and erasing the others.
+
+   So Weimar Republic, Nazi Germany and East German become German — four
+   names for a country that is still there, and three of them read on a
+   browsing row as an editorial interest nobody has. But Soviet does NOT
+   become Russian: those films were made in Ukrainian, Georgian, Armenian
+   and Kazakh studios, and collapsing them into Russia would be a factual
+   claim rather than a tidier label. British Raj stays for the same
+   reason — it spans present-day India, Pakistan and Bangladesh — and so
+   do Yugoslav and Czechoslovak. They are also the names those bodies of
+   work are catalogued under everywhere else, so keeping them is the
+   unremarkable choice and renaming them would be the pointed one.
+
+   Only labels that can reach a tile need to be here. The floor is one
+   picture in five hundred, so the long tail of Soviet republics, mandates
+   and protectorates below it is untouched and reachable by name.
+
+   Persian is deliberately NOT renamed to Iranian. It is 593 closings and
+   the corpus holds no "Iranian" at all, so this would be a rename with
+   nothing to merge into — a different decision from this one, and one
+   nobody has asked for. */
+export const TILE_STATES = Object.freeze({
+  /* one country, four names */
+  'Nazi Germany': 'German',
+  'Weimar Republic': 'German',
+  'East German': 'German',
+  'West German': 'German',
+  'Soviet occupation zone of Germany': 'German',
+  /* monarchy, republic, same country */
+  'Kingdom of Egypt': 'Egyptian',
+  'Republic of Egypt': 'Egyptian',
+  'Kingdom of Bulgaria': 'Bulgarian',
+  "People's Republic of Bulgaria": 'Bulgarian',
+  'Kingdom of Hungary': 'Hungarian',
+  "Hungarian People's Republic": 'Hungarian',
+  'Kingdom of Romania': 'Romanian',
+  'Socialist Republic of Romania': 'Romanian',
+  "Polish People's Republic": 'Polish',
+  'First Republic of Austria': 'Austrian',
+  'Empire of Japan': 'Japanese',
+  'French Third Republic': 'French',
+  'Dominion of India': 'Indian',
+  /* the same federation under its successive formal names — this folds
+     INTO the dissolved-state label rather than out of it, so it picks no
+     successor and erases nobody */
+  'Socialist Federal Republic of Yugoslavia': 'Yugoslav',
+  'Federal Republic of Yugoslavia': 'Yugoslav',
+  'Kingdom of Serbs, Croats and Slovenes': 'Yugoslav',
+  Yugoslavia: 'Yugoslav',
+  'First Czechoslovak Republic': 'Czechoslovak',
+});
+
+const TILE_STATE = new Map(Object.entries(TILE_STATES));
+
+/* The label a tile would file this country under. Identity for everything
+   not in the table, which is nearly everything. */
+export const tileCountry = label => TILE_STATE.get(label) || label;
+
+/* Does a picture belong under the label a reader picked?
+
+   Both readings, and that is the whole trick: a tile says "German" and
+   catches the Nazi-era films folded into it, while somebody who types
+   "Nazi Germany" into the field below — where it still appears, with its
+   own count — gets exactly those 200 and nothing else. Neither surface
+   has to know what the other did. */
+export const inCountry = (countries, label) => {
+  const list = countries || [];
+  return list.includes(label) || list.some(c => tileCountry(c) === label);
+};
+
 /* A readable tail on an otherwise opaque URL. The router reads only the
    first two hash segments, so anything after the Q-id is decoration —
    but it turns /#/person/Q807328 into something legible before a click.

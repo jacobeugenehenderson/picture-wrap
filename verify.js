@@ -406,34 +406,60 @@ export function statusOf(person, releaseYear) {
   if (died) return 'dead';
 
   const births = [
-    person.wd?.born
-      ? { year: Number(person.wd.born.slice(0, 4)),
-          exact: person.wd.precision >= WD_PRECISION_DAY }
-      : null,
-    person.tmdb?.born
-      ? { year: Number(person.tmdb.born.slice(0, 4)),
-          exact: toTheDay(person.tmdb.born) }
-      : null,
-  ].filter(b => b && b.year);
+    person.wd?.born ? Number(person.wd.born.slice(0, 4)) : null,
+    person.tmdb?.born ? Number(person.tmdb.born.slice(0, 4)) : null,
+  ].filter(Boolean);
 
   /* The youngest they could possibly be. With no birth date on either
      side that is the picture's own age, since nobody worked on a film
      before they were born. */
-  const youngest = births.length ? Math.max(...births.map(b => b.year)) : null;
+  const youngest = births.length ? Math.max(...births) : null;
 
   if (beyondLiving(youngest, releaseYear)) return 'dead';
 
+  /* Nothing on either side places this person in time at all. They are
+     unrecorded, and rule 17 is that unrecorded people never veto — which
+     is load-bearing: half of all closings hold at least one of them, and
+     holding a picture open forever on a blank would be a claim about the
+     blank that nothing supports. */
   if (!births.length) return 'unknown';
-
-  /* Precision matters for 'alive' and not for the line above it. Whether
-     a birth date is exact to the day changes nothing about a man born in
-     1850: no reading of that year leaves him living. */
-  const corroborated = births.length === 2 && births[0].year === births[1].year;
-  if (!births.some(b => b.exact) && !corroborated) return 'unknown';
 
   /* Old enough that neither 'alive' nor 'dead' is a claim we can make. */
   const age = thisYear() - youngest;
   return age > OLDEST ? 'unknown' : 'alive';
+
+  /* A DAY-PRECISION TEST STOOD HERE, AND IT WAS ASYMMETRIC.
+     Removed 4 August 2026.
+
+     It required a birth date to be exact to the day — or corroborated by
+     both databases on the year — before anyone could be called *alive*.
+     Anything less returned 'unknown', and unknown never vetoes, so the
+     picture closed.
+
+     The reasoning was that precision matters for 'alive' and not for the
+     line above it, and that is true of the claim it was written for:
+     whether a birth date is exact changes nothing about a man born in
+     1850. But it was never examined against the claim it actually
+     enabled. Precision was demanded to hold a picture OPEN, the safe
+     direction, and not to let it CLOSE, which is the only claim here that
+     can be wrong about a living person.
+
+     The Squeaking Shoes (2004) is the case. Mehrdad Jenabi and Vahid
+     Nik-Khah Azad are both born 1956 at Wikidata precision 9 — year only,
+     the day a placeholder — with no death recorded anywhere and no TMDB
+     record. Both came back 'unknown', neither vetoed, and the picture was
+     published as wrapped on Akbar Abdi's death in July 2026 while its own
+     page drew the two of them as living. Two men aged 70.
+
+     Measured before it was changed: 3,132 closings — 3.2% — rested on
+     somebody with a birth year, no recorded death, and an age under 112.
+     846 of them on somebody who would be under 70 today.
+
+     The line is now placement rather than precision. If the record can
+     put you in time and shows no death, you are not evidence of a
+     closing. If it cannot place you at all, rule 17 still applies — and
+     it must, because 49.3% of closings hold at least one person with no
+     birth year anywhere. */
 }
 
 /* Which of these people does Wikidata know to be dead, found by name?

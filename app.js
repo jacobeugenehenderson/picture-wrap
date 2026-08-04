@@ -22,13 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear, impossible, evidenced } from './verify.js?v=56';
-import { openCorpus } from './corpus.js?v=56';
+import { survivors, beyondLiving, earliestLivingBirthYear, impossible, evidenced } from './verify.js?v=57';
+import { openCorpus } from './corpus.js?v=57';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
-  CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js?v=56';
+  CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence, inCountry,
+} from './shared.js?v=57';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -1924,7 +1924,7 @@ async function fillUnclassifiedYear(details) {
 
   const all = await c.unclassified(y);
   const films = all.filter(f =>
-    (uFilter.region === 'all' || (f.countries || []).includes(uFilter.region)) &&
+    (uFilter.region === 'all' || inCountry(f.countries, uFilter.region)) &&
     (uFilter.genre === 'all' || (f.genres || []).includes(uFilter.genre)));
   if (!films.length) {
     body.innerHTML = `<p class="state">Nothing from ${esc(y)} here.</p>`;
@@ -2007,7 +2007,7 @@ async function fillYear(details) {
 
   const films = await c.closed(y);
   const shown = films.filter(f =>
-    (vaultFilter.region === 'all' || (f.countries || []).includes(vaultFilter.region)) &&
+    (vaultFilter.region === 'all' || inCountry(f.countries, vaultFilter.region)) &&
     (vaultFilter.genre === 'all' || (f.genres || []).includes(vaultFilter.genre)) &&
     (vaultFilter.sources === 'all' || !f.unverified));
 

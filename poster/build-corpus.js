@@ -125,6 +125,8 @@ import { readFile, writeFile, mkdir, rm, readdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 
+import { tileCountry, inCountry, TILE_STATES } from '../shared.js';
+
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
   const i = args.indexOf(flag);
@@ -500,6 +502,24 @@ for (const year of [...byUnclassifiedYear.keys()].sort((a, b) => a - b)) {
   digest.update(`u${year}`);
   for (const e of byUnclassifiedYear.get(year)) digest.update(JSON.stringify(e));
 }
+/* And the table that decides which states a browsing tile folds together.
+
+   Not a row, and therefore not caught by anything above — but
+   `summary.json` lives inside `v/<version>/` and is served immutable for
+   a year, so a change to the folding would rewrite the chip row while
+   leaving every URL where it was. A reader who had already fetched the
+   summary would keep the old row until 2027.
+
+   The table is hashed rather than its effect on this corpus, which is the
+   conservative direction: editing it always moves the version, even if no
+   picture in the corpus uses the label edited. One redundant deploy is
+   cheaper than one year-cached wrong row.
+
+   `summary.json` as a whole is still outside this digest — doors, picks
+   and counts are derived after `version` is computed and used to name the
+   directory they are written into. See BACKLOG.md. */
+digest.update(`tiles:${JSON.stringify(TILE_STATES)}`);
+
 const version = digest.digest('hex').slice(0, 12);
 
 /* --- the retraction record --------------------------------------------- */
@@ -1013,17 +1033,20 @@ const allLabels = (labelsOf, list) => {
    So the doors keep the smaller curated set and their film tables, and
    the Vault gets its own tiles with counts alone. */
 const doorGenres = topByRank(e => e.genres || [], 23).filter(([l]) => l !== 'fiction film');
-const doorRegions = topByRank(e => e.countries || [], 14);
+/* Tiles are a place to start, so they file a picture under the country it
+   is known by now — see `tileCountry` in shared.js. The picture's own
+   record is untouched; only the row of chips folds. */
+const doorRegions = topByRank(e => (e.countries || []).map(tileCountry), 14);
 
 const vaultGenres = tiled(e => e.genres || [], everyClosing).filter(([l]) => l !== 'fiction film');
-const vaultRegions = tiled(e => e.countries || [], everyClosing);
+const vaultRegions = tiled(e => (e.countries || []).map(tileCountry), everyClosing);
 const vaultPicks = {};
 {
   const buckets = new Map(vaultGenres.map(([label]) => [label, []]));
   for (const e of everyClosing) for (const g of new Set(e.genres || [])) buckets.get(g)?.push(e);
   const count = (g, r) => {
     const pool = g ? (buckets.get(g) || []) : everyClosing;
-    return r ? pool.filter(e => (e.countries || []).includes(r)).length : pool.length;
+    return r ? pool.filter(e => inCountry(e.countries, r)).length : pool.length;
   };
   for (const [g] of [['', null], ...vaultGenres]) {
     for (const [r] of [['', null], ...vaultRegions]) vaultPicks[`${g}||${r}`] = count(g, r);
@@ -1131,14 +1154,14 @@ const doors = {
    tables and is the largest thing in this file. */
 const unclassifiedList = [...byUnclassifiedYear.values()].flat();
 const uGenres = tiled(e => e.genres || [], unclassifiedList).filter(([l]) => l !== 'fiction film');
-const uRegions = tiled(e => e.countries || [], unclassifiedList);
+const uRegions = tiled(e => (e.countries || []).map(tileCountry), unclassifiedList);
 
 const uPicks = {};
 for (const [g] of [['', null], ...uGenres]) {
   for (const [r] of [['', null], ...uRegions]) {
     uPicks[`${g}||${r}`] = unclassifiedList.filter(e =>
       (!g || (e.genres || []).includes(g)) &&
-      (!r || (e.countries || []).includes(r))).length;
+      (!r || inCountry(e.countries, r))).length;
   }
 }
 

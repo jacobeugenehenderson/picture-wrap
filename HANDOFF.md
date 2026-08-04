@@ -5,7 +5,7 @@ project has is finished and its output is on disk and deployed.
 
 ## The one sentence
 
-**A picture now has three states, not two.** 97,395 have wrapped, 23,161
+**A picture now has three states, not two.** 94,446 have wrapped, 16,069
 are unclassified because nobody credited on them has a recorded date, and
 the rest are running. The Vault said 123,956 this morning; the difference
 is not a loss, it is the removal of claims that were never supported.
@@ -14,7 +14,7 @@ is not a loss, it is the removal of claims that were never supported.
 
 | | |
 |---|---|
-| **The corpus** | 137 release years, 329,957 pictures — **97,395 closed**, **23,161 unclassified**, 208,028 running, 1,373 unchecked |
+| **The corpus** | 137 release years, 329,957 pictures — **94,446 closed**, **16,069 unclassified**, 218,069 running, 1,373 unchecked |
 | Audit | **137 years, 0 failures** — true as of 4 August, and it was not on the 3rd; see below |
 | Built | `dist/`, version `1656efddcc1e`, FORMAT 13, gitignored |
 | **Corpus hosted** | Cloudflare Pages, project `picture-wrap-corpus`, at `https://picture-wrap-corpus.pages.dev/` |

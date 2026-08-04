@@ -30,7 +30,7 @@
 import { readFile, writeFile, rename, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { wrapDate, impossible, evidenced } from '../verify.js';
+import { wrapDate, impossible, statusOf, verdictFor } from '../verify.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -116,7 +116,7 @@ for (const year of years) {
   }
 
   const tally = { day: 0, month: 0, year: 0, none: 0, open: 0, changed: 0,
-                  unclassified: 0, reclassified: 0 };
+                  unclassified: 0, reclassified: 0, reopened: 0 };
   const rebuilt = works.map(work => {
     const record = evidence.get(work.id);
     /* Both directions, from the same evidence.
@@ -140,10 +140,28 @@ for (const year of years) {
        already on disk is corrected without asking anybody again. That is
        the whole bargain: a rule arrives late, and the corpus catches up
        for the cost of reading files. */
-    const judged = record.judged.map(p => ({
-      ...p,
-      impossible: p.impossible ?? impossible(p, record.releaseYear),
-    }));
+    /* Re-classify every person, rather than trusting the label the pass
+       wrote beside them.
+
+       This used to carry `p.status` through untouched and only re-derive
+       the verdict over it, which made the file a re-decision about
+       PICTURES and not about people. So a rule change reaching statusOf —
+       exactly what happened on 4 August, when a birth year without day
+       precision stopped meaning 'unknown' — passed straight through here
+       and changed nothing. The first run after that change reported no
+       reopenings at all, which is how it was found.
+
+       Same order as audit.js, and for the same reasons: born after the
+       picture leaves the reckoning, a name Wikidata buried is a death no
+       re-reading of dates can rediscover, and everything else is
+       statusOf's to decide. */
+    const judged = record.judged.map(p => {
+      const impossibleHere = p.impossible ?? impossible(p, record.releaseYear);
+      const status = impossibleHere ? 'excluded'
+        : p.buriedByName ? 'dead'
+        : statusOf(p, record.releaseYear);
+      return { ...p, impossible: impossibleHere, status };
+    });
     const dated = wrapDate(judged, record.releaseYear);
     tally[dated.dateBasis]++;
     if ((work.wrapped ?? null) !== (dated.wrapped ?? null)) tally.changed++;
@@ -155,6 +173,39 @@ for (const year of years) {
       : {};
     if (work.verdict !== 'closed') tally.reclassified++;
 
+    /* Somebody in the stored evidence is now recorded living, so this is
+       not a closing at all — it is running.
+
+       This file could only ever move a picture between closed and
+       unclassified, which was fine while every rule change was about
+       whether a death had been RECORDED. The rule that arrived on
+       4 August is about whether a person is ALIVE: a birth year and no
+       death now places somebody among the living whatever the precision
+       of the year, and 3,132 published closings held exactly such a
+       person.
+
+       Re-deriving `open` offline is sound HERE and would not be for a
+       picture already stored as open. A closing's evidence is complete by
+       construction — the survivor test ran over the whole population and
+       found nobody — so re-reading it under a stricter rule is a
+       re-decision, not a guess. A short-circuited `open` is the opposite:
+       its population was never gathered (rule 19), which is why those are
+       left alone above and belong to retest.js. */
+    const verdict = verdictFor(judged, record.releaseYear);
+    if (verdict === 'open') {
+      tally.reopened++;
+      tally.changed++;
+      return {
+        ...work,
+        verdict: 'open',
+        reason: 'living-recorded',
+        tested: work.tested ?? false,
+        wrapped: null, wrappedMonth: null, wrappedYear: null,
+        dateBasis: null, last: null,
+        rebuiltAt: new Date().toISOString(),
+      };
+    }
+
     /* A closing needs a death. Nobody living and nobody dead is not a
        wrap — it is a picture the record has nothing to say about, and it
        was reaching the Vault because the rule that unrecorded people never
@@ -163,7 +214,7 @@ for (const year of years) {
        Re-derived here rather than re-fetched, which is the whole bargain
        this file exists to make: the rule arrived on 3 August and the
        corpus catches up for the cost of reading its own evidence. */
-    if (!evidenced(judged, record.releaseYear)) {
+    if (verdict === 'unclassified') {
       tally.unclassified++;
       if (work.verdict === 'closed') tally.changed++;
       return {
@@ -204,5 +255,6 @@ for (const year of years) {
   console.log(`${year}  ${works.length} pictures — day ${tally.day}, month ${tally.month}, ` +
     `year ${tally.year}, unplaceable ${tally.none}, open ${tally.open}` +
     (tally.unclassified ? `, unclassified ${tally.unclassified}` : '') +
+    (tally.reopened ? `, REOPENED ${tally.reopened}` : '') +
     (tally.changed ? `  (${tally.changed} changed)` : ''));
 }
