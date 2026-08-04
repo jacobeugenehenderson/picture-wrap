@@ -24,7 +24,7 @@ column that matters — **whether anything checks it**.
 A rule nobody checks is a rule that has already drifted from the code
 once, in this project, three times. The audit reproduces every verdict
 from stored evidence, so rules marked *reproduced* are verified against
-95,143 closings on every run. The rest are asserted, and are listed as
+95,567 closings on every run. The rest are asserted, and are listed as
 asserted rather than quietly implied to be safe.
 
 | # | rule | lives in | checked? |
@@ -86,7 +86,7 @@ circular rather than decorative:
 
 1. **Reproduction.** Re-decide every verdict and every wrap date from that
    year's own evidence, with the network unplugged. Any rule marked
-   *reproduced* above is exercised 95,143 times per run, because a
+   *reproduced* above is exercised 95,567 times per run, because a
    verdict that cannot be re-derived from the evidence means either the
    rule changed or the evidence is insufficient — and rule 19 is why those
    two are reported separately.
@@ -151,7 +151,7 @@ What it cost, offline, from evidence already on disk:
 
 | | before | after |
 |---|---|---|
-| closed | 97,395 | **95,143** |
+| closed | 97,395 | **95,567** |
 | unclassified | 23,161 | **16,201** |
 
 9,220 pictures moved, every one of them into *running*. Nothing moved
@@ -253,8 +253,32 @@ which reads TMDB live, and partial in the corpus:
 | closings dated by a TMDB person whose role was never stored | 7,325 |
 | opens held by TMDB people whose roles were never stored | 18,169 |
 
-About **25,500 pictures** would need their TMDB credits re-fetched before
-the corpus can answer this the way the film page already does.
+**Re-fetched on 4 August**, and the corpus answers it now. `retest.js`
+gained a third staleness clause — a verdict that turns on a credit we
+never kept — which selected 44,424 pictures: a closing DATED by a
+TMDB-sourced person with no stored role, or an open picture whose EVERY
+living person is that. Three hours, and self-clearing, because judge.js
+captures `role` on the way past.
+
+| | before | after |
+|---|---|---|
+| TMDB-sourced people with a role kept | ~25% | **980,218** |
+| people marked uncredited | 686 pictures' worth | **75,661** |
+| closings dated by an uncredited person | 47 known, thousands unknowable | **0 of 96,107** |
+
+The run also broke the strict form of the test. It matched `(uncredited)`
+exactly, on the reading that TMDB has one convention; it has several. Mel
+Blanc is `Bugs Bunny (voice / uncredited)` on *Jasper Goes Hunting* and
+dated its closing until this looked for the word rather than the
+parentheses. 228 roles in 144 forms sat outside the strict test and every
+one of them said the same thing.
+
+**A caution about verifying this, which cost an hour.** Checking "is any
+closing dated by an uncredited person" by matching the closer's NAME
+against the evidence reports false positives, because two people share a
+name more often than seems possible. *Hunted Men* (1938) has two Mary
+Parkers — born 1918, uncredited, died 1998; and born 1930, credited,
+died 2023. The closer is the second. Match on identity.
 
 It also found a third bug in `rebuild.js`. The file refused to re-derive
 any `open` the pass had written, on the rule-19 argument that a

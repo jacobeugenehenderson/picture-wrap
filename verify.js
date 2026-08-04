@@ -658,16 +658,27 @@ export async function deathsByName(people, sparql) {
    project's usual grain. Everywhere else, being wrong costs a picture its
    wrap. Here, a false match on "(uncredited)" REMOVES a veto and can
    close a picture on somebody still living — the expensive mistake. So
-   the test is deliberately literal: the exact parenthesised word TMDB
-   uses, nothing inferred, no guessing from a blank role. A person whose
-   role we never stored is not uncredited, they are unknown, and they keep
-   their vote.
+   the test is deliberately literal: the word TMDB uses, nothing inferred,
+   no guessing from a blank role. A person whose role we never stored is
+   not uncredited, they are unknown, and they keep their vote.
+
+   THE WORD, NOT A FIXED SHAPE AROUND IT. This first matched `(uncredited)`
+   exactly, on the reading that TMDB has one convention. It has several:
+   Mel Blanc is `Bugs Bunny (voice / uncredited)` on Jasper Goes Hunting,
+   and dated its closing for as long as this looked for the parentheses
+   instead of the word. 228 roles in 144 forms sat outside the strict test
+   — `(voice, uncredited)`, `(archive footage / uncredited)`, and plain
+   `Uncredited` — and every one says the same thing.
+
+   A whole word is the widest this should ever go. It is still TMDB's own
+   word rather than an inference, and no character among the 75,659
+   matching roles is NAMED anything like it.
 
    Crew are never matched: `job` carries "Director", not a credit
    convention, and a crew job IS the credit. */
 export const uncredited = person =>
-  (person?.roles || []).some(r => /\(uncredited\)/i.test(String(r)))
-  || /\(uncredited\)/i.test(String(person?.role ?? ''));
+  (person?.roles || []).some(r => /\buncredited\b/i.test(String(r)))
+  || /\buncredited\b/i.test(String(person?.role ?? ''));
 
 /* Outside the reckoning: in the list because they were in the picture,
    but voting on nothing and dating nothing.
