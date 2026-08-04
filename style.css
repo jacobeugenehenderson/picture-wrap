@@ -1012,6 +1012,44 @@ main,
   color: var(--ink-faint);
 }
 
+/* How many names the record holds, on the unclassified rows — the one
+   thing that differs between 23,161 pictures the page has already
+   described in full at the top.
+
+   It had no rule at all. The class was written in `app.js` and never
+   styled, so it inherited 16px body text and, following a `display:block`
+   sibling, took a third line at the same size as the title. Every row was
+   three lines with two of them shouting, down a list of 528, and the
+   titles read as enormous because the metadata under them was the same
+   size. The titles were never the problem.
+
+   Same register as `.closing-kind` and on the same line as it, which is
+   where it belongs: both are what the record holds about a picture we
+   cannot place. `::before` rather than a separator in the markup, so the
+   dot cannot be selected or read aloud. */
+.closing-kind { display: inline; }
+
+.closing-missing {
+  font-size: var(--size-tiny);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* No left margin: the newline between the two spans in the template is
+   already a space, and adding to it puts the dot adrift of the label it
+   follows. */
+.closing-missing::before {
+  content: '·';
+  margin: 0 0.45em 0 0;
+  letter-spacing: 0;
+}
+
+/* The kind is still its own line everywhere it is NOT accompanied by a
+   count — the Vault's rows, where it sits under a title with nothing
+   beside it. */
+.closing-films:not(.unclassified-list) .closing-kind { display: block; }
+
 /* The names you'd actually recognise. A title alone rarely places a film —
    "Casablanca" needs "Bogart" beside it. */
 .closing-stars {

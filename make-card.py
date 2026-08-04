@@ -44,7 +44,7 @@ DISPLAY = "/System/Library/Fonts/Supplemental/Iowan Old Style.ttc"
 UI = "/System/Library/Fonts/Helvetica.ttc"
 
 TITLE = "Picture Wrap"
-TAGLINE = "EVERY PICTURE WRAPS TWICE"
+TAGLINE = "THE PICTURE"
 
 
 def gold_at(t):
