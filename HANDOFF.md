@@ -15,7 +15,7 @@ is not a loss, it is the removal of claims that were never supported.
 | | |
 |---|---|
 | **The corpus** | 137 release years, 329,957 pictures — **97,395 closed**, **23,161 unclassified**, 208,028 running, 1,373 unchecked |
-| Audit | **137 years, 0 failures**, re-run after every change below |
+| Audit | **137 years, 0 failures** — true as of 4 August, and it was not on the 3rd; see below |
 | Built | `dist/`, version `1656efddcc1e`, FORMAT 13, gitignored |
 | **Corpus hosted** | Cloudflare Pages, project `picture-wrap-corpus`, at `https://picture-wrap-corpus.pages.dev/` |
 | **Site hosted** | GitHub Pages from `main`, at picture-wrap.com. **Two hosts** |
@@ -133,19 +133,38 @@ an id and a wrap date, and three changes in one day slipped past it.
 4. **Read `pass/provenance-disputes.tsv`.** 337 people. Nothing should
    overwrite a date on a name match alone.
 
-5. **Copy `pass/` to the Desktop evidence archive.** Every year was
-   rewritten today and the durable copy did not follow.
+5. ~~Copy `pass/` to the Desktop evidence archive.~~ **Done, 4 August.**
+   All 137 years re-sealed, 133 MB, and the two now agree.
 
-6. **Delete `vault/*.json` and `archive.json` — but not all of `vault/`.**
-   **`vault/suppressed.json` is live**: `app.js:1449` fetches it on every
-   page through `loadSuppressed()`. It is 3 bytes, `[]`, and it is the
-   name-suppression list — what makes honouring a removal request a
-   one-line commit rather than a migration. It stays.
+   It needed a script rather than a `cp`: the archive is a gzip bundle of
+   works, evidence and failures per year, and `pass.js`, `retest.js` and
+   `provenance.js` write it while `rebuild.js`, `dedupe.js` and
+   `enrich.js` do not — which is exactly why it went stale, since the 3
+   August work was rebuild and dedupe. `poster/archive-pass.js` re-seals
+   from what is on disk. **Run it after any offline repair**, and run
+   `audit.js` before it: it copies the working tree over the good copy,
+   so a wrong working tree overwrites a right archive.
 
-   The other eleven — nine decade files, `ids.json`, `summary.json` — are
-   dead to the site, as is `archive.json`. `poster/lib.js`, `review.js`
-   and `backfill-tmdbids.js` are the posting side and still write
-   `archive.json`, so this is archive-then-rewire and not a delete.
+6. ~~Delete `vault/*.json` and `archive.json`.~~ **Done, 4 August — and
+   two of the three things it named should not have been deleted.**
+
+   Eleven files went: nine decade shards, `ids.json`, `summary.json`.
+   `publishVault()` in `poster/lib.js`, which regenerated them on every
+   filing — about 3 MB of churn into files with no reader — went with
+   them.
+
+   **`vault/suppressed.json` stays.** `app.js:1449` fetches it on every
+   page load. It is 3 bytes, `[]`, and it is the name-suppression list
+   that makes honouring a removal request a one-line commit.
+
+   **`archive.json` stays.** It is not dead, it is the poster's record of
+   what it has *posted*, read by `review.js`, `recheck.js`, `recover.js`,
+   `coverage.js` and `backfill-tmdbids.js`. The corpus knows which
+   pictures have closed; it does not know which closings we announced.
+   Nothing else holds that.
+
+   The four `archive.json.before-*` snapshots (13 MB, untracked) moved to
+   `~/Desktop/picture-wrap-evidence/superseded/`.
 
 Then the Desk, still the largest thing not built on the posting side.
 
@@ -159,6 +178,7 @@ Then the Desk, still the largest thing not built on the posting side.
 | `poster/rebuild.js` | re-derives conclusions from stored evidence, offline, in both directions |
 | `poster/retest.js` | repairs verdicts that predate a rule change; needs the network |
 | `poster/dedupe.js` | collapses pictures a year's files hold more than once; offline |
+| `poster/archive-pass.js` | re-seals finished years into the durable archive; offline |
 | `poster/seed-removals.js` | opened the departure ledger from a pre-repair snapshot; a one-off |
 | `poster/provenance.js` | asks Wikidata whether it holds a death we took from TMDB |
 | `poster/enrich.js` | genre, country and fame per year |

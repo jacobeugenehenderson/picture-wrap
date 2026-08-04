@@ -36,7 +36,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { statusOf, wrapDate, impossible } from '../verify.js';
+import { statusOf, wrapDate, impossible, evidenced } from '../verify.js';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -87,6 +87,20 @@ function decide(work, judged, ceiling) {
     impossible: p.impossible ?? impossible(p, releaseYear),
   }));
   if (decided.some(p => p.status === 'alive')) return { verdict: 'open', wrapped: null };
+
+  /* Nobody living is not the same as closed. A picture where nobody is
+     recorded dead either is UNCLASSIFIED, and the rule for that is
+     evidenced() in verify.js — the same one judge.js and rebuild.js ask.
+
+     This line was missing from 3 August 2026 until the 4th, and it is the
+     exact failure the comment below warns about. The rule arrived, the
+     pass and the rebuild took it, and this file kept its own opinion: it
+     re-derived `closed` for all 23,583 unclassified pictures and reported
+     123 of 137 years as unreproducible. The corpus was right and the
+     checker was wrong, which is the worst way for an audit to fail —
+     nobody reads a checker that cries wolf, and the handoff went on
+     recording "137 years, 0 failures" while it did. */
+  if (!evidenced(decided, releaseYear)) return { verdict: 'unclassified', wrapped: null };
 
   /* The same wrapDate() the pass and the rebuild use. An audit that
      re-implements what it is auditing tests only its own opinion. */

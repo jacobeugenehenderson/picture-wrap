@@ -5,7 +5,7 @@
    finds candidates, review.js is the only path to Bluesky.
    ========================================================================== */
 
-import { readFile, mkdir, open, rename } from 'node:fs/promises';
+import { readFile, open, rename } from 'node:fs/promises';
 
 import { measure, LIMIT } from './bluesky.js';
 import {
@@ -450,76 +450,33 @@ export async function saveState(state) {
 }
 
 
-/* Publish the Vault in pieces the browser can fetch one at a time.
+/* The Vault used to be published here in pieces the browser could fetch
+   one at a time — summary.json, ids.json, and a file per closing decade.
+   `publishVault()` wrote them in the same breath as archive.json, on the
+   principle that a derived file which can be forgotten is one that goes
+   stale.
 
-   archive.json is the poster's file and stays whole — it is what every
-   script here reads and writes. The site stopped fetching it: at 3,640
-   entries it was 1.5 MB pulled on the landing page, the Vault and every
-   person page, and the 1946-65 backfill was on course to take it past
-   3.7 MB.
+   It was removed on 4 August 2026, along with the eleven files it wrote.
+   The corpus replaced them on 2 August: `build-corpus.js` publishes
+   329,957 judged pictures as immutable versioned shards and `corpus.js`
+   reads them, so nothing had fetched a `vault/` file for two days while
+   this went on regenerating them on every filing — about 3 MB of churn
+   per run, into files with no reader.
 
-   Three shapes, because three different questions get asked:
+   `vault/suppressed.json` survives and is NOT written here. It is a
+   hand-edited list of Q-ids, and `app.js` fetches it on every page load.
 
-     summary.json   totals, decade counts, country counts, and the few
-                    most recent closings. Everything the landing page and
-                    a shut Vault need. Small enough to be free.
-     ids.json       nothing but Q-ids. A person page asks only "is this
-                    film in the Vault", and that is the whole answer.
-     <decade>.json  the entries themselves, grouped by the decade a
-                    picture CLOSED in — which is how the Vault already
-                    reads — fetched when that drawer is opened and not
-                    before.
+   archive.json also stays. It is the poster's own record of what it has
+   posted, read by review.js, recheck.js, recover.js, coverage.js and
+   backfill-tmdbids.js, and the corpus does not hold it — the corpus knows
+   which pictures have closed, not which closings we announced. */
 
-   Written by whoever writes the archive, in the same breath, because a
-   derived file that can be forgotten is a derived file that goes stale. */
-const RECENT = 5;
-
-const decadeOf = entry => {
-  const y = Number(String(entry.wrapped || '').slice(0, 4));
-  return y ? `${Math.floor(y / 10) * 10}s` : 'undated';
-};
-
-export async function publishVault(archive) {
-  const dir = join(dirname(paths.archive), 'vault');
-  await mkdir(dir, { recursive: true });
-
-  const sorted = [...archive].sort((a, b) =>
-    (b.wrapped || '').localeCompare(a.wrapped || ''));
-
-  const byDecade = new Map();
-  const countries = new Map();
-  for (const entry of sorted) {
-    const key = decadeOf(entry);
-    if (!byDecade.has(key)) byDecade.set(key, []);
-    byDecade.get(key).push(entry);
-    const c = entry.country || 'Other';
-    countries.set(c, (countries.get(c) || 0) + 1);
-  }
-
-  for (const [key, entries] of byDecade) {
-    await atomicWrite(join(dir, `${key}.json`), JSON.stringify(entries) + '\n');
-  }
-
-  await atomicWrite(join(dir, 'ids.json'),
-    JSON.stringify(sorted.map(e => e.id)) + '\n');
-
-  await atomicWrite(join(dir, 'summary.json'), JSON.stringify({
-    total: sorted.length,
-    decades: [...byDecade.entries()].map(([key, e]) => [key, e.length]),
-    countries: [...countries.entries()].sort((a, b) => b[1] - a[1]),
-    recent: sorted.slice(0, RECENT).map(e => ({
-      id: e.id, title: e.title, year: e.year, wrapped: e.wrapped,
-    })),
-  }) + '\n');
-
-  return { decades: byDecade.size, total: sorted.length };
-}
-
-/* Everything that writes the archive goes through here, so the shards the
-   site reads cannot drift from the file the poster keeps. */
+/* Everything that writes the archive goes through here. It used to also
+   publish the shards the site read, so the two could not drift; the site
+   reads the corpus now and there is nothing left to keep in step. */
 export async function saveArchive(archive) {
   await save(paths.archive, archive);
-  return publishVault(archive);
+  return { total: archive.length };
 }
 
 /* --- files ------------------------------------------------------------- */

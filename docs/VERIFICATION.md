@@ -94,6 +94,28 @@ circular rather than decorative:
    person in the evidence, and does not precede the release; unknown
    counts match the unknowns listed.
 
+**And *reproduced* means only that the audit agrees, which is a claim
+about the audit as much as about the rule.** Rule 34 was marked
+*reproduced* on 3 August and was not: `audit.js` had its own verdict
+branch, which returned `closed` whenever nobody was alive and had never
+heard of the third state. It re-derived `closed` for all 23,583
+unclassified pictures and reported **123 of 137 years as unreproducible**
+— while `HANDOFF.md` went on recording "137 years, 0 failures", because
+nobody re-ran it after the rule landed.
+
+The corpus was right and the checker was wrong, which is the worse
+direction for an audit to fail in: a check that cries wolf stops being
+read, and this one had 23,583 wolves. Fixed on 4 August by importing
+`evidenced` from `verify.js` — the same function `judge.js` and
+`rebuild.js` ask — instead of keeping an opinion. 137 years, 0 failures,
+and this time the run is in the commit.
+
+The lesson is the one the README already states about `verify.js`: the
+copy always outlives the fix. `audit.js` deliberately does not import
+`survivors()`, because an audit that calls the thing it audits tests
+nothing — but that argument covers the *gathering* of people, not the
+*verdict* drawn from them, and the file had quietly extended it to both.
+
 **Asserted means only that a human wrote it down.** Rules 5, 12, 13, 15,
 18, 20-30 and 33 are not checked by anything, and the honest reading of that
 column is that those are where the next drift will be found — which is
