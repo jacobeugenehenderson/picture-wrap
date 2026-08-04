@@ -1550,7 +1550,6 @@ async function viewArchive(segments = []) {
    change exists to stop. */
 function renderArchive(summary) {
   setTitle(`The Vault — ${summary.total.toLocaleString('en')} pictures`);
-  const unclassifiedTotal = summary.unclassified ?? 0;
 
   /* The same ten genres and ten regions the landing's doors offer, drawn
      from the same precomputed table, for two reasons that are really one.
@@ -1667,23 +1666,6 @@ function renderArchive(summary) {
           title because it is not a peer of the Vault — it is what the
           Vault could not answer for, and a reader should meet it after
           the thing it qualifies. */''}
-    ${/* Both footnotes, at the foot. A paragraph above the drawers
-          explaining the filter was three lines of preamble in front of the
-          thing a reader came for, and the filter is legible without it:
-          "Confirmed" against "All" says which is the stronger claim. What
-          it means in full belongs where a reader goes looking, which is
-          the picture, and where it is already written out. */''}
-    <p class="prose-note vault-foot">
-      <strong>Confirmed</strong> closings were checked against both Wikidata
-      and TMDB. The rest were checked against Wikidata alone, because TMDB
-      has no record of the picture &mdash; three in five are confirmed, and
-      each picture says which it is.
-      ${unclassifiedTotal ? `<br>A further
-      <a href="#/unclassified">${unclassifiedTotal.toLocaleString('en')} pictures</a>
-      have nobody on record with a date at all, so this archive cannot say
-      whether they have wrapped.` : ''}
-      <a href="#/about">How a picture enters the Vault</a>.
-    </p>
   `);
 }
 
@@ -2263,6 +2245,19 @@ function viewAbout() {
         it can lag. If a living person is added to a picture in the Vault,
         that picture&rsquo;s own page will show it as open while the Vault
         still lists it as closed, until the next check.
+      </p>
+      <p>
+        <strong>Confirmed</strong> closings were checked against both
+        Wikidata and TMDB. The rest were checked against Wikidata alone,
+        because TMDB has no record of the picture. Three in five are
+        confirmed, and each picture says which it is.
+      </p>
+      <p>
+        The country and genre tiles are not a selection. A label earns a
+        tile by holding one picture in five hundred of the archive it
+        belongs to, and every other label &mdash; 451 genres and 228
+        countries in all &mdash; can be typed into the field beneath each
+        row.
       </p>
 
       <h3>9. Corrections</h3>
