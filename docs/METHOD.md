@@ -19,7 +19,7 @@ closings published on 3 August 2026, unless it names its own date.
 > requiring a day-precise birth date before anyone could be called living
 > was withdrawn — it demanded precision to hold a picture open and none to
 > let one close. 9,220 pictures moved into *running*: the corpus is now
-> **95,151 closings and 16,203 unclassified**, from 97,395 and 23,161.
+> **95,143 closings and 16,201 unclassified**, from 97,395 and 23,161.
 > Every proportion below was measured against the larger figure and has
 > not been re-derived. `docs/VERIFICATION.md` carries the account.
 

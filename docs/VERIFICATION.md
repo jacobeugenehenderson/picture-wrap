@@ -24,7 +24,7 @@ column that matters — **whether anything checks it**.
 A rule nobody checks is a rule that has already drifted from the code
 once, in this project, three times. The audit reproduces every verdict
 from stored evidence, so rules marked *reproduced* are verified against
-95,151 closings on every run. The rest are asserted, and are listed as
+95,143 closings on every run. The rest are asserted, and are listed as
 asserted rather than quietly implied to be safe.
 
 | # | rule | lives in | checked? |
@@ -86,7 +86,7 @@ circular rather than decorative:
 
 1. **Reproduction.** Re-decide every verdict and every wrap date from that
    year's own evidence, with the network unplugged. Any rule marked
-   *reproduced* above is exercised 95,151 times per run, because a
+   *reproduced* above is exercised 95,143 times per run, because a
    verdict that cannot be re-derived from the evidence means either the
    rule changed or the evidence is insufficient — and rule 19 is why those
    two are reported separately.
@@ -151,8 +151,8 @@ What it cost, offline, from evidence already on disk:
 
 | | before | after |
 |---|---|---|
-| closed | 97,395 | **95,151** |
-| unclassified | 23,161 | **16,203** |
+| closed | 97,395 | **95,143** |
+| unclassified | 23,161 | **16,201** |
 
 9,220 pictures moved, every one of them into *running*. Nothing moved
 into *dead*. The unclassified drop is the half nobody predicted: those
