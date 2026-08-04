@@ -628,7 +628,28 @@ nothing is built.
 
 ## Something that checks the person page against `verify.js`
 
-*Raised 2 August, after the second time this drifted.*
+*Raised 2 August, after the second time this drifted. **Half of it was
+deleted rather than checked on 4 August** — see below — and what remains
+is the half a checker is the right tool for.*
+
+**The verdict no longer drifts, because there is only one of it.** Rule
+35: `verdictFor` in `verify.js`, called by `judge.js`, `audit.js` and
+`app.js`. Three lines that had been written out in four files, and were
+wrong in two of them. Checking four copies for agreement was the wrong
+instinct; deleting three of them is cheaper and permanent.
+
+**What is left is the gathering, and that genuinely cannot be shared.**
+The pass reads Wikidata and TMDB and writes the answer down. The browser
+asks Wikidata live, and cannot afford the survivor test on a page load —
+that is hundreds of requests per filmography. The difference is why a film
+page moves the day a death is recorded rather than the day a pass is run.
+
+So the surfaces will always be looking at different populations, and the
+check below is for exactly that. Note that its test is **not equality** —
+which is why it survives the extraction as a useful thing rather than a
+tautology.
+
+---
 
 Rule 27 in `VERIFICATION.md` is *asserted*, and it is the only rule whose
 subject is the code rather than the data: a person page asks Wikidata

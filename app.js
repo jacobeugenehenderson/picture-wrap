@@ -22,13 +22,13 @@
    "does not provide an export named beyondLiving", and a blank page for
    everyone who had ever visited before. The imports carry the token so
    the whole module graph turns over together. */
-import { survivors, beyondLiving, earliestLivingBirthYear, impossible } from './verify.js?v=55';
-import { openCorpus } from './corpus.js?v=55';
+import { survivors, beyondLiving, earliestLivingBirthYear, impossible, evidenced } from './verify.js?v=56';
+import { openCorpus } from './corpus.js?v=56';
 import {
   CREW, IN_LIST, VALUES, KINDS, OCCUPATIONS, LANGS,
   nonLatin, nameFromArticle,
   CREDIT_NOUNS, qid, year, longDate, pickDemonym, path, sentence,
-} from './shared.js?v=55';
+} from './shared.js?v=56';
 
 const WDQS   = 'https://query.wikidata.org/sparql';
 const WD_API = 'https://www.wikidata.org/w/api.php';
@@ -1181,17 +1181,48 @@ async function viewPerson(id) {
       if (d) died.set(who, d > (died.get(who) || '') ? d : died.get(who));
     }
 
+    /* The people, and not only the arithmetic over them. It used to
+       return three numbers, and the trouble with three numbers is that a
+       new rule cannot be applied to them — rules 6 and 7 are not
+       expressible as counts, which is how Philip Glass, born 1937 and
+       credited on Dracula (1931) for a 1999 score, held that picture open
+       on his co-workers' pages while the Vault had it closed on Carla
+       Laemmle in 2014.
+
+       Shaped as verify.js shapes people — `status` and `impossible` — so
+       the rule can come from there instead of being retyped here. The
+       counts are still returned, unchanged, because the closed test below
+       still wants them. */
     let excluded = 0;
     const dates = [];
+    const people = [];
     for (const who of new Set([...born.keys(), ...died.keys()])) {
       const b = born.get(who), d = died.get(who);
-      if (b && released && b > released) { excluded++; continue; }
-      if (d) { dates.push(d); continue; }
-      if (b && b < earliestLivingBirthYear()) excluded++;
+      /* Born after it came out: they were not on it, and they vote on
+         nothing either way. */
+      if (b && released && b > released) {
+        excluded++;
+        people.push({ status: 'unknown', impossible: true });
+        continue;
+      }
+      if (d) { dates.push(d); people.push({ status: 'dead' }); continue; }
+      /* Past any human life. verify.js calls this dead, and it is what
+         rule 34 means by arithmetic settling it — so it is evidence of a
+         closing even though it produces no date. It stays in `excluded`
+         because the page still leaves it out of the reckoning. */
+      if (b && b < earliestLivingBirthYear()) {
+        excluded++;
+        people.push({ status: 'dead' });
+        continue;
+      }
+      people.push({ status: 'unknown' });
     }
 
     const datable = dates.filter(d => !released || Number(d.slice(0, 4)) >= released).sort();
-    return { excluded, dead: dates.length, wrapped: datable[datable.length - 1] || '' };
+    return {
+      excluded, dead: dates.length, people,
+      wrapped: datable[datable.length - 1] || '',
+    };
   };
 
   for (const f of films) f.people_ = readPeople(f);
@@ -1218,13 +1249,30 @@ async function viewPerson(id) {
       f.people_.wrapped === diedOn;
   }
 
-  /* Recorded deaths plus the people no record can make living again —
-     and, for a picture older than any human life, everybody, since
-     nobody on it can have been born after it. */
+  /* Two conditions, and they are different questions.
+
+     The first is this page's own: is every credited person accounted for,
+     as a recorded death or as somebody outside the reckoning? It is
+     stricter than the corpus rule — one person with no dates at all holds
+     the picture back here, where the corpus would let unrecorded people
+     not veto — and it stays that way deliberately, because the claim we
+     must not make is the one that says everybody is gone.
+
+     The second is `evidenced`, from verify.js, and it is new on 4 August
+     2026. Without it the first condition returns TRUE when every credited
+     person is excluded and none is recorded dead: `0 + n === n`. That is
+     precisely the unclassified case — the thing the third state exists to
+     stop claiming — and this page would have called it closed. It never
+     fired, because the whole test is ANDed with corpus membership below
+     and `ids.bin` holds closings only, so the corpus said no on our
+     behalf. Safe by a second condition covering for it is not the same as
+     right, and it is the last of the four places that had its own idea of
+     what closed means. */
   const wikidataClosed = f =>
     Number(f.credited) > 0 &&
     (beyondLiving(null, f.year) ||
-      f.people_.dead + f.people_.excluded === Number(f.credited));
+      f.people_.dead + f.people_.excluded === Number(f.credited)) &&
+    evidenced(f.people_.people, f.year);
 
   /* Below the bar means verified, and the Vault is what verification
      produces. A filmography can hold sixty closed-looking pictures, and

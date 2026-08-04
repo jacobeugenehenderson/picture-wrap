@@ -64,7 +64,7 @@ asserted rather than quietly implied to be safe.
 | **People** | | | |
 | 26 | Withholding a name takes **the name and never the vote** | `pass.js`, `app.js` | asserted |
 | **Where the rules are applied** | | | |
-| 27 | A **person page and a film page ask Wikidata directly** and must apply rules 3, 6, 7 and 8 themselves; the audit reaches neither | `app.js` `readPeople`, `app.js` `viewFilm` | asserted |
+| 27 | A **person page and a film page ask Wikidata directly** and must apply rules 3, 6, 7 and 8 themselves; the audit reaches neither. They no longer draw their own VERDICT — that comes from `verify.js` — but they still gather their own people | `app.js` `readPeople`, `app.js` `viewFilm` | asserted |
 | **Disagreement** | | | |
 | 28 | Where two sources give **different dates** for one death, neither is preferred: the published date stands and the disagreement is published beside it | `provenance.js` | asserted |
 | 29 | Agreement on the **year** where one source records only a year is **not** a disagreement — it is one source knowing less | `provenance.js` | asserted |
@@ -76,6 +76,7 @@ asserted rather than quietly implied to be safe.
 | 33 | A closing that leaves the corpus is **recorded, not deleted**: what was published, when it entered, when it left, and who was found living. The record is kept, not shown | `build-corpus.js` | asserted |
 | **Evidence** | | | |
 | 34 | A closing needs **at least one recorded death**, or a release year old enough that arithmetic settles it; nobody living and nobody dead is **unclassified**, not closed | `verify.js` `evidenced` | reproduced |
+| 35 | **The verdict is drawn in one place.** Anyone living holds a picture open, nobody recorded dead leaves it unclassified, the rest have closed — and every surface calls the same function rather than retyping it | `verify.js` `verdictFor` | reproduced |
 
 ### What the audit actually does
 
@@ -115,6 +116,32 @@ copy always outlives the fix. `audit.js` deliberately does not import
 `survivors()`, because an audit that calls the thing it audits tests
 nothing — but that argument covers the *gathering* of people, not the
 *verdict* drawn from them, and the file had quietly extended it to both.
+
+**So the verdict was extracted, later the same day.** Rule 35: three
+lines that were written out in four files now live in `verify.js` as
+`verdictFor`, and `judge.js`, `audit.js` and `app.js` call it. The
+extraction is behaviour-preserving and was checked twice — 200,000
+generated cases against the four expressions it replaced, and the full
+137-year audit before and after, whose output is byte-identical.
+
+It also fixed a fourth copy that had never fired. `app.js`'s test was
+`dead + excluded === credited`, which returns TRUE when every credited
+person is excluded and none is recorded dead — the unclassified case,
+called closed. It was invisible because the whole test is ANDed with
+corpus membership and `ids.bin` holds closings only, so the corpus
+refused on the page's behalf. A rule that is wrong but covered for is
+still wrong, and it is the kind that surfaces the moment the thing
+covering for it changes.
+
+**What extraction cannot reach**, and why rule 27 survives: how the
+people are GATHERED still differs, irreducibly. The pass reads Wikidata
+and TMDB and writes the answer down; the browser asks Wikidata live and
+cannot afford the survivor test on a page load. That difference is why a
+film page moves the day a death is recorded rather than the day a pass is
+run. Sharing the verdict guarantees every surface draws the same
+conclusion from the people it has — not that they have the same people.
+The check described in `BACKLOG.md` is for that residue, and is the right
+tool for it precisely because its test is not equality.
 
 **Asserted means only that a human wrote it down.** Rules 5, 12, 13, 15,
 18, 20-30 and 33 are not checked by anything, and the honest reading of that

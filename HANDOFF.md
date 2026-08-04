@@ -19,12 +19,12 @@ is not a loss, it is the removal of claims that were never supported.
 | Built | `dist/`, version `1656efddcc1e`, FORMAT 13, gitignored |
 | **Corpus hosted** | Cloudflare Pages, project `picture-wrap-corpus`, at `https://picture-wrap-corpus.pages.dev/` |
 | **Site hosted** | GitHub Pages from `main`, at picture-wrap.com. **Two hosts** |
-| Live site | current with `main`, `?v=87`, modules `?v=55` |
+| Live site | current with `main`, `?v=92`, modules `?v=56` |
 | Verified | 58,758 closings checked against both databases; **38,637 (40%) against Wikidata alone** and the Vault can filter them out |
 | The closer | 88,675 closings link to the person who closed them; 7,721 rest on a date only TMDB records |
 | Resolution | **93.6% of closings are dated to the day**; 1,532 carry no date at all |
 | Disputed | 1,034 closings where two sources give different dates, published with the disagreement |
-| Evidence | 1.7 GB local, on the Desktop, in iCloud and on an external drive — **the Desktop copy is behind for every year touched on 3 August** |
+| Evidence | 1.8 GB local; the Desktop archive re-sealed 4 August, 137 years, and the two agree |
 | Bluesky | 26 posts; 37 entries survive |
 
 ## What happened on 3 August
@@ -101,8 +101,9 @@ git push origin main          # the site; GitHub Pages serves from main
 ```
 
 **Bump both `?v=` numbers in `index.html`** whenever `app.js` or
-`style.css` changes, and the module `?v=` at the top of `app.js`. They
-stand at 87 and 55.
+`style.css` changes, and the module `?v=` at the top of `app.js` whenever
+`verify.js`, `shared.js` or `corpus.js` changes. They stand at **92** and
+**56**.
 
 **`FORMAT` is only for the shape of the files now.** It stands at 13.
 Since format 8 the version digest reads the whole of every published row,
@@ -239,7 +240,7 @@ were already corroborated.
 ## Everything else
 
 `README.md` indexes the documents. `METHOD.md` is the citable account.
-`VERIFICATION.md` is how a wrap is decided, and its canon — 34 rules — is
+`VERIFICATION.md` is how a wrap is decided, and its canon — 35 rules — is
 the list to check any change against. `FINDINGS.md` is what the archive
 says rather than how it works. `SOURCES.md` is what is accessed,
 collected and published. `BACKLOG.md` holds the open work.

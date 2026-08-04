@@ -119,6 +119,45 @@ export function evidenced(judged, releaseYear) {
   return (judged || []).some(p => p.status === 'dead' && !p.impossible);
 }
 
+/* The verdict itself, which until 4 August 2026 was written out four
+   times in four files and was therefore wrong in one of them.
+
+   Given people already classified, the answer is three lines of
+   arithmetic: anyone living holds it open, nobody recorded dead leaves it
+   unclassified, and what is left has closed. `judge.js` had it,
+   `rebuild.js` had half of it, `app.js` had a count that meant the same
+   thing on a good day, and `audit.js` had a version that predated the
+   third state — so the checker re-derived `closed` for all 23,583
+   unclassified pictures and called 123 of 137 years unreproducible while
+   the corpus was right.
+
+   That is the bug this file exists to make impossible, and it happened
+   anyway, because what was shared were the PARTS of the rule and not the
+   rule. `evidenced` was exported and imported; the two lines that use it
+   were retyped by everybody.
+
+   `living` is an override, and it is the honest part of the signature.
+   The pass knows who is alive from the TMDB survivor test, which is a
+   population this function is never handed and could not re-derive. What
+   it must not do is let each caller draw its own conclusion from that
+   population — so the caller supplies the fact and this supplies the
+   reasoning.
+
+   It does NOT unify how people are gathered, which genuinely differs: the
+   pass reads Wikidata and TMDB and writes the answer down, the browser
+   asks Wikidata live and cannot afford the survivor test on a page load.
+   That difference is why the film page is live, and it is what canon rule
+   27 is about. This only guarantees that once you have the people, every
+   surface draws the same conclusion from them. */
+export function verdictFor(judged, releaseYear, { living } = {}) {
+  const people = judged || [];
+  const anyLiving = living
+    ?? people.some(p => p.status === 'alive' && !p.impossible);
+
+  if (anyLiving) return 'open';
+  return evidenced(people, releaseYear) ? 'closed' : 'unclassified';
+}
+
 /* The same line drawn as a year, for the places that have to ask it of
    Wikidata rather than of a person we already hold: born before this and
    there is no living to be beyond. Exported so no query hard-codes a

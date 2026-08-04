@@ -17,7 +17,8 @@
 import { qid } from './lib.js';
 import { CREDITS, VALUES, LANGS } from '../shared.js';
 import {
-  survivors, statusOf, fromWikidata, datesAWrap, wrapDate, impossible, evidenced,
+  survivors, statusOf, fromWikidata, datesAWrap, wrapDate, impossible,
+  evidenced, verdictFor,
 } from '../verify.js';
 
 const ROLE = new Map(CREDITS.map(([prop, label]) => [prop.replace('wdt:', ''), label]));
@@ -159,7 +160,9 @@ export async function judge(work, creditRows, { sparql, tmdb }) {
   if (!tmdbId) {
     const dated = wrapDate(recorded, releaseYear);
     return {
-      verdict: evidenced(recorded, releaseYear) ? 'closed' : 'unclassified',
+      /* Nobody living got this far — the branch above returns first — so
+         the only question left is whether anything is recorded dead. */
+      verdict: verdictFor(recorded, releaseYear, { living: false }),
       reason: evidenced(recorded, releaseYear) ? 'wikidata-only' : 'nobody-dated',
       tested: false, unverified: true,
       recorded, resolved: [], unknownCount: null, tmdbCredited: null,
@@ -207,7 +210,11 @@ export async function judge(work, creditRows, { sparql, tmdb }) {
   const shown = evidenced([...recorded, ...resolved], releaseYear);
 
   return {
-    verdict: alive ? 'open' : (shown ? 'closed' : 'unclassified'),
+    /* `living` is supplied rather than inferred: whether anyone is alive
+       is what the TMDB survivor test just answered, over a population
+       verify.js is not handed here. The reasoning about it is shared; the
+       gathering of it cannot be. */
+    verdict: verdictFor([...recorded, ...resolved], releaseYear, { living: alive }),
     reason: alive ? 'tmdb-survivor' : (shown ? 'tested' : 'nobody-dated'),
     tested: true,
     recorded, resolved,
