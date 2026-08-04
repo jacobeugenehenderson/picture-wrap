@@ -28,7 +28,7 @@
        cache these hard; without a new URL, returning visitors keep the old
        version until they hard-refresh. The number is arbitrary — any change
        works — but keeping them in step makes it one edit to remember. -->
-  <link rel="stylesheet" href="style.css?v=87">
+  <link rel="stylesheet" href="style.css?v=88">
 </head>
 <body>
 
@@ -82,8 +82,18 @@
          reasoning that crediting a source we never called would be false.
          That was right when every page was computed live. The corpus now
          ships dates TMDB supplied whether or not this browser ever calls
-         them, so the credit is owed on every page load. -->
+         them, so the credit is owed on every page load.
+
+         The logo is required alongside the wording, and the terms ask
+         that it sit less prominently than our own branding — so it is
+         here, at the foot, under a wordmark that is larger and above it.
+         `tmdb.svg` is their `blue_short` mark unaltered; it is a single
+         path filled with one gradient and recolouring it is not ours to
+         do, which is why nothing here tries. -->
     <p class="colophon-tmdb">
+      <a href="https://www.themoviedb.org" rel="noopener">
+        <img src="tmdb.svg" alt="The Movie Database" class="tmdb-mark" width="273" height="36">
+      </a>
       This website uses TMDB and the TMDB APIs but is not endorsed,
       certified, or otherwise approved by
       <a href="https://www.themoviedb.org" rel="noopener">TMDB</a>.
@@ -92,7 +102,7 @@
 
   <!-- type="module" so app.js can import shared.js, which the poster imports
        too. Native ES modules in both runtimes; still no build step. -->
-  <script type="module" src="app.js?v=87"></script>
+  <script type="module" src="app.js?v=88"></script>
   <script src="embed-height.js"></script>
 </body>
 </html>

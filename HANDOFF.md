@@ -111,8 +111,10 @@ an id and a wrap date, and three changes in one day slipped past it.
 
 ## What to do next, in order
 
-1. **Add the TMDB logo** to the colophon. The terms require it and the
-   asset is not in this repository.
+1. ~~Add the TMDB logo.~~ **Done.** `tmdb.svg` in the colophon, and the
+   terms this project operates under are now downloaded and kept in
+   `licences/` — TMDB's API and site terms, CC0, Wikidata, Wikimedia and
+   Bluesky, as fetched on 3 August with their fingerprints.
 
 2. **The link previews.** There are no `og:` or `twitter:` tags at all.
    The cheap half is a site-wide card. The per-picture half is a fork:
@@ -131,9 +133,16 @@ an id and a wrap date, and three changes in one day slipped past it.
 5. **Copy `pass/` to the Desktop evidence archive.** Every year was
    rewritten today and the durable copy did not follow.
 
-6. **Delete `vault/*.json` and `archive.json`.** Nothing on the site
-   reads them, but `poster/lib.js`, `review.js` and `backfill-tmdbids.js`
-   still do.
+6. **Delete `vault/*.json` and `archive.json` — but not all of `vault/`.**
+   **`vault/suppressed.json` is live**: `app.js:1449` fetches it on every
+   page through `loadSuppressed()`. It is 3 bytes, `[]`, and it is the
+   name-suppression list — what makes honouring a removal request a
+   one-line commit rather than a migration. It stays.
+
+   The other eleven — nine decade files, `ids.json`, `summary.json` — are
+   dead to the site, as is `archive.json`. `poster/lib.js`, `review.js`
+   and `backfill-tmdbids.js` are the posting side and still write
+   `archive.json`, so this is archive-then-rewire and not a delete.
 
 Then the Desk, still the largest thing not built on the posting side.
 

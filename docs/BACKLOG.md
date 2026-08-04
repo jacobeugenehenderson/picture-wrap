@@ -769,20 +769,26 @@ stop the join failing for everybody.
 
 ---
 
-## The TMDB credit is conditioned on the wrong thing — FIXED, except the logo
+## The TMDB credit is conditioned on the wrong thing — DONE
 
-*Raised and fixed 2 August. Small, and a compliance defect rather than a
-preference.*
+*Raised and fixed 2 August; the logo followed on 3 August.*
 
-**Done.** The notice is now unconditional, in the colophon on every page,
-in TMDB's own wording. `revealTmdb()` no longer gates on a key, and the
-About paragraph says what TMDB's role actually is: about one closing date
-in thirteen rests on a death only TMDB records.
+**Done.** The notice is unconditional, in the colophon on every page, in
+TMDB's own wording. `revealTmdb()` no longer gates on a key, and the About
+paragraph says what TMDB's role actually is: about one closing date in
+thirteen rests on a death only TMDB records.
 
-**Still outstanding: the logo.** The terms require it and this repository
-does not hold the asset. It is a two-minute download from TMDB's
-logos-and-attribution page, deliberately not done here because
-downloading and committing somebody's brand asset is the owner's call.
+**The logo is in**, at Jacob's instruction on 3 August. `tmdb.svg` at the
+repository root is TMDB's `blue_short` mark, unmodified — 13px at the foot
+of the page, under a 46px wordmark, which is how the terms' *less
+prominent than your own branding* condition is met. It is shown at full
+opacity deliberately: dimming it to sit quieter against this palette would
+be an alteration of somebody else's brand asset.
+
+All five marks are kept in `licences/logos/` with the terms themselves.
+TMDB fingerprints its asset filenames with a SHA-256 of the contents and
+all five of ours match, so they are verified intact rather than merely
+downloaded.
 
 The original defect, for the record:
 
