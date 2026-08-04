@@ -110,10 +110,58 @@ const closedUnasked = work =>
   work.verdict === 'closed' && !work.tested &&
   work.reason === 'wikidata-only' && Boolean(work.tmdbId);
 
+/* And the third kind of stale, from 4 August 2026: a verdict that turns
+   on whether somebody was CREDITED, asked before we kept the answer.
+
+   `role` only started being written into the evidence partway through the
+   corpus — the same gap that leaves 27% of closers with no on-screen flag
+   — so for the years passed before that, a TMDB-sourced person arrives
+   with `roles: []` and nothing on disk can say whether TMDB called them
+   "Soldier (uncredited)" or "Soldier".
+
+   Deliberately narrow. It is not every picture holding such a person —
+   that is 76,972 of them, and for most the answer cannot change, because
+   the closer is somebody Wikidata credits or a credited person is alive
+   regardless. Only two shapes can move:
+
+     a closing DATED by a TMDB-sourced person whose role we never kept —
+     if that person turns out uncredited, the picture closed on somebody
+     else, earlier;
+
+     an open picture whose every living person is TMDB-sourced with no
+     role kept — if all of them turn out uncredited, nobody is holding it
+     open at all.
+
+   Re-running judge.js captures `role` on the way past, so this clause is
+   self-clearing in the same way `closedUnasked` is: once a picture has
+   been through, its people carry roles and it stops matching. */
+const tmdbSourced = p => p.source === 'tmdb' || (!p.wd && Boolean(p.tmdb));
+const noRoleKept = p => !(p.roles || []).length;
+
+const creditUnknown = (work, record) => {
+  if (!record || !work.tmdbId) return false;
+  const judged = record.judged || [];
+
+  if (work.verdict === 'closed') {
+    const closer = work.last?.name;
+    if (!closer) return false;
+    const p = judged.find(x => x.name === closer);
+    return Boolean(p && tmdbSourced(p) && noRoleKept(p));
+  }
+
+  if (work.verdict === 'open') {
+    const living = judged.filter(p => p.status === 'alive' && !p.impossible);
+    return living.length > 0 && living.every(p => tmdbSourced(p) && noRoleKept(p));
+  }
+
+  return false;
+};
+
 const isStale = (work, record) =>
-  heldOpenByNobody(work, record) || closedUnasked(work);
+  heldOpenByNobody(work, record) || closedUnasked(work) || creditUnknown(work, record);
 
 let totalStale = 0, totalReopened = 0, totalClosed = 0, totalUntested = 0, totalFailed = 0;
+const byClause = { heldOpenByNobody: 0, closedUnasked: 0, creditUnknown: 0 };
 
 for (const year of years) {
   const dir = join(OUT, String(year));
@@ -128,6 +176,14 @@ for (const year of years) {
   totalStale += stale.length;
 
   if (dryRun) {
+    /* Which clause caught them: three different repairs with three
+       different costs, and a run may only want one. */
+    for (const w of stale) {
+      const r = evidence.get(w.id);
+      if (heldOpenByNobody(w, r)) byClause.heldOpenByNobody++;
+      else if (closedUnasked(w)) byClause.closedUnasked++;
+      else byClause.creditUnknown++;
+    }
     console.log(`${year}  ${stale.length} stale: ${stale.slice(0, 3).map(w => w.title).join(', ')}` +
       (stale.length > 3 ? `, +${stale.length - 3}` : ''));
     continue;
@@ -231,6 +287,11 @@ for (const year of years) {
     (failed ? `, ${failed} could not be checked` : ''));
 }
 
+if (dryRun) {
+  console.log(`\n  held open by nobody   ${byClause.heldOpenByNobody}`);
+  console.log(`  closed unasked        ${byClause.closedUnasked}`);
+  console.log(`  credit never kept     ${byClause.creditUnknown}`);
+}
 console.log(`\n${totalStale} stale verdicts${dryRun ? ' found' : ''}`);
 if (!dryRun) {
   console.log(`  ${totalClosed} closed against TMDB`);
