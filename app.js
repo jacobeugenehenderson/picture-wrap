@@ -2337,8 +2337,16 @@ function viewAbout() {
 
       <h3>10. Privacy</h3>
       <p>
-        This site sets no cookies, runs no analytics and keeps no logs. It is
-        static files served from a CDN and nothing about readers is collected.
+        This site sets no cookies, runs no analytics and has no accounts.
+        It is static files, and the service that serves them counts
+        requests the way every such service does &mdash; how many, not who.
+        That total is the only thing about readers anyone here looks at.
+      </p>
+      <p>
+        Pages are assembled in your browser, which asks Wikidata and TMDB
+        directly for what it shows. Those requests reach them rather than
+        us, and what you type into the search box is sent to Wikidata to
+        answer it.
       </p>
       <p>
         It does hold names and birth dates of living people, all of them

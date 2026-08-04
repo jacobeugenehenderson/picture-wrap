@@ -332,6 +332,26 @@ here are people typing the names of the recently dead. Storing those beside
 IP addresses creates a record of who is checking whether whom is still alive.
 No IPs, no cookies, no session IDs.
 
+**Asked for on 4 August 2026, and answered without building anything.**
+A visitor count was wanted, for the maintainer and not for display. It
+already exists: every page load fetches `manifest.json` from the corpus
+host on Cloudflare Pages, so the requests are counted there and the total
+is in the dashboard. Nothing was added to the site, no third-party script
+ships, and the single-tool constraint above is intact.
+
+What did change is the page. Methods §10 said the site "keeps no logs"
+and that "nothing about readers is collected", and a CDN counts requests
+by nature — which is exactly what makes the total readable. The claim was
+truer of us than of the infrastructure, so it now says how many rather
+than who, and names the total as the one thing anyone here looks at.
+
+The same rewrite added a fact the page had never disclosed and should
+have: **the browser asks Wikidata and TMDB directly**, so a search term
+reaches Wikidata rather than us. That is the privacy question this
+project actually has — the concern two paragraphs above, arriving by a
+different route than analytics — and a reader could not have known it
+from the page.
+
 **The better version of that idea** is not an analytics page but a *gaps*
 page: films the site could not answer for because Wikidata has too little on
 record. That is useful to a visitor, improves the project's own accuracy, and
