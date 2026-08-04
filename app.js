@@ -2340,7 +2340,6 @@ function viewAbout() {
         This site sets no cookies, runs no analytics and has no accounts.
         It is static files, and the service that serves them counts
         requests the way every such service does &mdash; how many, not who.
-        That total is the only thing about readers anyone here looks at.
       </p>
       <p>
         Pages are assembled in your browser, which asks Wikidata and TMDB

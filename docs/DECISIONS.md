@@ -343,7 +343,10 @@ What did change is the page. Methods §10 said the site "keeps no logs"
 and that "nothing about readers is collected", and a CDN counts requests
 by nature — which is exactly what makes the total readable. The claim was
 truer of us than of the infrastructure, so it now says how many rather
-than who, and names the total as the one thing anyone here looks at.
+than who, and stops there. A first draft added that the total "is the
+only thing about readers anyone here looks at", which was cut: a reader
+weighing this page needs to know what is collected, not to be reassured
+about our restraint in reading it.
 
 The same rewrite added a fact the page had never disclosed and should
 have: **the browser asks Wikidata and TMDB directly**, so a search term
