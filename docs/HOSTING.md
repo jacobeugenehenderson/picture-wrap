@@ -140,20 +140,13 @@ reserved `bsky.social` handle. Recreate it with the MX and TXT records
 above if this zone ever moves.
 
 **The DKIM keys are per-domain.** The `.com` and `.social` keys are
-different strings, generated separately, and the Admin screen that makes
-them opens on whichever domain it likes. Generating on the wrong one
-silently replaces a working key.
+different strings and are not interchangeable.
 
-> **A second hazard, learned the hard way on 9 August.** Namecheap's
-> Advanced DNS editor commits the **whole table** on SAVE ALL CHANGES. If
-> the table is showing fewer rows than the zone actually has, saving
-> deletes the difference. Editing the MX rows took the four `A` records
-> and the `www` CNAME with them, and the site stopped resolving entirely —
-> not a slow failure, an immediate NXDOMAIN.
->
-> It was a two-minute fix only because the records above had been `dig`ged
-> and written down first. Do that before touching anything, and re-check
-> the full zone after every save, not just the row you meant to change.
+> **Before editing either zone, `dig` it and write the records down; after
+> every save, `dig` the whole zone again.** Not the row you changed — all
+> of it. Editing this zone has already deleted the site's `A` records as a
+> side effect, and a registrar's save can take half a minute to appear.
+> `DIARY.md`, 9 August, has the account.
 
 ## The order to do it in
 
