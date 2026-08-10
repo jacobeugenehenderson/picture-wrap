@@ -28,9 +28,9 @@ App passwords). Not your account password — an app password can be revoked
 on its own.
 
 ```sh
-export BSKY_HANDLE="picturewrap.bsky.social"
+export BSKY_HANDLE="picture-wrap.bsky.social"
 export BSKY_APP_PASSWORD="xxxx-xxxx-xxxx-xxxx"
-export PW_SITE="https://picturewrap.studio"     # used in the post link
+export PW_SITE="https://picture-wrap.com"       # used in the post link
 ```
 
 The website fetches `archive.json` from its own directory. Either copy it

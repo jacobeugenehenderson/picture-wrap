@@ -29,7 +29,7 @@ const WDQS = 'https://query.wikidata.org/sparql';
 
 /* Wikidata asks for a descriptive agent on automated queries. Put a real
    contact in here — it's how they reach you instead of blocking you. */
-const AGENT = 'PictureWrap/1.0 (https://picture-wrap.com; jacob@jacobhenderson.studio)';
+const AGENT = 'PictureWrap/1.0 (https://picture-wrap.com; max@picture-wrap.com)';
 
 
 /* A COST control for the backfill, and nothing else.

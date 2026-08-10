@@ -81,29 +81,51 @@ a decision rather than a side effect.
 
 ## What the DNS actually looks like
 
-Verified 4 August. **The nameservers are at Namecheap, not Cloudflare**,
-which is what makes A and B bigger than they sound:
+Verified 9 August, after moving mail to Google Workspace. **The nameservers
+are at Namecheap, not Cloudflare**, which is what makes A and B bigger than
+they sound:
 
 ```
 NS     dns1.registrar-servers.com, dns2.registrar-servers.com
 A      185.199.108.153 .109 .110 .111        GitHub Pages
 www    CNAME jacobeugenehenderson.github.io
-MX     10 eforward1/2/3, 15 eforward4, 20 eforward5 .registrar-servers.com
-TXT    v=spf1 include:spf.efwd.registrar-servers.com ~all
+MX     1 smtp.google.com                     Google Workspace
+TXT    v=spf1 include:_spf.google.com ~all
+TXT    google-site-verification=...          domain ownership
+TXT    google._domainkey → v=DKIM1; ...      DKIM signing
 ```
+
+Mail is `max@picture-wrap.com`, an alias on the `jacobhenderson.studio`
+Workspace account — `picture-wrap.com` is attached there as a **secondary
+domain**, so the alias costs no seat. It lands in the same inbox and can
+send as itself. Namecheap's own email forwarding is **off**; the MAIL
+SETTINGS dropdown on Advanced DNS is set to *Custom MX*, which is what
+makes MX editable at all. The old `eforward*` records are gone and should
+not come back.
 
 A Cloudflare Pages custom domain on the **apex** needs the zone on
 Cloudflare's nameservers. So A and B both begin with a nameserver move,
-and a nameserver move means **recreating those five MX records and the SPF
-TXT by hand**.
+and a nameserver move means **recreating the MX record and all three TXT
+records by hand**.
 
-> **The hazard:** miss them and mail to `@picture-wrap.com` stops
-> forwarding, silently, with no error anywhere. Nothing on the site would
+> **The hazard:** miss them and mail to `max@picture-wrap.com` stops
+> arriving, silently, with no error anywhere. Nothing on the site would
 > look wrong. Write the records down before changing anything, and check
 > mail after.
 
 That step belongs to whoever owns the registrar login. It is not something
 to automate.
+
+> **A second hazard, learned the hard way on 9 August.** Namecheap's
+> Advanced DNS editor commits the **whole table** on SAVE ALL CHANGES. If
+> the table is showing fewer rows than the zone actually has, saving
+> deletes the difference. Editing the MX rows took the four `A` records
+> and the `www` CNAME with them, and the site stopped resolving entirely —
+> not a slow failure, an immediate NXDOMAIN.
+>
+> It was a two-minute fix only because the records above had been `dig`ged
+> and written down first. Do that before touching anything, and re-check
+> the full zone after every save, not just the row you meant to change.
 
 ## The order to do it in
 

@@ -22,7 +22,7 @@
 import { sparql, qid, LANGS } from './lib.js';
 import { survivors, couldBeLivingSparql } from '../verify.js';
 
-const AGENT = 'PictureWrap/1.0 (https://picture-wrap.com; jacob@jacobhenderson.studio)';
+const AGENT = 'PictureWrap/1.0 (https://picture-wrap.com; max@picture-wrap.com)';
 const arg = process.argv.slice(2).join(' ').trim();
 
 if (!arg) {
