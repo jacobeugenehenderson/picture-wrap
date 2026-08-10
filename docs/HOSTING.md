@@ -116,6 +116,28 @@ records by hand**.
 That step belongs to whoever owns the registrar login. It is not something
 to automate.
 
+`picture-wrap.social` is at the same registrar and takes mail the same way.
+It hosts nothing — the apex is still a Namecheap parking redirect — but
+`max@picture-wrap.social` is live and is the address Bluesky holds, which
+makes this zone the account's only recovery path. Auto-renew is not
+optional.
+
+```
+NS     dns1.registrar-servers.com, dns2.registrar-servers.com
+A      192.64.119.165                        Namecheap parking
+www    CNAME parkingpage.namecheap.com       parking
+@      URL Redirect                          parking
+MX     1 smtp.google.com                     Google Workspace
+TXT    v=spf1 include:_spf.google.com ~all
+TXT    google-site-verification=...          domain ownership
+TXT    google._domainkey → v=DKIM1; ...      DKIM signing, its own key
+```
+
+**The DKIM keys are per-domain.** The `.com` and `.social` keys are
+different strings, generated separately, and the Admin screen that makes
+them opens on whichever domain it likes. Generating on the wrong one
+silently replaces a working key.
+
 > **A second hazard, learned the hard way on 9 August.** Namecheap's
 > Advanced DNS editor commits the **whole table** on SAVE ALL CHANGES. If
 > the table is showing fewer rows than the zone actually has, saving

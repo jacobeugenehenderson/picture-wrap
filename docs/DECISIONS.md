@@ -1364,3 +1364,43 @@ label set and a precomputed table; deepening it took `summary.json` to
 438 KB. They are separate now — a door is a curated way in and carries
 film picks ranked three ways, a tile is a filter and carries a count —
 and the file is 283 KB.
+
+---
+
+## The app is `.com`, the social side is `.social`
+
+*9 August 2026.*
+
+**Decision.** `picture-wrap.com` stays the archive: the site, the corpus,
+the links in every post, the address a reader sees. `picture-wrap.social`
+carries the Bluesky identity. The project's contact address is
+`max@picture-wrap.com`.
+
+**Why.** The two halves were already decoupled in the code — the site and
+the poster share nothing but `archive.json` — and the names now say so.
+A reader who lands on a picture is not thinking about a feed, and a
+handle that reads `@picture-wrap.social` says what the account is without
+the `bsky.social` suffix that reads as a placeholder.
+
+**Why the mailbox is on `.com` and not `.social`.** A contact address
+should match the domain already in front of people. `picture-wrap.com` is
+in `CNAME`, in the `og:` tags, in the `User-Agent` that Wikidata and TMDB
+see when they decide whether to answer us, and in the link inside every
+post. The byline and both copies of `AGENT` carried a personal address
+until today; they carry the project's now.
+
+**Both domains take mail.** `max@` exists at each, as Workspace aliases on
+the `jacobhenderson.studio` account with both domains attached as
+secondary domains. No extra seat, one inbox. `.social`'s address is the
+one Bluesky holds, which makes that domain the account's only recovery
+path — its auto-renew is not optional.
+
+**Cost, accepted.** Moving the handle off `picture-wrap.bsky.social`
+breaks all 37 post URLs stored in `archive.json`, which resolve by handle.
+The durable form is `bsky.app/profile/did:plc:…/post/…`, and rewriting to
+it is the fix if those links ever matter. Decided pre-launch that they do
+not: the posts have no audience to lose.
+
+**Not yet done.** The handle still reads `picture-wrap.bsky.social`. The
+move needs a `_atproto` TXT record on `picture-wrap.social` and a change
+in Bluesky's settings. `docs/HOSTING.md` has the DNS as it stands.
