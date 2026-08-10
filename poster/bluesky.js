@@ -5,7 +5,7 @@
 
    Credentials come from the environment, never from a file in the repo:
 
-     export BSKY_HANDLE="picture-wrap.bsky.social"
+     export BSKY_HANDLE="picture-wrap.social"
      export BSKY_APP_PASSWORD="xxxx-xxxx-xxxx-xxxx"
 
    Use an APP PASSWORD (Settings → Privacy and security → App passwords),

@@ -1401,6 +1401,17 @@ The durable form is `bsky.app/profile/did:plc:…/post/…`, and rewriting to
 it is the fix if those links ever matter. Decided pre-launch that they do
 not: the posts have no audience to lose.
 
-**Not yet done.** The handle still reads `picture-wrap.bsky.social`. The
-move needs a `_atproto` TXT record on `picture-wrap.social` and a change
-in Bluesky's settings. `docs/HOSTING.md` has the DNS as it stands.
+**Done the same evening.** The handle is `@picture-wrap.social`, proved by
+a `_atproto` TXT record on that domain carrying the account's DID:
+`did=did:plc:hfelnvqwod6dr6qqee2pv3mz`. The DID is the account's permanent
+name — the handle is only a lease on top of it, which is why the record
+points one at the other.
+
+**It is reversible.** Bluesky keeps `picture-wrap.bsky.social` reserved,
+and switching back is a settings change. Delete the `_atproto` record and
+the handle stops resolving, so that record is now load-bearing: it belongs
+in the list of things to recreate if the zone ever moves.
+
+**Consequence for the poster.** `BSKY_HANDLE` is the login identifier, and
+it is now `picture-wrap.social`. `node poster/check.js` logs in and prints
+the handle without posting, which is the way to confirm it.

@@ -131,7 +131,13 @@ MX     1 smtp.google.com                     Google Workspace
 TXT    v=spf1 include:_spf.google.com ~all
 TXT    google-site-verification=...          domain ownership
 TXT    google._domainkey → v=DKIM1; ...      DKIM signing, its own key
+TXT    _atproto → did=did:plc:hfelnv...      the Bluesky handle
 ```
+
+**`_atproto` is load-bearing.** It is what makes the handle
+`@picture-wrap.social` resolve. Delete it and the account falls back to a
+reserved `bsky.social` handle. Recreate it with the MX and TXT records
+above if this zone ever moves.
 
 **The DKIM keys are per-domain.** The `.com` and `.social` keys are
 different strings, generated separately, and the Admin screen that makes

@@ -130,7 +130,7 @@ queue exists so a human looks at the evidence before a claim is published.
 ## Environment
 
 ```sh
-export BSKY_HANDLE="picture-wrap.bsky.social"
+export BSKY_HANDLE="picture-wrap.social"
 export BSKY_APP_PASSWORD="xxxx-xxxx-xxxx-xxxx"   # app password, not account
 export PW_SITE="https://picture-wrap.com"      # used in the post link
 export PW_ARCHIVE="/path/to/site/archive.json"   # write where the site reads
